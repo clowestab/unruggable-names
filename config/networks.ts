@@ -1,7 +1,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Networks
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-import { arbitrum, arbitrumGoerli, baseGoerli, goerli, hardhat, mainnet, optimism, optimismGoerli, polygon, sepolia } from '@wagmi/chains'
+import { arbitrum, arbitrumGoerli, baseGoerli, goerli, hardhat, mainnet, optimism, optimismGoerli, polygon, sepolia, foundry } from '@wagmi/chains'
 import { configureChains } from 'wagmi'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { infuraProvider } from 'wagmi/providers/infura'
@@ -16,7 +16,7 @@ arbitrumGoerli.iconUrl = '/icons/NetworkArbitrumTest.svg'
 // @ts-ignore
 baseGoerli.iconUrl = '/icons/NetworkBaseTest.svg'
 
-export const ETH_CHAINS_TEST = [mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, goerli, sepolia, hardhat]
+export const ETH_CHAINS_TEST = [mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, goerli, sepolia, foundry]
 export const ETH_CHAINS_PROD = [mainnet, optimism, arbitrum, polygon]
 
 export const CHAINS = process.env.NODE_ENV === 'production' ? ETH_CHAINS_PROD : ETH_CHAINS_TEST

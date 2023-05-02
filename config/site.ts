@@ -17,10 +17,10 @@ interface SiteConfig {
 export const SITE_CANONICAL = 'https://turboeth.xyz'
 
 export const siteConfig: SiteConfig = {
-  name: 'TurboETH',
-  title: 'TurboETH - Web3 App Template',
+  name: 'Unruggable subdomain rentals',
+  title: 'Unruggable subdomain rentals',
   emoji: '⚡',
-  description: 'Web3 App Template built using Next.js, RainbowKit, SIWE, Disco, and more!',
+  description: 'Decentralized and trustless subname rentals in the Ethereum Name Service (ENS) ecosystem.',
   previewImg: `${SITE_CANONICAL}/preview.png`,
   localeDefault: 'en',
   links: {

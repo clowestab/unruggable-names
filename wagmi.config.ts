@@ -1,5 +1,5 @@
 import { defineConfig } from '@wagmi/cli'
-import { react } from '@wagmi/cli/plugins'
+import { react, foundry } from '@wagmi/cli/plugins'
 import { erc20ABI } from 'wagmi'
 
 export default defineConfig({
@@ -10,5 +10,18 @@ export default defineConfig({
       abi: erc20ABI,
     },
   ],
-  plugins: [react()],
+  plugins: [
+    react(),
+    foundry({
+      project: '../../SubnameWrapper',
+      include: [
+        'SubnameWrapper.sol/**',
+        'SubnameRegistrar.sol/**',
+        'RenewalController.sol/**',
+        'NameWrapper.sol/**',
+        'ENSRegistry.sol/**',
+        'ETHRegistrarController.sol/**'
+      ]
+    })
+  ],
 })

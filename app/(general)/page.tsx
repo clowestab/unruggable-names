@@ -1,5 +1,7 @@
 'use client'
 
+import { foundry } from 'wagmi/chains'
+
 import { motion } from 'framer-motion'
 import { FaGithub } from 'react-icons/fa'
 import Balancer from 'react-wrap-balancer'
@@ -7,7 +9,45 @@ import Balancer from 'react-wrap-balancer'
 import { LinkComponent } from '@/components/shared/link-component'
 import { FADE_DOWN_ANIMATION_VARIANTS } from '@/config/design'
 
+import { useSubnameRegistrarRead, useSubnameRegistrarMinCommitmentAge } from '../../lib/blockchain'
+import React from 'react'
+
+let utf8Encode = new TextEncoder();
+let la = utf8Encode.encode("abc");
+
+
+const packet = require('dns-packet')
+
+function hexEncodeName(name) {
+  return '0x' + packet.name.encode(name).toString('hex')
+}
+
 export default function Home() {
+
+
+ const  { data: rentPrice }  = useSubnameRegistrarRead({
+    address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+    functionName: 'rentPrice',
+    args: [hexEncodeName("sub.abc.eth"), 31536000],
+    chainId: foundry.id
+  });
+
+  const data = useSubnameRegistrarMinCommitmentAge({
+    address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+    chainId: foundry.id
+  })
+
+  React.useEffect(() => {
+    console.log("effect", data);
+    console.log("utf8Encode", la);
+  }, []);
+
+
+  React.useEffect(() => {
+    console.log("effect2change", rentPrice);
+  }, [rentPrice]);
+
+
   return (
     <>
       <div className="relative flex flex-1">
@@ -30,7 +70,7 @@ export default function Home() {
             <motion.h1
               className="text-gradient-sand text-center text-6xl font-bold tracking-[-0.02em] drop-shadow-sm md:text-8xl md:leading-[6rem]"
               variants={FADE_DOWN_ANIMATION_VARIANTS}>
-              <Balancer>Get Started</Balancer>
+              <Balancer>Get Startedd</Balancer>
             </motion.h1>
             <motion.p className="mt-6 text-center text-gray-500 dark:text-gray-200 md:text-xl" variants={FADE_DOWN_ANIMATION_VARIANTS}>
               <Balancer className="text-xl font-semibold">Start building next generation Web3 apps today</Balancer>
