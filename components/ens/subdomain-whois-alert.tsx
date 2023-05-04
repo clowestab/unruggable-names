@@ -38,6 +38,7 @@ import {
     useEnsRegistryRead, 
     useNameWrapperRead, 
     useRenewalController, 
+    useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameRegistrarRenew, 
     useSubnameWrapperRead 
@@ -62,6 +63,11 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
         }             = useSigner()
 
         console.log("SIGNER", signer);
+
+        const subnameRegistrar = useSubnameRegistrar({
+            address:          subnameRegistrarAddress,
+            signerOrProvider: signer
+        });
 
         const renewalController = useRenewalController({
             address:          renewalControllerAddress,
@@ -96,6 +102,15 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
             args:          [tokenId],
         });
 
+        const  { data: canRegistrarModifyName }  = useSubnameWrapperRead({
+            address:       subnameWrapperAddress,
+            functionName:  'canModifyName',
+            args:          [namehash, subnameRegistrarAddress],
+        });
+
+        console.log("canRegistrarModifyName", canRegistrarModifyName);
+
+
         console.log("name data", nameData);
 
         const  { data: nameWrapperOwnerAddress }  = useNameWrapperRead({
@@ -114,12 +129,21 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
 
         const doRenew = () => {
 
-        console.log("renew");
-        setIsRenewing(true);
+            console.log("renew");
+            setIsRenewing(true);
         }
 
-        const isOwnedByUser = nameData?.owner == address;
+    const isOwnedByUser = nameData?.owner == address;
 
+    const canRenewThroughSubnameRegistrar = nameData && nameData.renewalController == "0x0000000000000000000000000000000000000000" && isOwnedByUser && canRegistrarModifyName;
+
+    var renewalControllerToUse = null;
+
+    if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
+    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+
+    console.log("renewalControllerToUse", renewalControllerToUse);
+    
     return (
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -135,29 +159,35 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                         <div className = "mt-2">
 
                         {!isRenewing ? (
-                                <>
+                            <>
                                 <Button type="submit" disabled = {isRenewing} onClick = {doRenew}>
-                                        {isRenewing && CommonIcons.miniLoader}
-                                        Renew
+                                    {isRenewing && CommonIcons.miniLoader}
+                                    Renew
                                 </Button>
 
-                                {isOwnedByUser && nameData && nameData.renewalController == "0x0000000000000000000000000000000000000000" && (
-                                        <div className = "mt-1 text-xs text-red-800">You can renew this because you own it and there is no renewal controller set.</div>
+
+                                {canRenewThroughSubnameRegistrar && (
+                                    <div className = "mt-1 text-xs text-red-800">
+                                        No renewal controller has been set for this domain.
+                                        You can renew this name through the subname registrar.
+                                    </div>
                                 )}
-                                </>
+
+
+                            </>
                         ) : (
                                 <TransactionConfirmationState 
                                 key      = {"renewal-" + name}
                                 contract = {renewalController}
                                 txArgs   = {{
                                         args: [
-                                        encodedNameToRenew,
-                                        refererAddress, //referer
-                                        renewForTimeInSeconds
+                                            encodedNameToRenew,
+                                            refererAddress, //referer
+                                            renewForTimeInSeconds
                                         ],
                                         overrides: {
-                                        gasLimit: ethers.BigNumber.from("5000000"),
-                                        value:    "10000000000000000000"
+                                            gasLimit: ethers.BigNumber.from("5000000"),
+                                            value:    "10000000000000000000"
                                         }
                                 }}
                                 txFunction = 'renew'

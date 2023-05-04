@@ -65,7 +65,7 @@ interface SearchResultRowProps {
 }
 
 
-export function SubdomainSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
+export function SubdomainSearchResultRow({ className, name, resultIndex, onRegister, doLookup }: SearchResultRowProps) {
 
     const provider                                          = useProvider();
     const { data: signer }  = useSigner()
@@ -169,7 +169,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
         console.log("onCommitmentConfirmed", time.toString());
         console.log("onCommitmentConfirmed block", block);
         const currentTimestamp = Math.floor(Date.now() / 1000);
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()));
+        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 2);
     }
 
 
@@ -190,7 +190,10 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
   return (
     <div className = {classes}>
         <div className = {classNames({ "bg-green-100": isAvailable, "bg-red-100": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center')}>
-            <>{name}</>
+            <div className = "text-center">
+                {name}
+                <div className = "cursor-pointer text-xs underline" onClick = {() => { doLookup(parentName); }}>view parent</div>
+            </div>
             <div className = "w-8" />
             <div className = "flex items-center justify-center">
                 {isAvailable ? (
@@ -249,7 +252,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
                                                     gasLimit: ethers.BigNumber.from("200000")
                                                 }
                                             }}
-                                            txFunction = 'commit'
+                                            txFunction  = 'commit'
                                             onConfirmed = {onCommitmentConfirmed}>
                                                 <div>
                                                     {CommonIcons.miniLoader} Submitting registration commitment..

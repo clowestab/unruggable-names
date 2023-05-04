@@ -133,7 +133,9 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     console.log("rentprice", rentPrice);
 
 
-    const [salt, setSalt] = React.useState<`0x${string}`>(generateSalt() as `0x${string}`);
+    const [salt, setSalt] = React.useState<`0x${string}`>("0x" + generateSalt() as `0x${string}`);
+
+    console.log("salt", salt);
 
     console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);
@@ -165,6 +167,8 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
         },
     });
 
+    console.log("COMMITMENT", commitment);
+
 
     /**
      * Triggered when register button clicked
@@ -187,7 +191,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
         //Discern and set the time at which the commitment will be valid on chain
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()));
+        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 2);
     }
 
     /**
@@ -243,7 +247,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
                             <>
                                 {/* Set when the transaction is committed and 60 seconds has passed */}
-                                {!commitmentCompleteTimestamp ? (
+                                {commitmentCompleteTimestamp == null ? (
                                     <>
                                         {commitment != null && (
                                             <TransactionConfirmationState 

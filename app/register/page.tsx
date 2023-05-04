@@ -1,5 +1,14 @@
 'use client'
 
+import {
+  useConnectModal,
+  useAccountModal,
+  useChainModal,
+} from '@rainbow-me/rainbowkit';
+
+
+import { useNetwork } 					from 'wagmi'
+
 import { 
 	WalletAddress, 
 	WalletBalance, 
@@ -41,6 +50,11 @@ interface SearchResult {
 
 export default function RegistrationForm() {
 
+	const { chain, chains }  = useNetwork();
+	const { openChainModal } = useChainModal();
+
+	console.log("chain", chain);
+
 	const [searchTerm, setSearchTerm]       = React.useState<string>("");
 	const [searchError, setSearchError]     = React.useState<string | null>(null);
 	const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
@@ -59,14 +73,19 @@ export default function RegistrationForm() {
 	/**
 	 * 
 	 */ 
-	const doSearch = () => {
+	const doSearch = (manualSearchTerm) => {
+
+		console.log("search man", manualSearchTerm);
+		console.log("search", searchTerm);
+
+		const searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
 
 		setSearchResults([]);
 
 		//Show error if no input
-		if (searchTerm == "") { setSearchError("Please enter an input"); return; }
+		if (searchTermToUse == "") { setSearchError("Please enter an input"); return; }
 
-		const domainParts     	= searchTerm.split(".");
+		const domainParts     	= searchTermToUse.split(".");
 		const domainExtension 	= domainParts[domainParts.length - 1];
 		const isSubdomain     	= domainParts.length == 3 && domainExtension == 'eth';
 		const isEth2ld     		= domainParts.length == 2 && domainExtension == 'eth';
@@ -79,7 +98,7 @@ export default function RegistrationForm() {
 		const newResults = [];
 		if (isSubdomain) { 
 			newResults.push({
-				name:  searchTerm, 
+				name:  searchTermToUse, 
 				type:  'subdomain', 
 				nonce: Math.floor(Math.random() * 100000)
 			}); 
@@ -87,7 +106,7 @@ export default function RegistrationForm() {
 
 		if (isEth2ld) { 
 			newResults.push({
-				name:  searchTerm, 
+				name:  searchTermToUse, 
 				type:  'domain', 
 				nonce: Math.floor(Math.random() * 100000)
 			}); 
@@ -99,6 +118,17 @@ export default function RegistrationForm() {
 
 	return (
 		<div className = "m-8">
+
+			{chain && (chain.id != foundry.id) && (
+				<>
+					<p>This interface only currently works with foundry.</p>
+					<Button 
+						type     = "submit" 
+						onClick  = {openChainModal}>
+						Change Network
+					</Button>
+				</>
+			)}
 
 			<div className="flex-center col-span-12 flex flex-col lg:col-span-9">
 				<div className="text-center">
@@ -136,7 +166,8 @@ export default function RegistrationForm() {
 							onChange    = {(e) => {
 								setSearchError(null);
 								setSearchTerm(e.target.value)
-							}} />
+							}}
+							value 		= {searchTerm} />
 						{searchError != null && (
 							<div className = "text-sm text-red-500 flex flex-center mt-2">{searchError}</div>
 						)}
@@ -169,6 +200,12 @@ export default function RegistrationForm() {
 										onRegister 		= {() => {    
 											setSearchResults([]);
 											doSearch();
+										}}
+										doLookup = {(domain) => {
+
+											setSearchError(null);
+											setSearchTerm(domain);
+											doSearch(domain);
 										}} />
 
 								<div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
