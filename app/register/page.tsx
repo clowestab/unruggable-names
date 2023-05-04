@@ -73,7 +73,7 @@ export default function RegistrationForm() {
 	/**
 	 * 
 	 */ 
-	const doSearch = (manualSearchTerm) => {
+	const doSearch = (manualSearchTerm: any) => {
 
 		console.log("search man", manualSearchTerm);
 		console.log("search", searchTerm);
