@@ -85,8 +85,8 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     const domainParts                          = name.split(".");
     domainParts.shift();
     const parentName                           = domainParts.join(".");
-    const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName);
-    const encodedNameToRegister: `0x${string}` = hexEncodeName(name);
+    const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName)  as `0x${string}`;
+    const encodedNameToRegister: `0x${string}` = hexEncodeName(name) as `0x${string}`;
 
     const  { data: isAvailable }    = useSubnameRegistrarRead({
         address:      subnameRegistrarAddress,

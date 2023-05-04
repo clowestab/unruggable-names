@@ -101,7 +101,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     const domainParts               = name.split(".");
     const label                     = domainParts[0];
     const encodedNameToRegister     = hexEncodeName(name);
-    const domainNamehash            = ethers.utils.namehash(name);
+    const domainNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
 
     const  { data: isAvailable }    = useEthRegistrarControllerRead({
          address:      ethRegistrarControllerAddress,
@@ -113,7 +113,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
     const  { data: pricingData }  = useSubnameRegistrarPricingData({
          address: subnameRegistrarAddress,
-         args:    [`0x${domainNamehash}`],
+         args:    [domainNamehash],
      });
 
     console.log("Pricing data", pricingData);
@@ -133,7 +133,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     console.log("rentprice", rentPrice);
 
 
-    const [salt, setSalt] = React.useState<`0x${string}`>(`0x${generateSalt()}`);
+    const [salt, setSalt] = React.useState<`0x${string}`>(generateSalt() as `0x${string}`);
 
     console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);

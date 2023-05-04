@@ -80,7 +80,11 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     const domainParts                     = name.split(".");
     const label                           = domainParts[0];
     const namehash                        = ethers.utils.namehash(name);
-    const namehashHex: `0x${string}`      = namehash;
+    const namehashHex: `0x${string}`      = namehash as `0x${string}`;
+
+    console.log("namehash", typeof namehash);
+    console.log("namehashHex", namehashHex);
+
     const tokenId                         = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
     const renewForTimeInSeconds           = ethers.BigNumber.from("31536000");

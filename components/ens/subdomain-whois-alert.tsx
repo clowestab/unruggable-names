@@ -70,9 +70,9 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
 
         const [isRenewing, setIsRenewing]       = React.useState(false);
 
-        const namehash: `0x${string}`           = ethers.utils.namehash(name);
+        const namehash: `0x${string}`           = ethers.utils.namehash(name) as `0x${string}`;;
         const tokenId                           = ethers.BigNumber.from(namehash);
-        const encodedNameToRenew: `0x${string}` = hexEncodeName(name);
+        const encodedNameToRenew: `0x${string}` = hexEncodeName(name) as `0x${string}`;
         const renewForTimeInSeconds             = ethers.BigNumber.from("31536000");
         const refererAddress                    = "0x0000000000000000000000000000000000005627";
 

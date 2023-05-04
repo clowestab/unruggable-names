@@ -12,7 +12,7 @@ import { useSubnameRegistrar }  from '../../lib/blockchain'
 interface TransactionConfirmationStateProps {
     contract:     any,
     txFunction:   string,
-    txArgs:       Object<any>,
+    txArgs:       any,
     children:     Array<React.ReactElement>,
     onConfirmed?: Function,
     onAlways?:    Function,
