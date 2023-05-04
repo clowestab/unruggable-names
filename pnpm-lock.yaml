@@ -142,6 +142,9 @@ dependencies:
   axios:
     specifier: ^1.2.2
     version: 1.3.4
+  check-types:
+    specifier: ^11.2.2
+    version: 11.2.2
   class-variance-authority:
     specifier: ^0.4.0
     version: 0.4.0(typescript@4.9.4)
@@ -7665,6 +7668,10 @@ packages:
 
   /check-error@1.0.2:
     resolution: {integrity: sha512-BrgHpW9NURQgzoNyjfq0Wu6VFO6D7IZEmJNdtgNqpzGG8RuNFHt2jQxWlAs4HMe119chBnv+34syEZtc6IhLtA==}
+    dev: false
+
+  /check-types@11.2.2:
+    resolution: {integrity: sha512-HBiYvXvn9Z70Z88XKjz3AEKd4HJhBXsa3j7xFnITAzoS8+q6eIGi8qDB8FKPBAjtuxjI/zFpwuiCb8oDtKOYrA==}
     dev: false
 
   /chokidar@3.5.3:

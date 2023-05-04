@@ -10,18 +10,23 @@ import { foundry }              from 'wagmi/chains'
 import { useSubnameRegistrar }  from '../../lib/blockchain'
 
 interface TransactionConfirmationStateProps {
-    txFunction: Function,
-    txArgs: Array<any>,
-    children?: React.ReactElement | Array<React.ReactElement>,
-    inComplete?: Function
+    contract:     any,
+    txFunction:   string,
+    txArgs:       Object<any>,
+    children:     Array<React.ReactElement>,
+    onConfirmed?: Function,
+    onAlways?:    Function,
 }
 
 // @ts-ignore
 export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onConfirmed, onAlways }: TransactionConfirmationStateProps): React.ReactElement | null {
 
+    console.log("txFunction", txFunction);
+    console.log("txArgs", txArgs);
+
     const { address }                                       = useAccount()
     const provider                                          = useProvider();
-    const { data: signer, isErrorSigner, isLoadingSigner }  = useSigner()
+    const { data: signer }                                  = useSigner()
 
     const [hasStarted, setHasStarted]                       = React.useState(false);
 
@@ -43,13 +48,13 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
                     return contract[txFunction](...txArgs.args, txArgs.overrides);
                 })
-                .then((methodResponse) => {
+                .then((methodResponse: any) => {
 
                     console.log("methodResponse", methodResponse);
 
                     return methodResponse.wait();
                 })
-                .then((methodReceipt) => {
+                .then((methodReceipt: any) => {
 
                     console.log("methodReceipt", methodReceipt);
 
@@ -61,7 +66,7 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
                     //return lookupDomain();
                 })
-                .catch((error) => {
+                .catch((error: any) => {
 
                     console.log("ERROR method response - " + error.reason, error);
                     console.log("Werrorname", error.errorName);
@@ -84,7 +89,9 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
     if (isConfirmed) {
 
-        return confirmationError == null ? children[1] : confirmationError;
+        const output: any = confirmationError == null ? children[1] : confirmationError;
+        
+        return output;
 
     } else {
 

@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FADE_IN_ANIMATION_SETTINGS } from '@/config/design'
 
+import { BranchIsAuthenticated } from '../../integrations/siwe/components/branch-is-authenticated'
 import { ButtonSIWELogin } from '../../integrations/siwe/components/button-siwe-login'
 import { ButtonSIWELogout } from '../../integrations/siwe/components/button-siwe-logout'
-import { BranchIsAuthenticated } from '../../integrations/siwe/components/branch-is-authenticated'
 
 export function UserDropdown() {
   return (

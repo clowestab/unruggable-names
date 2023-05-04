@@ -15,22 +15,22 @@ import React from 'react'
 let utf8Encode = new TextEncoder();
 let la = utf8Encode.encode("abc");
 
+import { 
+  hexEncodeName 
+}                     from '../../helpers/Helpers.jsx';
 
-const packet = require('dns-packet')
-
-function hexEncodeName(name) {
-  return '0x' + packet.name.encode(name).toString('hex')
-}
 
 export default function Home() {
 
 
- const  { data: rentPrice }  = useSubnameRegistrarRead({
+  const encodedName = hexEncodeName("sub.abc.eth");
+
+ /*const  { data: rentPrice }  = useSubnameRegistrarRead({
     address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
     functionName: 'rentPrice',
-    args: [hexEncodeName("sub.abc.eth"), 31536000],
+    args: [encodedName, 31536000],
     chainId: foundry.id
-  });
+  });*/
 
   const data = useSubnameRegistrarMinCommitmentAge({
     address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
@@ -43,9 +43,9 @@ export default function Home() {
   }, []);
 
 
-  React.useEffect(() => {
+  /*React.useEffect(() => {
     console.log("effect2change", rentPrice);
-  }, [rentPrice]);
+  }, [rentPrice]);*/
 
 
   return (

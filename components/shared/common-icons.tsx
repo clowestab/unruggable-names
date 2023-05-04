@@ -1,52 +1,54 @@
 import { Icon } from '@iconify/react';
 
-export default {
-	miniLoader: (
+const icons = {
+	miniLoader: 
 		<Icon 
 			className   = "inline-block"
 			icon        = "eos-icons:three-dots-loading"  
 			width       = "24" 
 			height      = "24" />
-	),
-	save: (
+	,
+	save: 
 		<Icon 
 			className   = "inline-block"
 			icon        = "ant-design:save-outlined"  
 			width       = "24" 
 			height      = "24" />
-	),
-	copy: (
+	,
+	copy: 
 		<Icon 
 			className   = "inline-block"
 			icon        = "clarity:copy-line"  
 			width       = "24" 
 			height      = "24" />
-	),
-	tooltip: (
+	,
+	tooltip: 
     	<Icon 
 			className 	= "inline-block"
             icon 		= "ant-design:question-circle-outlined" />
-	),
-	alert: (
+	,
+	alert: 
     	<Icon 
-			className 	= "inline-block ml-2"
+			className 	= "ml-2 inline-block"
             icon 		= "akar-icons:triangle-alert" />
-	),
-	check: (
+	,
+	check: 
     	<Icon 
-			className 	= "inline-block ml-2"
+			className 	= "ml-2 inline-block"
             icon 		= "ant-design:check-circle-outlined"
             color 		= "green" />
-	),
-	cross: (
+	,
+	cross: 
     	<Icon 
-			className 	= "inline-block ml-2"
+			className 	= "ml-2 inline-block"
             icon 		= "ant-design:close-circle-outlined"
             color 		= "red" />
-	),
-	upload: (
+	,
+	upload: 
     	<Icon 
-			className 	= "inline-block ml-2"
+			className 	= "ml-2 inline-block"
             icon 		= "ic:baseline-file-upload" />
-	)
+	
 }
+
+export default icons;

@@ -1,15 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
 //Fuses
 const FUSES = {
   CAN_DO_EVERYTHING:       0,
@@ -28,51 +16,54 @@ const FUSES = {
 import React                            from 'react'
 
 import classNames                       from 'clsx'
-
-import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
-import { DomainWhoisAlert }             from '../ens/domain-whois-alert'
-import { CountdownText }                from './countdown-text'
-
-import { 
-    useEthRegistrarController, 
-    useEthRegistrarControllerRead, 
-    useEthRegistrarControllerMakeCommitment, 
-    useEthRegistrarControllerMinCommitmentAge, 
-    useSubnameRegistrarPricingData 
-}                                       from '../../lib/blockchain'
-import { foundry }                      from 'wagmi/chains'
-
+import { ethers }                       from "ethers";
 import { HiCheckCircle, HiXCircle }     from 'react-icons/hi'
-import CommonIcons                      from '../shared/common-icons';
-import { Button }                       from "@/components/ui/button"
-
 import { 
-    useWaitForTransaction,
-    useAccount, 
+    useAccount,
     useProvider, 
-    useSigner 
+    useSigner, 
+    useWaitForTransaction 
 }                                       from 'wagmi'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+}                                       from "@/components/ui/alert-dialog"
+import { Button }                       from "@/components/ui/button"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+}                                       from "@/components/ui/tooltip"
+
+import { CountdownText }                from './countdown-text'
+import {
+    ethRegistrarControllerAddress,
+    renewalControllerAddress,
+    subnameRegistrarAddress,
+    subnameWrapperAddress
+}                                       from '../../helpers/contract-addresses';
 import { 
     generateSalt, 
     hexEncodeName 
 }                                       from '../../helpers/Helpers.jsx';
-
-import { ethers }                       from "ethers";
-
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-}                                       from "@/components/ui/tooltip"
-
-import {
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress,
-    ethRegistrarControllerAddress
-}                                       from '../../helpers/contract-addresses.tsx';
+import { 
+    useEthRegistrarController, 
+    useEthRegistrarControllerMakeCommitment, 
+    useEthRegistrarControllerMinCommitmentAge, 
+    useEthRegistrarControllerRead, 
+    useSubnameRegistrarPricingData 
+}                                       from '../../lib/blockchain'
+import { DomainWhoisAlert }             from '../ens/domain-whois-alert'
+import CommonIcons                      from '../shared/common-icons';
+import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
 const REGISTRATION_STATE = {
     COMMITTED:  'COMMITTED',
@@ -81,29 +72,31 @@ const REGISTRATION_STATE = {
  
 
 interface SearchResultRowProps {
-    className?: string
+    className?:  string,
+    name:        string,
+    resultIndex: number,
+    onRegister?: () => void
 }
 
 
 export function DomainSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
 
     const provider                                          = useProvider();
-    const { data: signer, isErrorSigner, isLoadingSigner }  = useSigner()
+    const { data: signer }  = useSigner()
     const { address }                                       = useAccount()
 
     console.log("SIGNER", signer);
 
     const ethRegistrarController = useEthRegistrarController({
         address:          ethRegistrarControllerAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
     console.log("ethRegistrarController", ethRegistrarController);
 
     const [isRegistering, setIsRegistering]                             = React.useState(false);
-    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState(false);
-    const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState(false);
+    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(null);
+    const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
     const domainParts               = name.split(".");
     const label                     = domainParts[0];
@@ -114,21 +107,19 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
          address:      ethRegistrarControllerAddress,
          functionName: 'available',
          args:         [label],
-         chainId:      foundry.id
     });
 
     console.log("isAvailable data", isAvailable);
 
     const  { data: pricingData }  = useSubnameRegistrarPricingData({
          address: subnameRegistrarAddress,
-         args:    [domainNamehash],
-         chainId: foundry.id
+         args:    [`0x${domainNamehash}`],
      });
 
     console.log("Pricing data", pricingData);
 
     const addressToRegisterTo      = address;
-    const registerForTimeInSeconds = 10000000;//31536000;
+    const registerForTimeInSeconds = ethers.BigNumber.from("10000000");//31536000;
     const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
 
 
@@ -136,14 +127,13 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
          address:      ethRegistrarControllerAddress,
          functionName: 'rentPrice',
          args:         [encodedNameToRegister, registerForTimeInSeconds],
-         chainId:      foundry.id
      });
 
 
     console.log("rentprice", rentPrice);
 
 
-    const [salt, setSalt] = React.useState("0x" + generateSalt());
+    const [salt, setSalt] = React.useState<`0x${string}`>(`0x${generateSalt()}`);
 
     console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);
@@ -154,7 +144,6 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
     const { data: MIN_COMMITMENT_TIME_IN_SECONDS } = useEthRegistrarControllerMinCommitmentAge({
         address: ethRegistrarControllerAddress,
-        chainId: foundry.id
     });
 
     console.log("MIN_COMMITMENT_TIME_IN_SECONDS", MIN_COMMITMENT_TIME_IN_SECONDS?.toString());
@@ -163,7 +152,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
         address: ethRegistrarControllerAddress,
         args: [
             label, 
-            addressToRegisterTo, 
+            addressToRegisterTo!, 
             registerForTimeInSeconds, 
             salt, 
             addressToResolveTo, 
@@ -172,9 +161,8 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
             (FUSES.CANNOT_UNWRAP)
         ],
         overrides: {
-            gasLimit: 200000
+            gasLimit: ethers.BigNumber.from("200000")
         },
-        //chainId: foundry.id
     });
 
 
@@ -189,7 +177,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     /**
      * Called back from TransactionConfirmationState component
      */ 
-    const onCommitmentConfirmed = async (subnameRegistrar) => {
+    const onCommitmentConfirmed = async (subnameRegistrar: any) => {
 
         const time  = await subnameRegistrar.commitments(commitment);
         const block = await provider.getBlock('latest');
@@ -199,7 +187,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
         //Discern and set the time at which the commitment will be valid on chain
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS.toString()));
+        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()));
     }
 
     /**
@@ -219,7 +207,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
             <div className = {classNames({ "bg-green-100": isAvailable, "bg-red-100": !isAvailable}, "p-4", 'flex justify-center items-center')}>
                 <>{name}</>
                 <div className = "w-8" />
-                <div className = "flex justify-center items-center">
+                <div className = "flex items-center justify-center">
                     {isAvailable ? (
                         <><HiCheckCircle /><div className = "w-1" /> Available</>
                     ) : (
@@ -230,7 +218,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                 <div className = "w-1" />
                                 <AlertDialog key = {"whois-" + name} >
                                     <AlertDialogTrigger asChild>
-                                        <span className = "text-xs underline cursor-pointer">whois</span>
+                                        <span className = "cursor-pointer text-xs underline">whois</span>
                                     </AlertDialogTrigger>
                                     <DomainWhoisAlert name = {name} />
                                 </AlertDialog>
@@ -241,7 +229,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
                 <div className = "w-8" />
 
-                <div className = "flex justify-center items-center">
+                <div className = "flex items-center justify-center">
                     {isAvailable && rentPrice && (
                         <span>Ξ {ethers.utils.formatEther(rentPrice.base.toString())}</span>
                     )}
@@ -267,7 +255,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                                         commitment, //secret
                                                     ],
                                                     overrides: {
-                                                        gasLimit: 200000
+                                                        gasLimit: ethers.BigNumber.from("200000")
                                                     }
                                                 }}
                                                 txFunction  = 'commit'
@@ -304,8 +292,8 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                                 (FUSES.CANNOT_UNWRAP) //fuses
                                             ],
                                             overrides: {
-                                                gasLimit: 500000,
-                                                value: rentPrice.base.toString()
+                                                gasLimit:   ethers.BigNumber.from("500000"),
+                                                value:      rentPrice!.base.toString()
                                             }
                                         }}
                                         txFunction  = 'register'

@@ -32,12 +32,19 @@ import {
 import { SubdomainSearchResultRow } 	from '@/components/ens/subdomain-search-result-row'
 import { DomainSearchResultRow } 		from '@/components/ens/domain-search-result-row'
 
+
+interface SearchResult {
+  	name:  string,
+  	type:  string,
+  	nonce: number
+}
+
 export default function RegistrationForm() {
 
-	const [searchTerm, setSearchTerm]       = React.useState("");
-	const [searchError, setSearchError]     = React.useState(null);
-	const [searchResults, setSearchResults] = React.useState([]);
-	const [isSearching, setIsSearching]     = React.useState(false);
+	const [searchTerm, setSearchTerm]       = React.useState<string>("");
+	const [searchError, setSearchError]     = React.useState<string | null>(null);
+	const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
+	const [isSearching, setIsSearching]     = React.useState<boolean>(false);
 
 	/**
 	 * Effect to hide the loader when searching ends
@@ -127,7 +134,7 @@ export default function RegistrationForm() {
 							type        = "text" 
 							placeholder = "Enter a domain.." 
 							onChange    = {(e) => {
-								setSearchError(false);
+								setSearchError(null);
 								setSearchTerm(e.target.value)
 							}} />
 						{searchError != null && (
@@ -157,9 +164,9 @@ export default function RegistrationForm() {
 							return (
 								<div key = {"result-" + resultIndex}>
 									<SubdomainSearchResultRow 
-										key = {"result-row-" + result.name + "-" + result.nonce} {...result} 
-										resultIndex={resultIndex} 
-										onRegister = {() => {    
+										key 			= {"result-row-" + result.name + "-" + result.nonce} {...result} 
+										resultIndex		= {resultIndex} 
+										onRegister 		= {() => {    
 											setSearchResults([]);
 											doSearch();
 										}} />
@@ -172,9 +179,9 @@ export default function RegistrationForm() {
 							return (
 								<div key = {"result-" + resultIndex}>
 									<DomainSearchResultRow 
-										key = {"domain-result-row-" + result.name + "-" + result.nonce} {...result} 
-										resultIndex={resultIndex} 
-										onRegister = {() => {     
+										key 		= {"domain-result-row-" + result.name + "-" + result.nonce} {...result} 
+										resultIndex	= {resultIndex} 
+										onRegister 	= {() => {     
 											setSearchResults([]);
 											doSearch();
 										}} />

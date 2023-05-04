@@ -1,30 +1,22 @@
 import React                              from 'react'
+
 import { ethers }                         from "ethers";
 import { 
     useAccount, 
-    useWaitForTransaction, 
     useProvider, 
-    useSigner 
+    useSigner, 
+    useWaitForTransaction 
 }                                         from 'wagmi'
 import { foundry }                        from 'wagmi/chains'
-import { 
-    useRenewalController, 
-    useSubnameWrapperRead, 
-    useNameWrapper, 
-    useNameWrapperRead, 
-    useEnsRegistryRead, 
-    useSubnameWrapper, 
-    useSubnameRegistrar, 
-    useSubnameRegistrarRenew, 
-    useSubnameRegistrarRead, 
-    useEthRegistrarController 
-}                                         from '../../lib/blockchain'
 
-import CommonIcons                        from '../shared/common-icons';
-import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
-import { Toaster }                        from "@/components/ui/toaster"
-import { useToast }                       from '@/lib/hooks/use-toast'
 
+
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+}                                         from "@/components/ui/accordion"
 import {
         AlertDialog,
         AlertDialogAction,
@@ -36,83 +28,84 @@ import {
         AlertDialogTitle,
         AlertDialogTrigger,
 }                                         from "@/components/ui/alert-dialog"
-
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-}                                         from "@/components/ui/accordion"
-
-import { Input }                          from "@/components/ui/input"
-import { Label }                          from "@/components/ui/label"
 import { Button }                         from "@/components/ui/button"
 import { Checkbox }                       from "@/components/ui/checkbox"
+import { Input }                          from "@/components/ui/input"
+import { Label }                          from "@/components/ui/label"
+import { Toaster }                        from "@/components/ui/toaster"
+import { useToast }                       from '@/lib/hooks/use-toast'
 
+
+import {
+    ensRegistryAddress,
+    ethRegistrarControllerAddress,
+    nameWrapperAddress,
+    renewalControllerAddress,
+    subnameRegistrarAddress,
+    subnameWrapperAddress
+}                                         from '../../helpers/contract-addresses';
 import { 
     formatExpiry, 
     hexEncodeName 
 }                                         from '../../helpers/Helpers.jsx';
+import { 
+    useEnsRegistryRead, 
+    useEthRegistrarController, 
+    useNameWrapper, 
+    useNameWrapperRead, 
+    useRenewalController, 
+    useSubnameRegistrar, 
+    useSubnameRegistrarRead, 
+    useSubnameRegistrarRenew, 
+    useSubnameWrapper, 
+    useSubnameWrapperRead 
+}                                         from '../../lib/blockchain'
+import CommonIcons                        from '../shared/common-icons';
+import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
 
-import {
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress,
-    nameWrapperAddress,
-    ensRegistryAddress,
-    ethRegistrarControllerAddress
-}                                         from '../../helpers/contract-addresses.tsx';
-
-interface SubdomainWhoisAlertProps {
-    txFunction:  Function,
-    txArgs:      Array<any>,
-    children?:   React.ReactElement | Array<React.ReactElement>,
-    inComplete?: Function
+interface DomainWhoisAlertProps {
+    name:        string,
 }
 
 // @ts-ignore
-export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.ReactElement | null {
+export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactElement | null {
 
     //References for the Pricing Data inputs so we can get the values when saving
-    const offerSubnamesRef                = React.useRef(null);
-    const renewalControllerInputRef       = React.useRef(null);
-    const minRegistrationDurationInputRef = React.useRef(null);
-    const minCharactersInputRef           = React.useRef(null);
-    const maxCharactersInputRef           = React.useRef(null);
+    const offerSubnamesRef                = React.useRef<HTMLButtonElement & { checked: boolean }>(null);
+    const renewalControllerInputRef       = React.useRef<HTMLInputElement>(null);
+    const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
+    const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
+    const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
 
     const domainParts                     = name.split(".");
     const label                           = domainParts[0];
     const namehash                        = ethers.utils.namehash(name);
-    const tokenId                         = ethers.BigNumber.from(namehash).toString();
+    const namehashHex: `0x${string}`      = namehash;
+    const tokenId                         = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
-    const renewForTimeInSeconds           = 31536000;
+    const renewForTimeInSeconds           = ethers.BigNumber.from("31536000");
 
     const { toast }                       = useToast();
     const { address }                     = useAccount()
     const { 
         data: signer, 
-        isErrorSigner, 
-        isLoadingSigner 
     }                                     = useSigner()
 
     //ETHRegistrarController instance
     const ethRegistrarController = useEthRegistrarController({
         address:          ethRegistrarControllerAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
     //RenewalController instance
     const renewalController = useRenewalController({
         address:          renewalControllerAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
         address:          subnameWrapperAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
@@ -138,8 +131,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
     const  { data: rentPrice }  = useSubnameRegistrarRead({
          address:      subnameRegistrarAddress,
          functionName: 'rentPrice',
-         args:         [encodedNameToRenew, renewForTimeInSeconds],
-         chainId:      foundry.id
+         args:         [`0x${encodedNameToRenew}`, renewForTimeInSeconds],
      });
 
     console.log("renewal price for " + name, rentPrice);
@@ -148,21 +140,18 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
     const  { data: pricingData, refetch: refetchPricingData }  = useSubnameRegistrarRead({
          address:      subnameRegistrarAddress,
          functionName: 'pricingData',
-         args:         [namehash],
-         chainId:      foundry.id
+         args:         [namehashHex],
      });
 
     //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
         address:          subnameRegistrarAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
         address:          nameWrapperAddress,
-        chainId:          foundry.id,
         signerOrProvider: signer
     });
 
@@ -170,38 +159,41 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
          address:      nameWrapperAddress,
          functionName: 'getData',
-         args:         [namehash],
-         chainId:      foundry.id
+         args:         [tokenId],
      });
     const {owner: nameWrapperOwnerAddress} = nameData ?? {};
 
     console.log("name data", nameData);
 
-    //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
-    const  { data: isApprovedForAllSubdomainWrapper, refetch: refetchIsApprovedForAllSubdomainWrapper  }  = useSubnameWrapperRead({
-        address:      subnameWrapperAddress,
-        functionName: 'isApprovedForAll',
-        args:         [nameData?.owner, subnameRegistrarAddress],
-        chainId:      foundry.id
-    });
 
-    //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
-    const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
-        address:      nameWrapperAddress,
-        functionName: 'isApprovedForAll',
-        args:         [nameData?.owner, subnameWrapperAddress],
-        chainId:      foundry.id
-     });
 
-    console.log("isApprovedForAllSubdomainWrapper", isApprovedForAllSubdomainWrapper);
-    console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
+    //if (nameData === undefined) {
+
+        //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
+        const  { data: isApprovedForAllSubdomainWrapper, refetch: refetchIsApprovedForAllSubdomainWrapper  }  = useSubnameWrapperRead({
+            address:      subnameWrapperAddress,
+            functionName: 'isApprovedForAll',
+            //@ts-ignore
+            args:         [nameData?.owner, subnameRegistrarAddress],
+        });
+
+        //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
+        const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
+            address:      nameWrapperAddress,
+            functionName: 'isApprovedForAll',
+            //@ts-ignore
+            args:         [nameData?.owner, subnameWrapperAddress],
+         });
+
+        console.log("isApprovedForAllSubdomainWrapper", isApprovedForAllSubdomainWrapper);
+        console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
+    //}
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
          address:      ensRegistryAddress,
          functionName: 'owner',
-         args:         [namehash],
-         chainId:      foundry.id
+         args:         [namehashHex],
      });
 
     //Triggers the transaction to approve the 
@@ -256,7 +248,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                     type     = "submit" 
                                                     disabled = {isRenewing} 
                                                     onClick  = {onClickRenew}>
-                                                    {isRenewing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    {isRenewing && CommonIcons.miniLoader}
                                                     Renew
                                                 </Button>
                                             </>
@@ -270,7 +262,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                         renewForTimeInSeconds
                                                     ],
                                                     overrides: {
-                                                        gasLimit: 5000000,
+                                                        gasLimit: ethers.BigNumber.from("5000000"),
                                                         value:    "1000000000000000000"
                                                     }
                                                 }}
@@ -296,19 +288,19 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                 </div>
 
                                 <div className = "mt-4">
-                                    NameWrapper owner: <span className = "block font-bold mt-1">{nameWrapperOwnerAddress}</span>
+                                    NameWrapper owner: <span className = "mt-1 block font-bold">{nameWrapperOwnerAddress}</span>
 
                                     {isOwnedByUser && (
-                                        <div className = "text-xs text-red-800 mt-1">This is you.</div>
+                                        <div className = "mt-1 text-xs text-red-800">This is you.</div>
                                     )}
 
                                 </div>
 
                                 <div className = "mt-4">
-                                    Registry owner: <span className = "block font-bold mt-1">{registryOwnerAddress}</span>
+                                    Registry owner: <span className = "mt-1 block font-bold">{registryOwnerAddress}</span>
 
                                     {registryOwnerAddress == nameWrapperAddress && (
-                                        <div className = "text-xs text-red-800 mt-1">This is the NameWrapper.</div>
+                                        <div className = "mt-1 text-xs text-red-800">This is the NameWrapper.</div>
                                     )}
                                 </div>
                             </AccordionContent>
@@ -322,16 +314,16 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                 {isOwnedByUser && (
                                     <>
                                         <div>
-                                            <div className = "text-xs text-red-800 mt-1">
+                                            <div className = "mt-1 text-xs text-red-800">
                                                 These controls are visible to you because you own {name}.
                                             </div>
 
-                                            <h3 className = "text-md mt-4">Approvals</h3>
-                                            <div className = "text-xs mt-2">
+                                            <h3 className = "mt-4 text-base">Approvals</h3>
+                                            <div className = "mt-2 text-xs">
                                                 Before utilising the subdomain offering you must approve access to our smart contracts to manage your names.
                                             </div>
 
-                                            <div className = "text-xs mt-2">
+                                            <div className = "mt-2 text-xs">
                                                 1. Approve the <span className = "font-bold">Subdomain Wrapper</span> on the <span className = "font-bold">Name Wrapper</span>.
                                             </div>
 
@@ -357,7 +349,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                                     subnameWrapperAddress
                                                                 ],
                                                                 overrides: {
-                                                                    gasLimit: 5000000,
+                                                                    gasLimit: ethers.BigNumber.from("5000000"),
                                                                     //value: "10000000000000000000"
                                                                 }
                                                             }}
@@ -367,7 +359,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                             }}
                                                             onAlways = {() => {
                                                                 setIsNameWrapperApprovalPending(false);
-                                                                refetchIsApprovedForAllNameWrapper();
+                                                                refetchIsApprovedForAllNameWrapper?.();
                                                             }}>
                                                             <div>
                                                                 {/*Show nothing when approving - we do it on the button*/}
@@ -385,7 +377,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                             )}
                                         </div>
 
-                                        <div className = "text-xs mt-4">
+                                        <div className = "mt-4 text-xs">
                                             2. Approve the <span className = "font-bold">Subdomain Registrar</span> on the <span className = "font-bold">Subdomain Wrapper</span>.
                                         </div>
                                         
@@ -412,7 +404,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                                 subnameRegistrarAddress
                                                             ],
                                                             overrides: {
-                                                                gasLimit: 5000000,
+                                                                gasLimit: ethers.BigNumber.from("5000000"),
                                                                 //value: "10000000000000000000"
                                                             }
                                                         }}
@@ -422,7 +414,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                         }}
                                                         onAlways = {() => {
                                                             setIsSubdomainRegistrarApprovalPending(false);
-                                                            refetchIsApprovedForAllSubdomainWrapper();
+                                                            refetchIsApprovedForAllSubdomainWrapper?.();
                                                         }}>
                                                         <div>
                                                             {/*Show nothing when approving - we do it on the button*/}
@@ -458,11 +450,11 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                         {pricingData ? (
 
                                             <div className = "mt-4">
-                                                <div className = "mt-2">Offers subdomains: <span className = "font-bold">{pricingData.offerSubnames ? "YES":"NO"}</span></div>
-                                                <div>Renewal Controller: <span className = "font-bold">{pricingData.renewalController}</span></div>
-                                                <div>Min Duration: <span className = "font-bold">{pricingData.minRegistrationDuration}</span></div>
-                                                <div>Min characters: <span className = "font-bold">{pricingData.minChars}</span></div>
-                                                <div>Max characters: <span className = "font-bold">{pricingData.maxChars}</span></div>
+                                                <div className = "mt-2">Offers subdomains: <span className = "font-bold">{pricingData?.offerSubnames ? "YES":"NO"}</span></div>
+                                                <div>Renewal Controller: <span className = "font-bold">{pricingData?.renewalController}</span></div>
+                                                <div>Min Duration: <span className = "font-bold">{pricingData?.minRegistrationDuration}</span></div>
+                                                <div>Min characters: <span className = "font-bold">{pricingData?.minChars}</span></div>
+                                                <div>Max characters: <span className = "font-bold">{pricingData?.maxChars}</span></div>
                                             </div>
                                         ) : (
                                             <div>No pricing data</div>
@@ -479,7 +471,7 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                     Modify Pricing Data
                                                 </Button>
 
-                                                <div className = "text-xs text-red-800 mt-1">
+                                                <div className = "mt-1 text-xs text-red-800">
                                                     You have this option because you own {name}.
                                                 </div>
                                             </>
@@ -489,7 +481,10 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                     <>
 
                                         <div className = "my-2">
-                                            <Checkbox id="offerSubdomains" defaultValue = {pricingData.offerSubnames} ref = {offerSubnamesRef} defaultChecked = {pricingData.offerSubnames} />
+                                            <Checkbox 
+                                                id             = "offerSubdomains"
+                                                ref            = {offerSubnamesRef} 
+                                                defaultChecked = {pricingData?.offerSubnames} />
                                             <label
                                                 htmlFor="offerSubdomains"
                                                 className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -499,28 +494,25 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                         </div>
 
                                         <Label htmlFor="renewalController">Renewal Controller</Label>
-                                        <Input type = "text" id = "renewalController" ref = {renewalControllerInputRef} defaultValue = {pricingData.renewalController} className = "my-2" />
+                                        <Input type = "text" id = "renewalController" ref = {renewalControllerInputRef} defaultValue = {pricingData?.renewalController} className = "my-2" />
 
-                                        <div className = "text-xs text-red-800 mt-1 mb-2">Why not try <span className = "font-bold">{renewalControllerAddress}</span>.</div>
+                                        <div className = "mt-1 mb-2 text-xs text-red-800">Why not try <span className = "font-bold">{renewalControllerAddress}</span>.</div>
                                         
 
                                         <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
-                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData.minRegistrationDuration} className = "my-2" />
+                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData?.minRegistrationDuration} className = "my-2" />
 
                                         <Label htmlFor="minChars">Minimum Characters</Label>
-                                        <Input type = "text" id = "minChars" ref = {minCharactersInputRef} defaultValue = {pricingData.minChars} className = "my-2" />
+                                        <Input type = "text" id = "minChars" ref = {minCharactersInputRef} defaultValue = {pricingData?.minChars} className = "my-2" />
 
                                         <Label htmlFor="maxChars">Maximum Characters</Label>
-                                        <Input type = "text" id = "maxChars" ref = {maxCharactersInputRef} defaultValue = {pricingData.maxChars} className = "my-2" />
+                                        <Input type = "text" id = "maxChars" ref = {maxCharactersInputRef} defaultValue = {pricingData?.maxChars} className = "my-2" />
 
                                         {!isSavingPricingData ? (
                                             <Button 
                                                 type="submit" 
                                                 onClick = {(e) => {
-
-                                                    console.log("changing", offerSubnamesRef.current.checked);
                                                     setIsSavingPricingData(true);
-
                                                 }} className = "mt-2">
                                                 Save Changes
                                             </Button>
@@ -530,15 +522,16 @@ export function DomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.Reac
                                                 contract = {subnameRegistrar}
                                                 txArgs = {{
                                                     args: [
-                                                        namehash,
-                                                        offerSubnamesRef.current.checked,
-                                                        renewalControllerInputRef.current.value,
-                                                        minRegistrationDurationInputRef.current.value,
-                                                        minCharactersInputRef.current.value,
-                                                        maxCharactersInputRef.current.value
+                                                        namehashHex,
+                                                        true,
+                                                        //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
+                                                        renewalControllerInputRef.current ? renewalControllerInputRef.current!.value : null,
+                                                        minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current!.value : null,
+                                                        minCharactersInputRef ? minCharactersInputRef.current!.value : null,
+                                                        maxCharactersInputRef ? maxCharactersInputRef.current!.value : null,
                                                     ],
                                                     overrides: {
-                                                        gasLimit: 5000000,
+                                                        gasLimit: ethers.BigNumber.from("5000000"),
                                                         //value: "10000000000000000000"
                                                     }
                                                 }}
