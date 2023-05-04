@@ -201,7 +201,7 @@ export default function RegistrationForm() {
 											setSearchResults([]);
 											doSearch();
 										}}
-										doLookup = {(domain) => {
+										doLookup = {(domain: any) => {
 
 											setSearchError(null);
 											setSearchTerm(domain);

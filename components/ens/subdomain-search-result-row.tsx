@@ -61,7 +61,8 @@ interface SearchResultRowProps {
     className?:  string,
     name:        string,
     resultIndex: number,
-    onRegister?: () => void
+    onRegister?: () => void,
+    doLookup?: any
 }
 
 
