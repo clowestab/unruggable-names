@@ -6,6 +6,7 @@ import { configureChains } from 'wagmi'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { infuraProvider } from 'wagmi/providers/infura'
 import { publicProvider } from 'wagmi/providers/public'
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 
 // @ts-ignore
 goerli.iconUrl = '/icons/NetworkEthereumTest.svg'
@@ -44,6 +45,12 @@ if (process.env.NEXT_PUBLIC_INFURA_API_KEY) {
 if (PROVIDERS.length === 0) {
   PROVIDERS.push(publicProvider())
 }
+
+PROVIDERS.push(jsonRpcProvider({
+      rpc: (chain) => ({
+        http: `http://127.0.0.1:8545`,
+      }),
+    }))
 
 // @ts-ignore
 export const { chains, provider } = configureChains(CHAINS, [...PROVIDERS])
