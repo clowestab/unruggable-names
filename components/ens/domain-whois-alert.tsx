@@ -578,7 +578,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                         <Label htmlFor="renewalController">Renewal Controller</Label>
 
                                         <Select 
-                                            value           = {(renewalControllerOptions.find((option) => option.value == pricingData?.renewalController))!.value}
+                                            value           = {(renewalControllerOptions.find((option) => option.value == pricingData?.renewalController))?.value}
                                             onValueChange   = {(value) => setRenewalControllerInput(value)}>
                                             <SelectTrigger className = "my-2">
                                                 <SelectValue placeholder="Select a renewal controller" />
