@@ -1,4 +1,6 @@
-import React                              from 'react'
+import * as React from 'react'
+
+import { Icon }                           from '@iconify/react';
 
 import { ethers }                         from "ethers";
 import { 
@@ -8,8 +10,6 @@ import {
     useWaitForTransaction 
 }                                         from 'wagmi'
 import { foundry }                        from 'wagmi/chains'
-
-
 
 import {
     Accordion,
@@ -28,13 +28,42 @@ import {
         AlertDialogTitle,
         AlertDialogTrigger,
 }                                         from "@/components/ui/alert-dialog"
+
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+}                                         from "@/components/ui/table"
+
+import { FuseList }                           from '@/components/ens/fuse-list';
+
 import { Button }                         from "@/components/ui/button"
 import { Checkbox }                       from "@/components/ui/checkbox"
 import { Input }                          from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+}                                         from "@/components/ui/select"
+
 import { Label }                          from "@/components/ui/label"
-import { Toaster }                        from "@/components/ui/toaster"
 import { useToast }                       from '@/lib/hooks/use-toast'
 
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+}                                         from "@/components/ui/tooltip"
 
 import {
     ensRegistryAddress,
@@ -44,6 +73,12 @@ import {
     subnameRegistrarAddress,
     subnameWrapperAddress
 }                                         from '../../helpers/contract-addresses';
+
+import {
+    renewalLengthOptions,
+    renewalControllerOptions
+}                                         from '../../helpers/select-options';
+
 import { 
     formatExpiry, 
     hexEncodeName 
@@ -56,7 +91,6 @@ import {
     useRenewalController, 
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
-    useSubnameRegistrarRenew, 
     useSubnameWrapper, 
     useSubnameWrapperRead 
 }                                         from '../../lib/blockchain'
@@ -72,10 +106,10 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
     //References for the Pricing Data inputs so we can get the values when saving
     const offerSubnamesRef                = React.useRef<HTMLButtonElement & { checked: boolean }>(null);
-    const renewalControllerInputRef       = React.useRef<HTMLInputElement>(null);
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
+    const [renewalControllerInput, setRenewalControllerInput]           = React.useState<string | null>(null);
 
     const domainParts                     = name.split(".");
     const label                           = domainParts[0];
@@ -87,9 +121,10 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
     const tokenId                         = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
-    const renewForTimeInSeconds           = ethers.BigNumber.from("31536000");
+    const [renewForTimeInSeconds, setRenewForTimeInSeconds]           = React.useState(ethers.BigNumber.from("31536000"));
 
-    const { toast }                       = useToast();
+    const { toast, dismiss } = useToast()
+
     const { address }                     = useAccount()
     const { 
         data: signer, 
@@ -165,10 +200,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
          functionName: 'getData',
          args:         [tokenId],
      });
-    const {owner: nameWrapperOwnerAddress} = nameData ?? {};
-
-    console.log("name data", nameData);
-
+    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
 
 
     //if (nameData === undefined) {
@@ -218,17 +250,16 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     const onClickRenew = () => {
 
         console.log("renew");
-
-        toast({
-            title: "Scheduled: Catch up",
-            description: "Friday, February 10, 2023 at 5:57 PM",
-        });
-
         setIsRenewing(true);
     }
 
+
     //Indicates if this name is owned by the connected user
     const isOwnedByUser = nameData?.owner == address;
+
+    //@ts-ignore
+    const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
+    const expiryString  = expiryDate.toLocaleString();
 
     return (
         <AlertDialogContent>
@@ -236,77 +267,108 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                 <AlertDialogTitle>{name}</AlertDialogTitle>
                 <AlertDialogDescription>
 
+
                     <Accordion type="single" collapsible className="w-full" defaultValue="item-whois">
                         <AccordionItem value="item-whois">
                             <AccordionTrigger>Whois</AccordionTrigger>
                             <AccordionContent>
 
-                                <div>
-                                    Expiry: <span className = "font-bold">{formatExpiry(nameData?.expiry)}</span>
+                                <Table>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell className="font-medium">Expiry</TableCell>
+                                            <TableCell>
+                                                <p>{expiryString}</p>
+                                                <div className = "mt-1 text-xs text-blue-800">{formatExpiry(nameData?.expiry)}</div>
+                                            
+                                                <div className = "mt-2">
 
-                                    <div className = "mt-2">
+                                                    {!isRenewing ? (
+                                                        <div className = "flex">
+                                                            <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
+                                                                <SelectTrigger className="w-[180px]">
+                                                                    <SelectValue placeholder="Select a duration" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        {renewalLengthOptions.map((option) => {
+                                                                            
+                                                                            return (
+                                                                                <SelectItem 
+                                                                                    key   = {option.value}
+                                                                                    value = {option.value.toString()}>
+                                                                                    {option.label}
+                                                                                </SelectItem>
+                                                                            );
+                                                                        })}
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
 
-                                        {!isRenewing ? (
-                                            <>
-                                                <Button 
-                                                    type     = "submit" 
-                                                    disabled = {isRenewing} 
-                                                    onClick  = {onClickRenew}>
-                                                    {isRenewing && CommonIcons.miniLoader}
-                                                    Renew
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <TransactionConfirmationState 
-                                                key       = {"domain-renewal-" + name}
-                                                contract  = {ethRegistrarController}
-                                                txArgs    = {{
-                                                    args: [
-                                                        label,
-                                                        renewForTimeInSeconds
-                                                    ],
-                                                    overrides: {
-                                                        gasLimit: ethers.BigNumber.from("5000000"),
-                                                        value:    "1000000000000000000"
-                                                    }
-                                                }}
-                                                txFunction  = 'renew'
-                                                onConfirmed = {() => {
-                                                    console.log("2ld renewal confirmed");
-                                                }}
-                                                onAlways  = {() => {
-                                                    console.log("2ld renewal onAlways");
-                                                    setIsRenewing(false);
-                                                    refetchData();
-                                                }}>
-                                                <div>
-                                                    {CommonIcons.miniLoader} Renewing domain..
+                                                            <div className="w-2" />
+
+                                                            <Button 
+                                                                type     = "submit" 
+                                                                disabled = {isRenewing} 
+                                                                onClick  = {onClickRenew}>
+                                                                {isRenewing && CommonIcons.miniLoader}
+                                                                Renew
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <TransactionConfirmationState 
+                                                            key       = {"domain-renewal-" + name}
+                                                            contract  = {ethRegistrarController}
+                                                            txArgs    = {{
+                                                                args: [
+                                                                    label,
+                                                                    renewForTimeInSeconds
+                                                                ],
+                                                                overrides: {
+                                                                    gasLimit: ethers.BigNumber.from("5000000"),
+                                                                    value:    "1000000000000000000"
+                                                                }
+                                                            }}
+                                                            txFunction  = 'renew'
+                                                            onConfirmed = {() => {
+                                                                console.log("2ld renewal confirmed");
+                                                            }}
+                                                            onAlways  = {() => {
+                                                                console.log("2ld renewal onAlways");
+                                                                setIsRenewing(false);
+                                                                refetchData();
+                                                            }}>
+                                                            <div>
+                                                                {CommonIcons.miniLoader} Renewing domain..
+                                                            </div>
+                                                            <div>
+                                                                SUCCESS
+                                                            </div>
+                                                        </ TransactionConfirmationState>
+                                                    )}
                                                 </div>
-                                                <div>
-                                                    SUCCESS
-                                                </div>
-                                            </ TransactionConfirmationState>
-                                        )}
-                                    </div>
-
-                                </div>
-
-                                <div className = "mt-4">
-                                    NameWrapper owner: <span className = "mt-1 block font-bold">{nameWrapperOwnerAddress}</span>
-
-                                    {isOwnedByUser && (
-                                        <div className = "mt-1 text-xs text-red-800">This is you.</div>
-                                    )}
-
-                                </div>
-
-                                <div className = "mt-4">
-                                    Registry owner: <span className = "mt-1 block font-bold">{registryOwnerAddress}</span>
-
-                                    {registryOwnerAddress == nameWrapperAddress && (
-                                        <div className = "mt-1 text-xs text-red-800">This is the NameWrapper.</div>
-                                    )}
-                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell className="font-medium">NameWrapper Owner</TableCell>
+                                            <TableCell>
+                                                {nameWrapperOwnerAddress}
+                                                {isOwnedByUser && (
+                                                    <div className = "mt-1 text-xs text-red-800">This is you.</div>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell className="font-medium">Registry owner</TableCell>
+                                            <TableCell>
+                                                {registryOwnerAddress}
+                                                {registryOwnerAddress == nameWrapperAddress && (
+                                                    <div className = "mt-1 text-xs text-red-800">This is the NameWrapper.</div>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-subdomain-controls">
@@ -445,27 +507,43 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                             <AccordionTrigger>Pricing Data</AccordionTrigger>
                             <AccordionContent>
 
-                                <div className = "text-xs text-red-800">
+                                <div className = "text-xs text-red-800 mb-4">
                                     This section details pricing data for registration of subdomains under {name}.
                                 </div>
 
                                 {!isEditingPricingData ? (
                                     <>
                                         {pricingData ? (
-
-                                            <div className = "mt-4">
-                                                <div className = "mt-2">Offers subdomains: <span className = "font-bold">{pricingData?.offerSubnames ? "YES":"NO"}</span></div>
-                                                <div>Renewal Controller: <span className = "font-bold">{pricingData?.renewalController}</span></div>
-                                                <div>Min Duration: <span className = "font-bold">{pricingData?.minRegistrationDuration}</span></div>
-                                                <div>Min characters: <span className = "font-bold">{pricingData?.minChars}</span></div>
-                                                <div>Max characters: <span className = "font-bold">{pricingData?.maxChars}</span></div>
-                                            </div>
+                                            <Table>
+                                                <TableBody>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Offers subdomains</TableCell>
+                                                        <TableCell>{pricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Renewal Controller</TableCell>
+                                                        <TableCell>{pricingData?.renewalController}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Min Duration</TableCell>
+                                                        <TableCell>{pricingData?.minRegistrationDuration}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Min Characters</TableCell>
+                                                        <TableCell>{pricingData?.minChars}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Max Characters</TableCell>
+                                                        <TableCell>{pricingData?.maxChars}</TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            </Table>  
                                         ) : (
                                             <div>No pricing data</div>
                                         )}
 
                                         {isOwnedByUser && (
-                                            <>
+                                            <div className = "text-center mt-4">
                                                 <Button 
                                                     type    ="submit" 
                                                     onClick   = {(e) => {
@@ -478,7 +556,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                 <div className = "mt-1 text-xs text-red-800">
                                                     You have this option because you own {name}.
                                                 </div>
-                                            </>
+                                            </div>
                                         )}
                                     </>
                                 ) : (
@@ -498,10 +576,28 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                         </div>
 
                                         <Label htmlFor="renewalController">Renewal Controller</Label>
-                                        <Input type = "text" id = "renewalController" ref = {renewalControllerInputRef} defaultValue = {pricingData?.renewalController} className = "my-2" />
 
-                                        <div className = "mt-1 mb-2 text-xs text-red-800">Why not try <span className = "font-bold">{renewalControllerAddress}</span>.</div>
-                                        
+                                        <Select 
+                                            value           = {(renewalControllerOptions.find((option) => option.value == pricingData?.renewalController))!.value}
+                                            onValueChange   = {(value) => setRenewalControllerInput(value)}>
+                                            <SelectTrigger className = "my-2">
+                                                <SelectValue placeholder="Select a renewal controller" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {renewalControllerOptions.map((option) => {
+                                                        
+                                                        return (
+                                                            <SelectItem 
+                                                                key   = {option.value}
+                                                                value = {option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
 
                                         <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
                                         <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData?.minRegistrationDuration} className = "my-2" />
@@ -529,7 +625,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         namehashHex,
                                                         true,
                                                         //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
-                                                        renewalControllerInputRef.current ? renewalControllerInputRef.current!.value : null,
+                                                        renewalControllerInput,
                                                         minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current!.value : null,
                                                         minCharactersInputRef ? minCharactersInputRef.current!.value : null,
                                                         maxCharactersInputRef ? maxCharactersInputRef.current!.value : null,
@@ -558,6 +654,12 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                         )}
                                     </> 
                                 )}
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-fuses">
+                            <AccordionTrigger>Fuses</AccordionTrigger>
+                            <AccordionContent>
+                                    <FuseList name = {name} />
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>

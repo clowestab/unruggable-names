@@ -41,6 +41,7 @@ import {
 import { SubdomainSearchResultRow } 	from '@/components/ens/subdomain-search-result-row'
 import { DomainSearchResultRow } 		from '@/components/ens/domain-search-result-row'
 
+import { Toaster }                        from "@/components/ui/toaster"
 
 interface SearchResult {
   	name:  string,
@@ -117,6 +118,7 @@ export default function RegistrationForm() {
 
 
 	return (
+		<>
 		<div className = "m-8">
 
 			{chain && (chain.id != foundry.id) && (
@@ -231,5 +233,7 @@ export default function RegistrationForm() {
 				</div>
 			)}
 		</div>
+		<Toaster />
+		</>
 	)
 }

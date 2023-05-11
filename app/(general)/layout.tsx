@@ -24,6 +24,7 @@ export default function GeneralLayout({ children }: any) {
       </div>
       {/* TODO: Add position controls */}
       <Toaster />
+      hello
     </>
   )
 }

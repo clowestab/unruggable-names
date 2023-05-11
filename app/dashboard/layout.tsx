@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }: any) {
         </div>
       </div>
       <Toaster />
+      hullo
     </>
   )
 }

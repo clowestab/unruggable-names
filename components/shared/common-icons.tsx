@@ -34,13 +34,13 @@ const icons = {
 	,
 	check: 
     	<Icon 
-			className 	= "ml-2 inline-block"
+			className 	= "inline-block"
             icon 		= "ant-design:check-circle-outlined"
             color 		= "green" />
 	,
 	cross: 
     	<Icon 
-			className 	= "ml-2 inline-block"
+			className 	= "inline-block"
             icon 		= "ant-design:close-circle-outlined"
             color 		= "red" />
 	,

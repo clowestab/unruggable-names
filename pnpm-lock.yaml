@@ -68,7 +68,7 @@ dependencies:
     specifier: ^1.1.0
     version: 1.1.2(react-dom@18.2.0)(react@18.2.0)
   '@radix-ui/react-scroll-area':
-    specifier: ^1.0.2
+    specifier: ^1.0.3
     version: 1.0.3(react-dom@18.2.0)(react@18.2.0)
   '@radix-ui/react-select':
     specifier: ^1.2.0
@@ -238,6 +238,9 @@ dependencies:
   react-wrap-balancer:
     specifier: ^0.3.0
     version: 0.3.0(react@18.2.0)
+  shadcn-ui:
+    specifier: ^0.1.2
+    version: 0.1.2
   siwe:
     specifier: 1.1.6
     version: 1.1.6(ethers@5.7.2)
@@ -7882,7 +7885,6 @@ packages:
   /commander@10.0.0:
     resolution: {integrity: sha512-zS5PnTI22FIRM6ylNW8G4Ap0IEOyk62fhLSD0+uHRT9McRCLGpkVNvao4bjimpK/GShynyQkFFxHhwMcETmduA==}
     engines: {node: '>=14'}
-    dev: true
 
   /commander@2.13.0:
     resolution: {integrity: sha512-MVuS359B+YzaWqjCL/c+22gfryv+mCBPHAv3zyVI2GN8EY6IRP8VwtasXn8jyyhvvq84R4ImN1OKRtcbIasjYA==}
@@ -9553,7 +9555,6 @@ packages:
       onetime: 6.0.0
       signal-exit: 3.0.7
       strip-final-newline: 3.0.0
-    dev: true
 
   /exenv@1.2.2:
     resolution: {integrity: sha512-Z+ktTxTwv9ILfgKCk32OX3n/doe+OcLTRtqK9pcL+JsP3J1/VW8Uvl4ZjLlKqeW4rzK4oesDOGMEMRIZqtP4Iw==}
@@ -9906,7 +9907,6 @@ packages:
       graceful-fs: 4.2.10
       jsonfile: 6.1.0
       universalify: 2.0.0
-    dev: true
 
   /fs-extra@8.1.0:
     resolution: {integrity: sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g==}
@@ -10311,7 +10311,6 @@ packages:
   /human-signals@4.3.0:
     resolution: {integrity: sha512-zyzVyMjpGBX2+6cDVZeFPCdtOtdsxOeseRhB9tkQ6xXmGUNrcnBzdEKPy3VPNYz+4gy1oukVOXcrJCunSyc6QQ==}
     engines: {node: '>=14.18.0'}
-    dev: true
 
   /humanize-ms@1.2.1:
     resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==}
@@ -14498,6 +14497,20 @@ packages:
     dependencies:
       inherits: 2.0.4
       safe-buffer: 5.2.1
+    dev: false
+
+  /shadcn-ui@0.1.2:
+    resolution: {integrity: sha512-Pt9StpizMG78v/6C+pcrdA9DDZRI1L5qTeqhhOgImWBV3oUMdIjN8Y8soZ/qea1jMJIx76tU8t3LQ8O++4fJJQ==}
+    hasBin: true
+    dependencies:
+      chalk: 5.2.0
+      commander: 10.0.0
+      execa: 7.1.0
+      fs-extra: 11.1.0
+      node-fetch: 3.3.1
+      ora: 6.1.2
+      prompts: 2.4.2
+      zod: 3.21.4
     dev: false
 
   /shallow-clone@3.0.1:
