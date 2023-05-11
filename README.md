@@ -1,3 +1,26 @@
+# SubnameWrapper Demo Interface
+
+Start an anvil node
+```bash
+anvil --block-time 5
+```
+
+Run the deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
+```bash
+forge script script/DeploySNW_1.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --verify -vvvv
+```
+
+Run the server
+```bash
+pnpm dev
+```
+
+Or view the [deployed version](https://turbo-eth-git-main-clowestab.vercel.app/register).
+
+**Note:** Make sure you are connected to the Foundry network. If you are using Metamask etc you might have to add a custom network.
+
+---
+
 ![image](https://user-images.githubusercontent.com/3408362/230732083-1c98e451-08af-41c2-b522-126370e8c6a5.png)
 
 # ⚡ TurboETH - Web3 App Template
