@@ -36,7 +36,7 @@ import {
     useWaitForTransaction 
 }                                       from 'wagmi'
 
-import { Icon }                           from '@iconify/react';
+import { Icon }                         from '@iconify/react';
 
 import { Button }                       from "@/components/ui/button"
 import {
@@ -422,13 +422,13 @@ export function FuseList({ name }: FuseListProps) {
                                     </td>
                                     <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                                         {!isBurned && (
-                                            <button 
-                                                className = "mt-2 shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded disabled:opacity-25 disabled:cursor-not-allowed" 
-                                                type="button" 
-                                                disabled = {typeof signer === "undefined"}
-                                                onClick = {(e) => burnFuse(fuseKey)}>
+                                            <Button 
+                                                type      = "submit" 
+                                                disabled  = {typeof signer === "undefined"} 
+                                                onClick   = {(e) => burnFuse(fuseKey)}
+                                                className = "disabled:cursor-not-allowed">
                                                 {fuseBeingBurned == fuseKey ? CommonIcons.miniLoader : "Burn Fuse"}
-                                            </button>
+                                            </Button>
                                         )}
                                     </td>
 

@@ -65,6 +65,9 @@ import { DomainWhoisAlert }             from '../ens/domain-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
+import { useToast }                     from '@/lib/hooks/use-toast'
+
+
 const REGISTRATION_STATE = {
     COMMITTED:  'COMMITTED',
     REGISTERED: 'REGISTERED',
@@ -82,9 +85,10 @@ interface SearchResultRowProps {
 
 export function DomainSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
 
-    const provider                                          = useProvider();
-    const { data: signer }  = useSigner()
-    const { address }                                       = useAccount()
+    const provider         = useProvider();
+    const { data: signer } = useSigner()
+    const { address }      = useAccount()
+    const { toast }        = useToast()
 
     console.log("SIGNER", signer);
 
@@ -192,7 +196,13 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
         //Discern and set the time at which the commitment will be valid on chain
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 2);
+        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5);
+
+        toast({
+            duration: 5000,
+            className: "bg-green-200 dark:bg-green-800 border-0",
+            description: "Your commitment has been confirmed on chain.",
+        })
     }
 
     /**
@@ -209,7 +219,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
     return (
         <div className = {classes}>
-            <div className = {classNames({ "bg-green-100": isAvailable, "bg-red-100": !isAvailable}, "p-4", 'flex justify-center items-center')}>
+            <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": !isAvailable}, "p-4", 'flex justify-center items-center w-full')}>
                 <>{name}</>
                 <div className = "w-8" />
                 <div className = "flex items-center justify-center">
@@ -304,6 +314,11 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                         txFunction  = 'register'
                                         onConfirmed = {() => {
                                             console.log("Registration confirmed");
+                                            toast({
+                                                duration: 5000,
+                                                className: "bg-green-200 dark:bg-green-800 border-0",
+                                                description: (<p>You have successfully registered <span className = "font-bold">{name}</span>.</p>),
+                                            });
                                             onRegister?.();
                                         }}>
                                         <div>

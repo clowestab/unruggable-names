@@ -17,10 +17,10 @@ export function DashboardFooter({ className }: DashboardFooterProps) {
   return (
     <footer className={classes}>
       <h3 className="text-sm font-semibold">{siteConfig.title}</h3>
-      <a className="link my-2 text-xs" target={'_blank'} href="https://districtlabs.com/" rel="noreferrer">
-        Built by District Labs
+      <a className="link my-2 text-xs" target={'_blank'} href="https://unruggablelabs.com/" rel="noreferrer">
+        Built by Unruggable Labs
       </a>
-      <div className="mt-2 flex items-center">
+      {/*<div className="mt-2 flex items-center">
         <LinkComponent href={`${siteConfig.links.github}`}>
           <FaGithub />
         </LinkComponent>
@@ -28,7 +28,7 @@ export function DashboardFooter({ className }: DashboardFooterProps) {
         <LinkComponent href={`${siteConfig.links.twitter}`}>
           <FaTwitter />
         </LinkComponent>
-      </div>
+      </div>*/}
     </footer>
   )
 }

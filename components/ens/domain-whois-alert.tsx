@@ -1,3 +1,5 @@
+const ethPrice = 1800;
+
 import * as React from 'react'
 
 import { Icon }                           from '@iconify/react';
@@ -86,6 +88,7 @@ import {
 import { 
     useEnsRegistryRead, 
     useEthRegistrarController, 
+    useEthRegistrarControllerRead, 
     useNameWrapper, 
     useNameWrapperRead, 
     useRenewalController, 
@@ -141,6 +144,14 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
         address:          renewalControllerAddress,
         signerOrProvider: signer
     });
+
+    const  { data: renewalPrice }  = useEthRegistrarControllerRead({
+        address:       ethRegistrarControllerAddress,
+        functionName:  'rentPrice',
+        args:          [name, renewForTimeInSeconds],
+    });
+
+    console.log("renewalPrice", renewalPrice);
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
@@ -279,42 +290,52 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                             <TableCell className="font-medium">Expiry</TableCell>
                                             <TableCell>
                                                 <p>{expiryString}</p>
-                                                <div className = "mt-1 text-xs text-blue-800">{formatExpiry(nameData?.expiry)}</div>
+                                                <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(nameData?.expiry)}</div>
                                             
                                                 <div className = "mt-2">
 
                                                     {!isRenewing ? (
-                                                        <div className = "flex">
-                                                            <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
-                                                                <SelectTrigger className="w-[180px]">
-                                                                    <SelectValue placeholder="Select a duration" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectGroup>
-                                                                        {renewalLengthOptions.map((option) => {
-                                                                            
-                                                                            return (
-                                                                                <SelectItem 
-                                                                                    key   = {option.value}
-                                                                                    value = {option.value.toString()}>
-                                                                                    {option.label}
-                                                                                </SelectItem>
-                                                                            );
-                                                                        })}
-                                                                    </SelectGroup>
-                                                                </SelectContent>
-                                                            </Select>
+                                                        <>
+                                                            <div className = "flex">
+                                                                <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
+                                                                    <SelectTrigger className="w-[180px]">
+                                                                        <SelectValue placeholder="Select a duration" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectGroup>
+                                                                            {renewalLengthOptions.map((option) => {
+                                                                                
+                                                                                return (
+                                                                                    <SelectItem 
+                                                                                        key   = {option.value}
+                                                                                        value = {option.value.toString()}>
+                                                                                        {option.label}
+                                                                                    </SelectItem>
+                                                                                );
+                                                                            })}
+                                                                        </SelectGroup>
+                                                                    </SelectContent>
+                                                                </Select>
 
-                                                            <div className="w-2" />
+                                                                <div className="w-2" />
 
-                                                            <Button 
-                                                                type     = "submit" 
-                                                                disabled = {isRenewing} 
-                                                                onClick  = {onClickRenew}>
-                                                                {isRenewing && CommonIcons.miniLoader}
-                                                                Renew
-                                                            </Button>
-                                                        </div>
+                                                                <Button 
+                                                                    type     = "submit" 
+                                                                    disabled = {isRenewing} 
+                                                                    onClick  = {onClickRenew}>
+                                                                    {isRenewing && CommonIcons.miniLoader}
+                                                                    Renew
+                                                                </Button>
+                                                            </div>
+
+
+                                                            {renewalPrice && (
+                                                                <p className = "text-xs mt-2">
+                                                                    The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice.base.add(renewalPrice.premium))}</span> (~${(ethers.utils.formatEther(renewalPrice.base.add(renewalPrice.premium)) * ethPrice).toFixed(2)}).
+                                                                </p>
+                                                            )}
+                                                        </>
+
                                                     ) : (
                                                         <TransactionConfirmationState 
                                                             key       = {"domain-renewal-" + name}
@@ -354,7 +375,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                             <TableCell>
                                                 {nameWrapperOwnerAddress}
                                                 {isOwnedByUser && (
-                                                    <div className = "mt-1 text-xs text-red-800">This is you.</div>
+                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is you.</div>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -363,7 +384,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                             <TableCell>
                                                 {registryOwnerAddress}
                                                 {registryOwnerAddress == nameWrapperAddress && (
-                                                    <div className = "mt-1 text-xs text-red-800">This is the NameWrapper.</div>
+                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper.</div>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -380,7 +401,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                 {isOwnedByUser && (
                                     <>
                                         <div>
-                                            <div className = "mt-1 text-xs text-red-800">
+                                            <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
                                                 These controls are visible to you because you own {name}.
                                             </div>
 
@@ -507,7 +528,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                             <AccordionTrigger>Pricing Data</AccordionTrigger>
                             <AccordionContent>
 
-                                <div className = "text-xs text-red-800 mb-4">
+                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
                                     This section details pricing data for registration of subdomains under {name}.
                                 </div>
 
@@ -553,7 +574,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                     Modify Pricing Data
                                                 </Button>
 
-                                                <div className = "mt-1 text-xs text-red-800">
+                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
                                                     You have this option because you own {name}.
                                                 </div>
                                             </div>

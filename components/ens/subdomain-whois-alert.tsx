@@ -1,3 +1,5 @@
+const ethPrice = 1800;
+
 import React                            from 'react'
 
 import { ethers }                       from "ethers";
@@ -76,7 +78,8 @@ import {
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameRegistrarRenew, 
-    useSubnameWrapperRead 
+    useSubnameWrapperRead,
+    useRenewalControllerRead 
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
@@ -129,7 +132,17 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
         args:          [encodedNameToRenew, renewForTimeInSeconds],
     });
 
-    console.log("renewal price for " + name, rentPrice);
+    console.log("register price for " + name, rentPrice);
+
+
+    const  { data: renewalPrice }  = useRenewalControllerRead({
+        address:       renewalControllerAddress,
+        functionName:  'rentPrice',
+        args:          [encodedNameToRenew, renewForTimeInSeconds],
+    });
+
+    console.log("renewal price for " + name, renewalPrice);
+
 
     const  { data: nameData, refetch: refetchData  }  = useSubnameWrapperRead({
         address:       subnameWrapperAddress,
@@ -200,7 +213,7 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                             <TableCell className="font-medium">SubnameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {ownerAddress}
-                                                <div className = "mt-1 text-xs text-red-800">This is me</div>
+                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is me</div>
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
@@ -208,7 +221,7 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                             <TableCell>
                                                 
                                                 <p>{expiryString}</p>
-                                                <div className = "mt-1 text-xs text-blue-800">{formatExpiry(nameData?.expiry)}</div>
+                                                <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(nameData?.expiry)}</div>
 
                                                 {!isRenewing ? (  
 
@@ -248,12 +261,18 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                                                     </Button>
                                                                 </div>
 
+                                                                {renewalPrice && (
+                                                                    <p className = "text-xs mt-2">
+                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
+                                                                    </p>
+                                                                )}
+
                                                                 <p className = "text-xs mt-2">
                                                                     This domain is using the <span className = "font-bold">{(renewalControllerOptions.find((option) => option.value == renewalControllerToUse)).label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
-                                                            <div className = "mt-1 text-xs text-red-800">This subdomain cannot be renewed because it does not have a renewal controller set.</div>
+                                                            <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This subdomain cannot be renewed because it does not have a renewal controller set.</div>
                                                         )}
                                                     </>
 
@@ -295,14 +314,14 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                             <TableCell className="font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {nameWrapperOwnerAddress}
-                                                <div className = "mt-1 text-xs text-red-800">This is the SubnameWrapper</div>
+                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the SubnameWrapper</div>
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell className="font-medium">Registry Owner</TableCell>
                                             <TableCell>
                                                 {registryOwnerAddress}
-                                                <div className = "mt-1 text-xs text-red-800">This is the NameWrapper</div>
+                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper</div>
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>

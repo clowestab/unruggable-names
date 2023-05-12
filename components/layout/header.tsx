@@ -41,9 +41,9 @@ export function Header(props: Props) {
                 <Image alt="Logo" src="/logo-white.png" width={32} height={32} />
               </BranchColorMode>
             </LinkComponent>
-            <div className="">
+            {/*<div className="">
               <UserDropdown />
-            </div>
+            </div>*/}
           </div>
         </>
         <>
@@ -54,11 +54,11 @@ export function Header(props: Props) {
             </BranchColorMode>
             <h1 className="text-gradient-sand ml-2 text-2xl font-bold">{siteConfig.name}</h1>
           </LinkComponent>
-          <div className="flex flex-1 justify-center lg:px-10">
+          {/*<div className="flex flex-1 justify-center lg:px-10">
             <NavigationMenuGeneral />
-          </div>
+          </div>*/}
 
-          <div className="flex items-center gap-4">
+          {/*<div className="flex items-center gap-4">
             <BranchButtonLoginOrAccount classNameButtonLogout="menu-item" classNameButtonLogin="menu-item colormode" />
             <LinkComponent className="flex items-center" href="/dashboard">
               <button className="btn btn-pill bg-gradient-button hover:scale-105 hover:shadow-lg">
@@ -66,7 +66,7 @@ export function Header(props: Props) {
               </button>
             </LinkComponent>
             <ThemeToggle />
-          </div>
+          </div>*/}
         </>
       </ResponsiveMobileAndDesktop>
     </header>

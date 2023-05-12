@@ -1,106 +1,236 @@
 'use client'
 
-import { foundry } from 'wagmi/chains'
+import {
+  useConnectModal,
+  useAccountModal,
+  useChainModal,
+} from '@rainbow-me/rainbowkit';
 
-import { motion } from 'framer-motion'
-import { FaGithub } from 'react-icons/fa'
-import Balancer from 'react-wrap-balancer'
 
-import { LinkComponent } from '@/components/shared/link-component'
-import { FADE_DOWN_ANIMATION_VARIANTS } from '@/config/design'
-
-import { useSubnameRegistrarRead, useSubnameRegistrarMinCommitmentAge } from '../../lib/blockchain'
-import React from 'react'
-
-let utf8Encode = new TextEncoder();
-let la = utf8Encode.encode("abc");
+import { useNetwork }                   from 'wagmi'
 
 import { 
-  hexEncodeName 
-}                     from '../../helpers/Helpers.jsx';
+    WalletAddress, 
+    WalletBalance, 
+    WalletNonce, 
+    WalletEnsName 
+}                                       from '@turbo-eth/core-wagmi'
+import { motion }                       from 'framer-motion'
+
+import { BranchIsWalletConnected }      from '@/components/shared/branch-is-wallet-connected'
+import { WalletConnect }                from '@/components/blockchain/wallet-connect'
+
+import { FADE_DOWN_ANIMATION_VARIANTS } from '@/config/design'
+
+import { Input }                        from "@/components/ui/input"
+import { Button }                       from "@/components/ui/button"
+import CommonIcons                      from '@/components/shared/common-icons';
+
+import React                            from 'react'
+import { 
+    useSubnameRegistrarRead, 
+    useSubnameRegistrarMinCommitmentAge 
+}                                       from '../../lib/blockchain'
+
+import { foundry }                      from 'wagmi/chains'
+
+import { 
+    hexEncodeName 
+}                                       from '../../helpers/Helpers.jsx';
+
+import { SubdomainSearchResultRow }     from '@/components/ens/subdomain-search-result-row'
+import { DomainSearchResultRow }        from '@/components/ens/domain-search-result-row'
+
+import { Toaster }                        from "@/components/ui/toaster"
+
+interface SearchResult {
+    name:  string,
+    type:  string,
+    nonce: number
+}
+
+export default function RegistrationForm() {
+
+    const { chain, chains }  = useNetwork();
+    const { openChainModal } = useChainModal();
+
+    console.log("chain", chain);
+
+    const [searchTerm, setSearchTerm]       = React.useState<string>("");
+    const [searchError, setSearchError]     = React.useState<string | null>(null);
+    const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
+    const [isSearching, setIsSearching]     = React.useState<boolean>(false);
+
+    /**
+     * Effect to hide the loader when searching ends
+     */ 
+    React.useEffect(() => {
+        
+        setIsSearching(false);
+
+    }, [searchResults]);
 
 
-export default function Home() {
+    /**
+     * 
+     */ 
+    const doSearch = (manualSearchTerm?: any) => {
+
+        console.log("search man", manualSearchTerm);
+        console.log("search", searchTerm);
+
+        const searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
+
+        setSearchResults([]);
+
+        //Show error if no input
+        if (searchTermToUse == "") { setSearchError("Please enter an input"); return; }
+
+        const domainParts       = searchTermToUse.split(".");
+        const domainExtension   = domainParts[domainParts.length - 1];
+        const isSubdomain       = domainParts.length == 3 && domainExtension == 'eth';
+        const isEth2ld          = domainParts.length == 2 && domainExtension == 'eth';
+
+        //Show error if input not a valid domain or subdomain
+        if (!isSubdomain && !isEth2ld) { setSearchError("Please enter a valid domain/subdomain"); return; }
+
+        setIsSearching(true);
+
+        const newResults = [];
+        if (isSubdomain) { 
+            newResults.push({
+                name:  searchTermToUse, 
+                type:  'subdomain', 
+                nonce: Math.floor(Math.random() * 100000)
+            }); 
+        }
+
+        if (isEth2ld) { 
+            newResults.push({
+                name:  searchTermToUse, 
+                type:  'domain', 
+                nonce: Math.floor(Math.random() * 100000)
+            }); 
+        }
+
+        setSearchResults(newResults);
+    }
 
 
-  const encodedName = hexEncodeName("sub.abc.eth");
+    return (
+        <div className = "m-8">
 
- /*const  { data: rentPrice }  = useSubnameRegistrarRead({
-    address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
-    functionName: 'rentPrice',
-    args: [encodedName, 31536000],
-    chainId: foundry.id
-  });*/
+            {chain && (chain.id != foundry.id) && (
+                <>
+                    <p>This interface only currently works with foundry.</p>
+                    <Button 
+                        type     = "submit" 
+                        onClick  = {openChainModal}>
+                        Change Network
+                    </Button>
+                </>
+            )}
 
-  const data = useSubnameRegistrarMinCommitmentAge({
-    address: '0x9A676e781A523b5d0C0e43731313A708CB607508',
-    chainId: foundry.id
-  })
+            <div className="flex-center col-span-12 flex flex-col lg:col-span-9">
+                <div className="text-center">
+                    <h3 className="font-primary text-2xl font-bold lg:text-4xl">
+                        <span className="text-gradient-secondary">
+                            Lets find you the perfect domain <WalletEnsName />
+                        </span>
+                    </h3>
 
-  React.useEffect(() => {
-    console.log("effect", data);
-    console.log("utf8Encode", la);
-  }, []);
+                    <BranchIsWalletConnected>
+                        <span className="font-light">
+                            <WalletAddress className="mt-4 block text-xl font-light" />
+                        </span>
+                        <div>
+                            <h3 className="text-lg font-normal mt-4">Connect your wallet to register a domain.</h3>
+                            <WalletConnect className = "table mx-auto mt-2" />
+                        </div>
+                    </BranchIsWalletConnected>
+                </div>
+            </div>
 
+            <motion.div
+                className   = "flex-center flex h-full w-full my-8"
+                variants    = {FADE_DOWN_ANIMATION_VARIANTS}
+                initial     = "hidden"
+                whileInView = "show"
+                animate     = "show"
+                viewport    = {{ once: true }}>
 
-  /*React.useEffect(() => {
-    console.log("effect2change", rentPrice);
-  }, [rentPrice]);*/
-
-
-  return (
-    <>
-      <div className="relative flex flex-1">
-        <div className="flex-center flex h-full flex-1 flex-col items-center justify-center text-center">
-          <motion.div
-            className="max-w-3xl px-5 xl:px-0"
-            initial="hidden"
-            whileInView="show"
-            animate="show"
-            viewport={{ once: true }}
-            variants={{
-              hidden: {},
-              show: {
-                transition: {
-                  staggerChildren: 0.15,
-                },
-              },
-            }}>
-            <img src="/logo-fill.png" alt="Turbo ETH" className="mx-auto mb-10 h-20 w-20" />
-            <motion.h1
-              className="text-gradient-sand text-center text-6xl font-bold tracking-[-0.02em] drop-shadow-sm md:text-8xl md:leading-[6rem]"
-              variants={FADE_DOWN_ANIMATION_VARIANTS}>
-              <Balancer>Get Startedd</Balancer>
-            </motion.h1>
-            <motion.p className="mt-6 text-center text-gray-500 dark:text-gray-200 md:text-xl" variants={FADE_DOWN_ANIMATION_VARIANTS}>
-              <Balancer className="text-xl font-semibold">Start building next generation Web3 apps today</Balancer>
-            </motion.p>
-            <motion.div className="mx-auto mt-6 flex items-center justify-center space-x-5" variants={FADE_DOWN_ANIMATION_VARIANTS}>
-              <a
-                className="group flex max-w-fit items-center justify-center space-x-2 rounded-full border border-black bg-black px-5 py-2 text-sm text-white transition-colors hover:bg-white hover:text-black"
-                href={'https://docs.turboeth.xyz/'}
-                target="_blank"
-                rel="noopener noreferrer">
-                <span className="text-xl">⚡️</span>
-                <span className="font-bold">TurboETH Documentation</span>
-              </a>
-              <a
-                className="flex max-w-fit items-center justify-center space-x-2 rounded-full border border-gray-300 bg-white px-5 py-2 text-sm text-gray-600 shadow-md transition-colors hover:border-gray-800"
-                href="https://github.com/turbo-eth/template-web3-app"
-                target="_blank"
-                rel="noopener noreferrer">
-                <FaGithub />
-                <p>Star on GitHub</p>
-              </a>
+                <div className = "flex items-start space-x-2">
+                    <div className = "flex flex-col">
+                        <Input 
+                            type        = "text" 
+                            placeholder = "Enter a domain.." 
+                            onChange    = {(e) => {
+                                setSearchError(null);
+                                setSearchTerm(e.target.value)
+                            }}
+                            value       = {searchTerm} />
+                        {searchError != null && (
+                            <div className = "text-sm text-red-500 flex flex-center mt-2">{searchError}</div>
+                        )}
+                    </div>
+                    <Button 
+                        type     = "submit" 
+                        disabled = {isSearching} 
+                        onClick  = {doSearch}>
+                        {isSearching && (<>{CommonIcons.miniLoader}</>)}
+                        Search
+                    </Button>
+                </div>
             </motion.div>
-            <motion.p className="mt-6 text-center text-sm" variants={FADE_DOWN_ANIMATION_VARIANTS}>
-              <LinkComponent className="link" href="https://github.com/turbo-eth/template-web3-app/tree/integrations">
-                Click here to view the <span className="font-bold">integrations branch</span> for more examples.
-              </LinkComponent>
-            </motion.p>
-          </motion.div>
+
+            {searchResults.length > 0 && (
+                <div>
+                    <h2 className = "text-2xl font-semibold tracking-tight mt-8">Search results</h2>
+                    <p className = "text-sm text-slate-500 dark:text-slate-400 mb-4">
+                        Top picks for you based on your search input.
+                    </p>
+
+                    {searchResults.map((result, resultIndex) => {
+
+                        if (result.type == "subdomain") {
+                            return (
+                                <div key = {"result-" + resultIndex}>
+                                    <SubdomainSearchResultRow 
+                                        key             = {"result-row-" + result.name + "-" + result.nonce} {...result} 
+                                        resultIndex     = {resultIndex} 
+                                        onRegister      = {() => {    
+                                            setSearchResults([]);
+                                            doSearch();
+                                        }}
+                                        doLookup = {(domain: any) => {
+
+                                            setSearchError(null);
+                                            setSearchTerm(domain);
+                                            doSearch(domain);
+                                        }} />
+
+                                <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
+                                </div>
+                                    
+                            );
+                        } else if (result.type == "domain") {
+                            return (
+                                <div key = {"result-" + resultIndex}>
+                                    <DomainSearchResultRow 
+                                        key         = {"domain-result-row-" + result.name + "-" + result.nonce} {...result} 
+                                        resultIndex = {resultIndex} 
+                                        onRegister  = {() => {     
+                                            setSearchResults([]);
+                                            doSearch();
+                                        }} />
+
+                                    <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
+                                </div>  
+                            );
+                        }
+                    })}
+                </div>
+            )}
         </div>
-      </div>
-    </>
-  )
+    )
 }

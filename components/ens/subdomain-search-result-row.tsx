@@ -190,7 +190,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
 
   return (
     <div className = {classes}>
-        <div className = {classNames({ "bg-green-100": isAvailable, "bg-red-100": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center')}>
+        <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center w-full')}>
             <div className = "text-center">
                 {name}
                 <div className = "cursor-pointer text-xs underline" onClick = {() => { doLookup(parentName); }}>view parent</div>
