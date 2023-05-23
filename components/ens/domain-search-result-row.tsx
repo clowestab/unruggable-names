@@ -44,12 +44,6 @@ import {
 }                                       from "@/components/ui/tooltip"
 
 import { CountdownText }                from './countdown-text'
-import {
-    ethRegistrarControllerAddress,
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress
-}                                       from '../../helpers/contract-addresses';
 import { 
     generateSalt, 
     hexEncodeName 
@@ -59,7 +53,11 @@ import {
     useEthRegistrarControllerMakeCommitment, 
     useEthRegistrarControllerMinCommitmentAge, 
     useEthRegistrarControllerRead, 
-    useSubnameRegistrarPricingData 
+    useSubnameRegistrarPricingData,
+    ethRegistrarControllerAddress,
+    renewalControllerAddress,
+    subnameRegistrarAddress,
+    subnameWrapperAddress 
 }                                       from '../../lib/blockchain'
 import { DomainWhoisAlert }             from '../ens/domain-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
@@ -93,7 +91,6 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     console.log("SIGNER", signer);
 
     const ethRegistrarController = useEthRegistrarController({
-        address:          ethRegistrarControllerAddress,
         signerOrProvider: signer
     });
 
@@ -109,7 +106,6 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     const domainNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
 
     const  { data: isAvailable }    = useEthRegistrarControllerRead({
-         address:      ethRegistrarControllerAddress,
          functionName: 'available',
          args:         [label],
     });
@@ -117,7 +113,6 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     console.log("isAvailable data", isAvailable);
 
     const  { data: pricingData }  = useSubnameRegistrarPricingData({
-         address: subnameRegistrarAddress,
          args:    [domainNamehash],
      });
 
@@ -129,7 +124,6 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
 
     const  { data: rentPrice }  = useEthRegistrarControllerRead({
-         address:      ethRegistrarControllerAddress,
          functionName: 'rentPrice',
          args:         [encodedNameToRegister, registerForTimeInSeconds],
      });
@@ -150,13 +144,11 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
 
     const { data: MIN_COMMITMENT_TIME_IN_SECONDS } = useEthRegistrarControllerMinCommitmentAge({
-        address: ethRegistrarControllerAddress,
     });
 
     console.log("MIN_COMMITMENT_TIME_IN_SECONDS", MIN_COMMITMENT_TIME_IN_SECONDS?.toString());
 
     const { data: commitment } = useEthRegistrarControllerMakeCommitment({
-        address: ethRegistrarControllerAddress,
         args: [
             label, 
             addressToRegisterTo!, 
@@ -320,6 +312,14 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                                 description: (<p>You have successfully registered <span className = "font-bold">{name}</span>.</p>),
                                             });
                                             onRegister?.();
+                                        }}
+                                        onError = {(error) => {
+
+                                            toast({
+                                                duration: 5000,
+                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                description: (<p>{error.errorName}</p>),
+                                            });
                                         }}>
                                         <div>
                                             {CommonIcons.miniLoader} Registering domain..

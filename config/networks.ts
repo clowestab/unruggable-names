@@ -17,8 +17,8 @@ arbitrumGoerli.iconUrl = '/icons/NetworkArbitrumTest.svg'
 // @ts-ignore
 baseGoerli.iconUrl = '/icons/NetworkBaseTest.svg'
 
-export const ETH_CHAINS_TEST = [mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, goerli, sepolia, foundry]
-export const ETH_CHAINS_PROD = [mainnet, optimism, arbitrum, polygon, foundry]
+export const ETH_CHAINS_TEST = [/*mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, sepolia, */goerli, foundry]
+export const ETH_CHAINS_PROD = [/*mainnet, optimism, arbitrum, polygon, */goerli, foundry]
 
 export const CHAINS = process.env.NODE_ENV === 'production' ? ETH_CHAINS_PROD : ETH_CHAINS_TEST
 

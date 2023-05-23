@@ -18,8 +18,9 @@ interface TransactionConfirmationStateProps {
     onAlways?:    Function,
 }
 
+//
 // @ts-ignore
-export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onConfirmed, onAlways }: TransactionConfirmationStateProps): React.ReactElement | null {
+export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onConfirmed, onAlways, onError }: TransactionConfirmationStateProps): React.ReactElement | null {
 
     console.log("txFunction", txFunction);
     console.log("txArgs", txArgs);
@@ -73,6 +74,8 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
                     setConfirmationError(error.errorName != null ? error.errorName : "Something went wrong");
                     setIsConfirmed(true);
+
+                    onError?.(error);
 
                     //parseError(error);
                     return;

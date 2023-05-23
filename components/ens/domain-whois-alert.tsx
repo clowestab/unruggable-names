@@ -92,6 +92,7 @@ import {
     useNameWrapper, 
     useNameWrapperRead, 
     useRenewalController, 
+    useRenewalControllerRead,
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameWrapper, 
@@ -113,6 +114,9 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const [renewalControllerInput, setRenewalControllerInput]           = React.useState<string | null>(null);
+    const [renewalPricingData, setRenewalPricingData]           = React.useState<array>([]);
+    const [isSavingRegistrationPricingData, setIsSavingRegistrationPricingData]           = React.useState<boolean>(false);
+    const [isSavingRenewalPricingData, setIsSavingRenewalPricingData]           = React.useState<boolean>(false);
 
     const domainParts                     = name.split(".");
     const label                           = domainParts[0];
@@ -132,30 +136,88 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     const { 
         data: signer, 
     }                                     = useSigner()
+    const { 
+        data: provider, 
+    }                                     = useProvider()
+
+    console.log("lastRenewalPriceIndex Signer", signer);
+    console.log("lastRenewalPriceIndex Signerp", provider);
+    console.log("lastRenewalPriceIndex Signerreal", typeof signer !== "undefined");
 
     //ETHRegistrarController instance
     const ethRegistrarController = useEthRegistrarController({
-        address:          ethRegistrarControllerAddress,
         signerOrProvider: signer
     });
 
     //RenewalController instance
     const renewalController = useRenewalController({
-        address:          renewalControllerAddress,
         signerOrProvider: signer
     });
 
-    const  { data: renewalPrice }  = useEthRegistrarControllerRead({
-        address:       ethRegistrarControllerAddress,
+
+  const [enabled, setEnabled] = React.useState(false)
+
+    const  { data: lastRenewalPriceIndex }  = useRenewalControllerRead({
+        functionName:  'getLastCharIndex',
+        args:          [],
+        enabled,
+        //typeof signer !== "undefined"
+    });
+
+
+    React.useEffect(() => {
+        
+        console.log("lastRenewalPriceIndex changed", lastRenewalPriceIndex);
+        console.log("lastRenewalPriceIndex changedb", signer);
+        console.log("lastRenewalPriceIndex changedc", renewalController);
+
+        const doWork = async () => {
+
+        console.log("lastRenewalPriceIndex changedDD", renewalController);
+
+            var pricingData = [];
+
+            console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
+            console.log("lastRenewalPriceIndex do work1", renewalController);
+
+            for (var i = 0; i < 3; i++) {
+
+                const price = await renewalController.charAmounts(i);
+
+                console.log("lastRenewalPriceIndex price wut " + i, price);
+
+                const pricePerYear = (price.mul(ethers.BigNumber.from("31536000")));
+                const formatted = ethers.utils.formatEther(pricePerYear.toString())
+                const rounded = new Intl.NumberFormat('en-EN', {
+                    maximumFractionDigits: 2
+                }).format(formatted);
+                pricingData.push(rounded);
+            }
+
+console.log("lastRenewalPriceIndex price do work2", pricingData);
+
+
+            setRenewalPricingData(pricingData);
+        }
+
+        console.log("lastRenewalPriceIndex WUT", renewalController);
+        if (signer) {
+            console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
+            doWork();
+        }
+
+    }, [signer]);
+
+
+    const  { data: registrationPriceData }  = useEthRegistrarControllerRead({
         functionName:  'rentPrice',
         args:          [name, renewForTimeInSeconds],
     });
 
-    console.log("renewalPrice", renewalPrice);
+    console.log("registrationPriceData", registrationPriceData);
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
-        address:          subnameWrapperAddress,
         signerOrProvider: signer
     });
 
@@ -169,45 +231,40 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
         setIsNameWrapperApprovalPending
     ]                                         = React.useState(false);
     const [
-        isEditingPricingData, 
-        setIsEditingPricingData
-        ]                                       = React.useState(false);
+        isEditingSubdomainRegistrationConfig, 
+        setIsEditingSubdomainRegistrationConfig
+    ]                                         = React.useState(false);
     const [
-        isSavingPricingData, 
-        setIsSavingPricingData
+        isEditingSubdomainRenewalConfig, 
+        setIsEditingSubdomainRenewalConfig
     ]                                         = React.useState(false);
 
     //TODO get renewal price and implement renewals
     const  { data: rentPrice }  = useSubnameRegistrarRead({
-         address:      subnameRegistrarAddress,
          functionName: 'rentPrice',
-         args:         [`0x${encodedNameToRenew}`, renewForTimeInSeconds],
+         args:         [`${encodedNameToRenew}`, renewForTimeInSeconds],
      });
 
     console.log("renewal price for " + name, rentPrice);
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
-    const  { data: pricingData, refetch: refetchPricingData }  = useSubnameRegistrarRead({
-         address:      subnameRegistrarAddress,
+    const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useSubnameRegistrarRead({
          functionName: 'pricingData',
          args:         [namehashHex],
      });
 
     //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
-        address:          subnameRegistrarAddress,
         signerOrProvider: signer
     });
 
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
-        address:          nameWrapperAddress,
         signerOrProvider: signer
     });
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
-         address:      nameWrapperAddress,
          functionName: 'getData',
          args:         [tokenId],
      });
@@ -218,7 +275,6 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
         //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
         const  { data: isApprovedForAllSubdomainWrapper, refetch: refetchIsApprovedForAllSubdomainWrapper  }  = useSubnameWrapperRead({
-            address:      subnameWrapperAddress,
             functionName: 'isApprovedForAll',
             //@ts-ignore
             args:         [nameData?.owner, subnameRegistrarAddress],
@@ -226,7 +282,6 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
         //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
         const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
-            address:      nameWrapperAddress,
             functionName: 'isApprovedForAll',
             //@ts-ignore
             args:         [nameData?.owner, subnameWrapperAddress],
@@ -238,7 +293,6 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-         address:      ensRegistryAddress,
          functionName: 'owner',
          args:         [namehashHex],
      });
@@ -271,6 +325,9 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     //@ts-ignore
     const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
     const expiryString  = expiryDate.toLocaleString();
+
+
+    const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
 
     return (
         <AlertDialogContent>
@@ -329,9 +386,9 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                             </div>
 
 
-                                                            {renewalPrice && (
+                                                            {registrationPriceData && (
                                                                 <p className = "text-xs mt-2">
-                                                                    The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice.base.add(renewalPrice.premium))}</span> (~${(ethers.utils.formatEther(renewalPrice.base.add(renewalPrice.premium)) * ethPrice).toFixed(2)}).
+                                                                    The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(registrationPriceData.base.add(registrationPriceData.premium))}</span> (~${(ethers.utils.formatEther(registrationPriceData.base.add(registrationPriceData.premium)) * ethPrice).toFixed(2)}).
                                                                 </p>
                                                             )}
                                                         </>
@@ -353,11 +410,25 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                             txFunction  = 'renew'
                                                             onConfirmed = {() => {
                                                                 console.log("2ld renewal confirmed");
+
+                                                                toast({
+                                                                    duration: 5000,
+                                                                    className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                    description: (<p><span className = "font-bold">{name}</span> was successfully renewed.</p>),
+                                                                });
                                                             }}
                                                             onAlways  = {() => {
                                                                 console.log("2ld renewal onAlways");
                                                                 setIsRenewing(false);
                                                                 refetchData();
+                                                            }}
+                                                            onError = {() => {
+
+                                                                toast({
+                                                                    duration: 5000,
+                                                                    className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                    description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
+                                                                });
                                                             }}>
                                                             <div>
                                                                 {CommonIcons.miniLoader} Renewing domain..
@@ -402,7 +473,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                     <>
                                         <div>
                                             <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                These controls are visible to you because you own {name}.
+                                                These controls are visible to you because you own <span className = "font-bold">{name}</span>.
                                             </div>
 
                                             <h3 className = "mt-4 text-base">Approvals</h3>
@@ -443,10 +514,23 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                             txFunction    = 'setApprovalForAll'
                                                             onConfirmed   = {() => {
                                                                 console.log("setApprovalforall done");
+
+                                                                toast({
+                                                                    duration: 5000,
+                                                                    className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                    description: (<p>SubnameWrapper successfiully approved on the NameWrapper.</p>),
+                                                                });
                                                             }}
                                                             onAlways = {() => {
                                                                 setIsNameWrapperApprovalPending(false);
                                                                 refetchIsApprovedForAllNameWrapper?.();
+                                                            }}
+                                                            onError = {() => {
+                                                                toast({
+                                                                    duration: 5000,
+                                                                    className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                    description: (<p>There was a problem aproving the SubnameWrapper on the NameWrapper.</p>),
+                                                                });
                                                             }}>
                                                             <div>
                                                                 {/*Show nothing when approving - we do it on the button*/}
@@ -498,10 +582,23 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         txFunction  = 'setApprovalForAll'
                                                         onConfirmed = {() => {
                                                             console.log("setApprovalforall done");
+
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                description: (<p>Subdomain registrar successfully approved on the NameWrapper.</p>),
+                                                            });
                                                         }}
                                                         onAlways = {() => {
                                                             setIsSubdomainRegistrarApprovalPending(false);
                                                             refetchIsApprovedForAllSubdomainWrapper?.();
+                                                        }}
+                                                        onError = {() => {
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                description: (<p>There was a problem aproving the subdomain registrar on the NameWrapper.</p>),
+                                                            });
                                                         }}>
                                                         <div>
                                                             {/*Show nothing when approving - we do it on the button*/}
@@ -524,38 +621,38 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-pricing-data">
-                            <AccordionTrigger>Pricing Data</AccordionTrigger>
+                        <AccordionItem value="item-subdomain-registration-config">
+                            <AccordionTrigger>Subdomain Registration Config</AccordionTrigger>
                             <AccordionContent>
 
                                 <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                    This section details pricing data for registration of subdomains under {name}.
+                                    This section details configuration options for registration of subdomains under {name}.
                                 </div>
 
-                                {!isEditingPricingData ? (
+                                {!isEditingSubdomainRegistrationConfig ? (
                                     <>
-                                        {pricingData ? (
+                                        {registerPricingData ? (
                                             <Table>
                                                 <TableBody>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Offers subdomains</TableCell>
-                                                        <TableCell>{pricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
+                                                        <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
                                                     </TableRow>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Renewal Controller</TableCell>
-                                                        <TableCell>{pricingData?.renewalController}</TableCell>
+                                                        <TableCell>{registerPricingData?.renewalController}</TableCell>
                                                     </TableRow>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Min Duration</TableCell>
-                                                        <TableCell>{pricingData?.minRegistrationDuration}</TableCell>
+                                                        <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
                                                     </TableRow>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Min Characters</TableCell>
-                                                        <TableCell>{pricingData?.minChars}</TableCell>
+                                                        <TableCell>{registerPricingData?.minChars}</TableCell>
                                                     </TableRow>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Max Characters</TableCell>
-                                                        <TableCell>{pricingData?.maxChars}</TableCell>
+                                                        <TableCell>{registerPricingData?.maxChars}</TableCell>
                                                     </TableRow>
                                                 </TableBody>
                                             </Table>  
@@ -568,14 +665,14 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                 <Button 
                                                     type    ="submit" 
                                                     onClick   = {(e) => {
-                                                        setIsEditingPricingData(true);
+                                                        setIsEditingSubdomainRegistrationConfig(true);
                                                     }} 
                                                     className = "mt-4">
-                                                    Modify Pricing Data
+                                                    Edit
                                                 </Button>
 
                                                 <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                    You have this option because you own {name}.
+                                                    You have this option because you own <span className = "font-bold">{name}</span>.
                                                 </div>
                                             </div>
                                         )}
@@ -587,7 +684,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                             <Checkbox 
                                                 id             = "offerSubdomains"
                                                 ref            = {offerSubnamesRef} 
-                                                defaultChecked = {pricingData?.offerSubnames} />
+                                                defaultChecked = {registerPricingData?.offerSubnames} />
                                             <label
                                                 htmlFor="offerSubdomains"
                                                 className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -599,7 +696,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                         <Label htmlFor="renewalController">Renewal Controller</Label>
 
                                         <Select 
-                                            value           = {(renewalControllerOptions.find((option) => option.value == pricingData?.renewalController))?.value}
+                                            value           = {(currentRenewalController?.value)}
                                             onValueChange   = {(value) => setRenewalControllerInput(value)}>
                                             <SelectTrigger className = "my-2">
                                                 <SelectValue placeholder="Select a renewal controller" />
@@ -621,25 +718,25 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                         </Select>
 
                                         <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
-                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData?.minRegistrationDuration} className = "my-2" />
+                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {registerPricingData?.minRegistrationDuration} className = "my-2" />
 
                                         <Label htmlFor="minChars">Minimum Characters</Label>
-                                        <Input type = "text" id = "minChars" ref = {minCharactersInputRef} defaultValue = {pricingData?.minChars} className = "my-2" />
+                                        <Input type = "text" id = "minChars" ref = {minCharactersInputRef} defaultValue = {registerPricingData?.minChars} className = "my-2" />
 
                                         <Label htmlFor="maxChars">Maximum Characters</Label>
-                                        <Input type = "text" id = "maxChars" ref = {maxCharactersInputRef} defaultValue = {pricingData?.maxChars} className = "my-2" />
+                                        <Input type = "text" id = "maxChars" ref = {maxCharactersInputRef} defaultValue = {registerPricingData?.maxChars} className = "my-2" />
 
-                                        {!isSavingPricingData ? (
+                                        {!isSavingRegistrationPricingData ? (
                                             <Button 
                                                 type="submit" 
                                                 onClick = {(e) => {
-                                                    setIsSavingPricingData(true);
+                                                    setIsSavingRegistrationPricingData(true);
                                                 }} className = "mt-2">
                                                 Save Changes
                                             </Button>
                                         ) : (
                                             <TransactionConfirmationState 
-                                                key = {"save-pricing-data-" + name}
+                                                key = {"save-subdomain-registration-config-" + name}
                                                 contract = {subnameRegistrar}
                                                 txArgs = {{
                                                     args: [
@@ -659,11 +756,154 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                 txFunction = 'setParams'
                                                 onConfirmed = {() => {
                                                     console.log("setParams done");
-                                                    setIsSavingPricingData(false);
-                                                    setIsEditingPricingData(false);
+                                                    setIsEditingSubdomainRegistrationConfig(false);
+
+                                                    toast({
+                                                        duration: 5000,
+                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                        description: (<p>Subdomain registration config confirmed on chain.</p>),
+                                                    });
                                                 }}
                                                 onAlways = {() => {
-                                                    refetchPricingData();
+                                                    refetchRegisterPricingData();
+                                                }}
+                                                onError = {() => {
+                                                    toast({
+                                                        duration: 5000,
+                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                        description: (<p>There was a problem updating your subdomain registration config.</p>),
+                                                    });
+                                                }}>
+                                                <div>
+                                                    {CommonIcons.miniLoader} Saving pricing data..
+                                                </div>
+                                                <div>
+                                                    SUCCESS
+                                                </div>
+                                            </ TransactionConfirmationState>
+                                        )}
+                                    </> 
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="item-subdomain-renewal-config">
+                            <AccordionTrigger>Subdomain Renewal Config</AccordionTrigger>
+                            <AccordionContent>
+
+                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                    This section details configuration options for renewal of subdomains under <span className = "font-bold">{name}</span>.
+                                </div>
+
+                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                    The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to set pricing <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
+                                </div>
+
+
+
+                                {!isEditingSubdomainRenewalConfig ? (
+                                    <>
+                                        {renewalPricingData ? (
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="font-medium">Characters</TableHead>
+                                                        <TableHead>Price (USD)</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    
+                                                
+                                                    {renewalPricingData.map((value, index) => {
+
+                                                        return (
+                                                            <TableRow>
+                                                                <TableCell className="font-medium">
+                                                                    {lastRenewalPriceIndex && (""+(index + 1) == lastRenewalPriceIndex?.toString()) ? "All others" : (index + 1)}
+                                                                </TableCell>
+                                                                <TableCell>${value}</TableCell>
+                                                            </TableRow>
+                                                        );
+
+                                                    })}
+                                                    
+                                                </TableBody>
+                                            </Table>  
+                                        ) : (
+                                            <div>No renewal configuration data is available.</div>
+                                        )}
+
+                                        {isOwnedByUser && (
+                                            <div className = "text-center mt-4">
+                                                <Button 
+                                                    type    ="submit" 
+                                                    onClick   = {(e) => {
+                                                        setIsEditingSubdomainRenewalConfig(true);
+                                                    }} 
+                                                    className = "mt-4">
+                                                    Edit
+                                                </Button>
+
+                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                    You have this option because you own <span className = "font-bold">{name}</span>.
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+
+                                        <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
+                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData?.minRegistrationDuration} className = "my-2" />
+
+                                        {!isSavingRenewalPricingData ? (
+                                            <Button 
+                                                type="submit" 
+                                                onClick = {(e) => {
+                                                    setIsSavingRenewalPricingData(true);
+                                                }} className = "mt-2">
+                                                Save Changes
+                                            </Button>
+                                        ) : (
+                                            <TransactionConfirmationState 
+                                                key = {"save-subdomain-registration-config-" + name}
+                                                contract = {subnameRegistrar}
+                                                txArgs = {{
+                                                    args: [
+                                                        namehashHex,
+                                                        true,
+                                                        //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
+                                                        renewalControllerInput,
+                                                        minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current!.value : null,
+                                                        minCharactersInputRef ? minCharactersInputRef.current!.value : null,
+                                                        maxCharactersInputRef ? maxCharactersInputRef.current!.value : null,
+                                                    ],
+                                                    overrides: {
+                                                        gasLimit: ethers.BigNumber.from("5000000"),
+                                                        //value: "10000000000000000000"
+                                                    }
+                                                }}
+                                                txFunction = 'setParams'
+                                                onConfirmed = {() => {
+                                                    console.log("setParams done");
+                                                    setIsSavingRenewalPricingData(false);
+                                                    setIsEditingSubdomainRegistrationConfig(false);
+
+                                                    toast({
+                                                        duration: 5000,
+                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                        description: (<p>Subdomain registration config confirmed on chain.</p>),
+                                                    });
+                                                }}
+                                                onAlways = {() => {
+                                                    refetchRenewalPricingData();
+                                                }}
+                                                onError = {() => {
+                                                    toast({
+                                                        duration: 5000,
+                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                        description: (<p>There was a problem updating your subdomain registration config.</p>),
+                                                    });
                                                 }}>
                                                 <div>
                                                     {CommonIcons.miniLoader} Saving pricing data..
@@ -680,7 +920,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                         <AccordionItem value="item-fuses">
                             <AccordionTrigger>Fuses</AccordionTrigger>
                             <AccordionContent>
-                                    <FuseList name = {name} />
+                                <FuseList name = {name} />
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>

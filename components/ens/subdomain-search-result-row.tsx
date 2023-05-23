@@ -46,11 +46,14 @@ import {
     useSubnameRegistrarMakeCommitment, 
     useSubnameRegistrarMinCommitmentAge, 
     useSubnameRegistrarRead, 
-    useSubnameRegistrarRegister 
+    useSubnameRegistrarRegister,
+    useRenewalControllerRead 
 }                                           from '../../lib/blockchain'
 import { SubdomainWhoisAlert }              from '../ens/subdomain-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
 import { TransactionConfirmationState }     from '../shared/transaction-confirmation-state'
+
+import { useToast }                     from '@/lib/hooks/use-toast'
 
 const REGISTRATION_STATE = {
     COMMITTED:  'COMMITTED',
@@ -71,6 +74,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     const provider                                          = useProvider();
     const { data: signer }  = useSigner()
     const { address }                                       = useAccount()
+    const { toast }        = useToast()
 
     const subnameRegistrar = useSubnameRegistrar({
         address:          subnameRegistrarAddress,
@@ -110,8 +114,8 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     const registerForTimeInSeconds = ethers.BigNumber.from("10000000");//31536000;
     const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
 
-    const  { data: rentPrice }  = useSubnameRegistrarRead({
-        address:      subnameRegistrarAddress,
+    const  { data: rentPrice }  = useRenewalControllerRead({
+        address:      renewalControllerAddress,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
     });
@@ -292,7 +296,12 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
                                 }}
                                 txFunction  = 'register'
                                 onConfirmed = {() => {
-                                    console.log("Registration confirmed");
+                                    console.log("Registration confirmed la");
+                                    toast({
+                                        duration: 5000,
+                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                        description: (<p>You have successfully registered <span className = "font-bold">{name}</span>.</p>),
+                                    });
                                     onRegister?.();
                                 }}>
                                 <div>

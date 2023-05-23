@@ -22,6 +22,11 @@ import { WalletConnect }                from '@/components/blockchain/wallet-con
 
 import { FADE_DOWN_ANIMATION_VARIANTS } from '@/config/design'
 
+import { 
+    Alert, 
+    AlertDescription, 
+    AlertTitle 
+}                                       from "@/components/ui/alert"
 import { Input }                        from "@/components/ui/input"
 import { Button }                       from "@/components/ui/button"
 import CommonIcons                      from '@/components/shared/common-icons';
@@ -32,7 +37,7 @@ import {
     useSubnameRegistrarMinCommitmentAge 
 }                                       from '../../lib/blockchain'
 
-import { foundry }                      from 'wagmi/chains'
+import { foundry, goerli }              from 'wagmi/chains'
 
 import { 
     hexEncodeName 
@@ -120,15 +125,20 @@ export default function RegistrationForm() {
     return (
         <div className = "m-8">
 
-            {chain && (chain.id != foundry.id) && (
-                <>
-                    <p>This interface only currently works with foundry.</p>
-                    <Button 
-                        type     = "submit" 
-                        onClick  = {openChainModal}>
-                        Change Network
-                    </Button>
-                </>
+            {chain && (![foundry.id, goerli.id].includes(chain.id)) && (
+                <Alert className="border-red-800 bg-red-100 my-8" variant="destructive">
+                    {CommonIcons.alert}
+                    <AlertTitle>Invalid network</AlertTitle>
+                    <AlertDescription>
+                        <p>Unruggable subdomain rentals currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                        <Button 
+                            type      = "submit" 
+                            className = "mt-2"
+                            onClick   = {openChainModal}>
+                            Change Network
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             )}
 
             <div className="flex-center col-span-12 flex flex-col lg:col-span-9">

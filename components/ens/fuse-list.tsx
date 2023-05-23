@@ -76,6 +76,7 @@ export function FuseList({ name }: FuseListProps) {
 
     const domainNodeString                                      = domainParts.join(".");
     const isDotEth                                              = domainNodeString == "eth";
+    const is2ld                                                 = isDotEth && domainParts.length == 1;
     const domainNodeNamehash: `0x${string}`                     = ethers.utils.namehash(domainNodeString)  as `0x${string}`;
     
 
@@ -92,20 +93,17 @@ export function FuseList({ name }: FuseListProps) {
 
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
-        address:          nameWrapperAddress,
         signerOrProvider: signer
     });
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
-        address:          subnameWrapperAddress,
         signerOrProvider: signer
     });
 
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
-         address:      nameWrapperAddress,
          functionName: 'getData',
          args:         [tokenId],
      });
@@ -117,7 +115,6 @@ export function FuseList({ name }: FuseListProps) {
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
-         address:      nameWrapperAddress,
          functionName: 'getData',
          args:         [domainNodeTokenId],
      });
@@ -126,7 +123,6 @@ export function FuseList({ name }: FuseListProps) {
     console.log("PARENT name data", parentNameData);
 
     const  { data: isWrapped, refetch: refetchIsWrapped }  = useNameWrapperRead({
-         address:      nameWrapperAddress,
          functionName: 'isWrapped',
          args:         [domainNodeNamehash, labelhash],
      });
@@ -145,10 +141,10 @@ export function FuseList({ name }: FuseListProps) {
 
         toast({
             duration: 5000,
-            className: "bg-red-200 border-0",
+            className: "bg-red-200 dark:bg-red-800 border-0",
           //title: "Scheduled: Catch up ",
-          description: error,
-          variant: "destructive",
+            description: error,
+            variant: "destructive",
           //action: (
           //  <ToastAction altText="Goto schedule to undo">Undo</ToastAction>
           //),
@@ -329,19 +325,34 @@ export function FuseList({ name }: FuseListProps) {
 
             console.log("Burning fuse on second level .eth", fuseKey);
 
+            const contractToUse = is2ld ? nameWrapper : subnameWrapper;
+
+
+            console.log("is2ld", is2ld);
+            console.log("isDotEth", isDotEth);
+            console.log("domainParts", domainParts.length);
+            console.log("contractToUse", contractToUse);
+
             console.log("subnameWrapper",subnameWrapper);
-            await subnameWrapper
+            await contractToUse
                 .callStatic
                 .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
                 .then(() => {
 
-                    return subnameWrapper  
+                    return contractToUse  
                         .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
                 })
                 .then((fuseResponse) => {
                     return fuseResponse.wait();
                 })
                 .then((fuseReceipt) => {
+
+                    toast({
+                        duration: 5000,
+                        className: "bg-green-200 dark:bg-green-800 border-0",
+                        description: (<p><span className = "font-bold">{fuseKey}</span> successfully burned.</p>),
+                    })
+
                     return refetchData();
                 })
                 .catch(async (error) => {
