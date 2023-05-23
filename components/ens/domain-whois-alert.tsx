@@ -1,10 +1,12 @@
-const ethPrice = 1800;
+const ethPrice = 1854;
 
-import * as React from 'react'
+import * as React                         from 'react'
 
 import { Icon }                           from '@iconify/react';
 
 import { ethers }                         from "ethers";
+const yearInSeconds = ethers.BigNumber.from("31536000");
+
 import { 
     useAccount, 
     useProvider, 
@@ -20,15 +22,15 @@ import {
     AccordionTrigger,
 }                                         from "@/components/ui/accordion"
 import {
-        AlertDialog,
-        AlertDialogAction,
-        AlertDialogCancel,
-        AlertDialogContent,
-        AlertDialogDescription,
-        AlertDialogFooter,
-        AlertDialogHeader,
-        AlertDialogTitle,
-        AlertDialogTrigger,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
 }                                         from "@/components/ui/alert-dialog"
 
 import {
@@ -41,12 +43,12 @@ import {
     TableRow,
 }                                         from "@/components/ui/table"
 
-import { FuseList }                           from '@/components/ens/fuse-list';
+import { FuseList }                       from '@/components/ens/fuse-list';
 
 import { Button }                         from "@/components/ui/button"
 import { Checkbox }                       from "@/components/ui/checkbox"
 import { Input }                          from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea }                     from "@/components/ui/scroll-area"
 
 import {
   Select,
@@ -108,15 +110,35 @@ interface DomainWhoisAlertProps {
 // @ts-ignore
 export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactElement | null {
 
-    //References for the Pricing Data inputs so we can get the values when saving
+    //References for the Subdomain registration configuration inputs so we can get the values when saving
     const offerSubnamesRef                = React.useRef<HTMLButtonElement & { checked: boolean }>(null);
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
-    const [renewalControllerInput, setRenewalControllerInput]           = React.useState<string | null>(null);
-    const [renewalPricingData, setRenewalPricingData]           = React.useState<array>([]);
-    const [isSavingRegistrationPricingData, setIsSavingRegistrationPricingData]           = React.useState<boolean>(false);
-    const [isSavingRenewalPricingData, setIsSavingRenewalPricingData]           = React.useState<boolean>(false);
+    const [
+        renewalControllerInput, 
+        setRenewalControllerInput
+    ]                                     = React.useState<string | null>(null);
+
+    //Holds the prices per character for our default renewal controller pulled from chain
+    const [
+        renewalPricingData, 
+        setRenewalPricingData
+    ]                                     = React.useState<array>([]);
+
+    const [
+        renewalPriceInput, 
+        setRenewalPriceInput
+    ]                                     = React.useState<array>([]);
+
+    const [
+        isSavingRegistrationConfigurationData, 
+        setIsSavingRegistrationConfigurationData
+    ]                                     = React.useState<boolean>(false);
+    const [
+        isSavingRenewalConfigurationData, 
+        setIsSavingRenewalConfigurationData
+    ]                                     = React.useState<boolean>(false);
 
     const domainParts                     = name.split(".");
     const label                           = domainParts[0];
@@ -128,9 +150,14 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
     const tokenId                         = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
-    const [renewForTimeInSeconds, setRenewForTimeInSeconds]           = React.useState(ethers.BigNumber.from("31536000"));
 
-    const { toast, dismiss } = useToast()
+    //Holds the selected time in seconds for a renewal
+    const [
+        renewForTimeInSeconds, 
+        setRenewForTimeInSeconds
+    ]                                     = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
+
+    const { toast, dismiss }              = useToast()
 
     const { address }                     = useAccount()
     const { 
@@ -145,76 +172,80 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     console.log("lastRenewalPriceIndex Signerreal", typeof signer !== "undefined");
 
     //ETHRegistrarController instance
-    const ethRegistrarController = useEthRegistrarController({
+    const ethRegistrarController          = useEthRegistrarController({
         signerOrProvider: signer
     });
 
     //RenewalController instance
-    const renewalController = useRenewalController({
+    const renewalController               = useRenewalController({
         signerOrProvider: signer
     });
 
 
-  const [enabled, setEnabled] = React.useState(false)
-
-    const  { data: lastRenewalPriceIndex }  = useRenewalControllerRead({
+    //Gets the number of characters for which prices have been set from our basic renewal controller
+    const  { data: lastRenewalPriceIndex, refetch: refetchLastRenewalPriceIndex }  = useRenewalControllerRead({
         functionName:  'getLastCharIndex',
         args:          [],
-        enabled,
-        //typeof signer !== "undefined"
     });
 
 
+    const refetchRenewalConfiguration = async () => {
+
+        console.log("lastRenewalPriceIndex changedDD", renewalController);
+
+        var secondsPricingData = [];
+        var pricingData = [];
+
+        console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
+        console.log("lastRenewalPriceIndex do work1", renewalController);
+
+        for (var i = 0; i <= lastRenewalPriceIndex; i++) {
+
+            const price = await renewalController.charAmounts(i);
+            secondsPricingData.push(price.toString());
+
+            console.log("lastRenewalPriceIndex price wut " + i, price);
+
+            const pricePerYear = (price.mul(yearInSeconds));
+            const formatted = ethers.utils.formatEther(pricePerYear.toString())
+            const rounded = new Intl.NumberFormat('en-EN', {
+                maximumFractionDigits: 2
+            }).format(formatted);
+            pricingData.push(rounded);
+        }
+
+        console.log("lastRenewalPriceIndex price do work2", pricingData);
+
+        setRenewalPricingData(pricingData);
+        setRenewalPriceInput(pricingData);
+    }
+
+    /**
+     * Effect which pulls pricing data from our basic renewal controller
+     * Once the signer has been loaded
+     * Was having issues whereby the lastRenewalPriceIndex was being pulled but the signer was still returning undefined
+     */ 
     React.useEffect(() => {
         
         console.log("lastRenewalPriceIndex changed", lastRenewalPriceIndex);
         console.log("lastRenewalPriceIndex changedb", signer);
         console.log("lastRenewalPriceIndex changedc", renewalController);
 
-        const doWork = async () => {
-
-        console.log("lastRenewalPriceIndex changedDD", renewalController);
-
-            var pricingData = [];
-
-            console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
-            console.log("lastRenewalPriceIndex do work1", renewalController);
-
-            for (var i = 0; i < 3; i++) {
-
-                const price = await renewalController.charAmounts(i);
-
-                console.log("lastRenewalPriceIndex price wut " + i, price);
-
-                const pricePerYear = (price.mul(ethers.BigNumber.from("31536000")));
-                const formatted = ethers.utils.formatEther(pricePerYear.toString())
-                const rounded = new Intl.NumberFormat('en-EN', {
-                    maximumFractionDigits: 2
-                }).format(formatted);
-                pricingData.push(rounded);
-            }
-
-console.log("lastRenewalPriceIndex price do work2", pricingData);
-
-
-            setRenewalPricingData(pricingData);
-        }
-
         console.log("lastRenewalPriceIndex WUT", renewalController);
         if (signer) {
             console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
-            doWork();
+            refetchRenewalConfiguration();
         }
 
-    }, [signer]);
+    }, [signer, lastRenewalPriceIndex]);
 
 
-    const  { data: registrationPriceData }  = useEthRegistrarControllerRead({
+    const  { data: renewalPrice }  = useRenewalControllerRead({
         functionName:  'rentPrice',
-        args:          [name, renewForTimeInSeconds],
+        args:          [encodedNameToRenew, renewForTimeInSeconds],
     });
 
-    console.log("registrationPriceData", registrationPriceData);
+    console.log("renewalPrice", renewalPrice);
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
@@ -327,15 +358,16 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
     const expiryString  = expiryDate.toLocaleString();
 
 
+    console.log("CURRENT RC OPTIONS", renewalControllerOptions);
+    console.log("CURRENT RC", registerPricingData?.renewalController);
+
     const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
 
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{name}</AlertDialogTitle>
-                <AlertDialogDescription>
-
-
+                <AlertDialogDescription asChild>
                     <Accordion type="single" collapsible className="w-full" defaultValue="item-whois">
                         <AccordionItem value="item-whois">
                             <AccordionTrigger>Whois</AccordionTrigger>
@@ -351,49 +383,52 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                             
                                                 <div className = "mt-2">
 
-                                                    {!isRenewing ? (
-                                                        <>
-                                                            <div className = "flex">
-                                                                <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
-                                                                    <SelectTrigger className="w-[180px]">
-                                                                        <SelectValue placeholder="Select a duration" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectGroup>
-                                                                            {renewalLengthOptions.map((option) => {
-                                                                                
-                                                                                return (
-                                                                                    <SelectItem 
-                                                                                        key   = {option.value}
-                                                                                        value = {option.value.toString()}>
-                                                                                        {option.label}
-                                                                                    </SelectItem>
-                                                                                );
-                                                                            })}
-                                                                        </SelectGroup>
-                                                                    </SelectContent>
-                                                                </Select>
+                                                    <div className = "flex mt-8">
+                                                        <Select 
+                                                            disabled        = {isRenewing}
+                                                            onValueChange   = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
+                                                            <SelectTrigger className="w-[180px]">
+                                                                <SelectValue placeholder={renewalLengthOptions[0].label} />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectGroup>
+                                                                    {renewalLengthOptions.map((option) => {
+                                                                        
+                                                                        return (
+                                                                            <SelectItem 
+                                                                                key   = {"renew-option-" + option.value}
+                                                                                value = {option.value.toString()}>
+                                                                                {option.label}
+                                                                            </SelectItem>
+                                                                        );
+                                                                    })}
+                                                                </SelectGroup>
+                                                            </SelectContent>
+                                                        </Select>
 
-                                                                <div className="w-2" />
+                                                        <div className="w-2" />
 
-                                                                <Button 
-                                                                    type     = "submit" 
-                                                                    disabled = {isRenewing} 
-                                                                    onClick  = {onClickRenew}>
-                                                                    {isRenewing && CommonIcons.miniLoader}
-                                                                    Renew
-                                                                </Button>
-                                                            </div>
+                                                        <Button 
+                                                            type     = "submit" 
+                                                            disabled = {isRenewing} 
+                                                            onClick  = {onClickRenew}>
+                                                            {isRenewing ? CommonIcons.miniLoader : "Renew"}
+                                                        </Button>
+                                                    </div>
 
 
-                                                            {registrationPriceData && (
-                                                                <p className = "text-xs mt-2">
-                                                                    The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(registrationPriceData.base.add(registrationPriceData.premium))}</span> (~${(ethers.utils.formatEther(registrationPriceData.base.add(registrationPriceData.premium)) * ethPrice).toFixed(2)}).
-                                                                </p>
-                                                            )}
-                                                        </>
+                                                    {!isOwnedByUser && (
+                                                        <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                            <span className = "font-bold">{name}</span> is <span className = "font-bold">not owned by you</span>. You can still renew it for the owner.</div>
+                                                    )}
 
-                                                    ) : (
+                                                    {renewalPrice && (
+                                                        <p className = "text-xs mt-2">
+                                                            The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
+                                                        </p>
+                                                    )}
+
+                                                    {isRenewing && (
                                                         <TransactionConfirmationState 
                                                             key       = {"domain-renewal-" + name}
                                                             contract  = {ethRegistrarController}
@@ -404,7 +439,7 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                                 ],
                                                                 overrides: {
                                                                     gasLimit: ethers.BigNumber.from("5000000"),
-                                                                    value:    "1000000000000000000"
+                                                                    value:    renewalPrice
                                                                 }
                                                             }}
                                                             txFunction  = 'renew'
@@ -431,10 +466,10 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                                 });
                                                             }}>
                                                             <div>
-                                                                {CommonIcons.miniLoader} Renewing domain..
+                                                                {/* Renewing interface handled manually*/}
                                                             </div>
                                                             <div>
-                                                                SUCCESS
+                                                                {/* Success interface handled manually*/}
                                                             </div>
                                                         </ TransactionConfirmationState>
                                                     )}
@@ -463,13 +498,13 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                 </Table>
                             </AccordionContent>
                         </AccordionItem>
-                        <AccordionItem value="item-subdomain-controls">
-                            <AccordionTrigger>Subdomain Controls</AccordionTrigger>
-                            <AccordionContent>
 
+                        {/*Subdomain controls - displayed to owner*/}
+                        {isOwnedByUser && (
+                            <AccordionItem value="item-subdomain-controls">
+                                <AccordionTrigger>Subdomain Controls</AccordionTrigger>
+                                <AccordionContent>
 
-                                {/*Subdomain controls - displayed to owner*/}
-                                {isOwnedByUser && (
                                     <>
                                         <div>
                                             <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
@@ -481,7 +516,7 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                 Before utilising the subdomain offering you must approve access to our smart contracts to manage your names.
                                             </div>
 
-                                            <div className = "mt-2 text-xs">
+                                            <div className = "mt-4 text-xs">
                                                 1. Approve the <span className = "font-bold">Subdomain Wrapper</span> on the <span className = "font-bold">Name Wrapper</span>.
                                             </div>
 
@@ -492,9 +527,8 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                         type      = "submit" 
                                                         disabled  = {isNameWrapperApprovalPending} 
                                                         onClick   = {onClickApproveForAllNameWrapper} 
-                                                        className = "mt-2">
-                                                        {isNameWrapperApprovalPending && (CommonIcons.miniLoader)}
-                                                        Approve Subdomain Wrapper in Name Wrapper
+                                                        className = "mt-2 disabled:cursor-not-allowed">
+                                                        {isNameWrapperApprovalPending ? CommonIcons.miniLoader : "Approve Subdomain Wrapper in Name Wrapper"}
                                                     </Button>
 
                                                     {isNameWrapperApprovalPending && (
@@ -518,7 +552,11 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                                 toast({
                                                                     duration: 5000,
                                                                     className: "bg-green-200 dark:bg-green-800 border-0",
-                                                                    description: (<p>SubnameWrapper successfiully approved on the NameWrapper.</p>),
+                                                                    description: (
+                                                                        <p>
+                                                                            <span className = "font-bold">SubnameWrapper</span> successfiully approved on the <span className = "font-bold">NameWrapper</span>.
+                                                                        </p>
+                                                                    ),
                                                                 });
                                                             }}
                                                             onAlways = {() => {
@@ -529,14 +567,18 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                                 toast({
                                                                     duration: 5000,
                                                                     className: "bg-red-200 dark:bg-red-800 border-0",
-                                                                    description: (<p>There was a problem aproving the SubnameWrapper on the NameWrapper.</p>),
+                                                                    description: (
+                                                                        <p>
+                                                                            There was a problem approving the <span className = "font-bold">SubnameWrapper</span> on the <span className = "font-bold">NameWrapper</span>.
+                                                                        </p>
+                                                                    ),
                                                                 });
                                                             }}>
                                                             <div>
                                                                 {/*Show nothing when approving - we do it on the button*/}
                                                             </div>
                                                             <div>
-                                                                {CommonIcons.check} Approved
+                                                                {/*Show nothing when approved - we do it in the else*/}
                                                             </div>
                                                         </ TransactionConfirmationState>
                                                     )}
@@ -548,7 +590,7 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                             )}
                                         </div>
 
-                                        <div className = "mt-4 text-xs">
+                                        <div className = "mt-8 text-xs">
                                             2. Approve the <span className = "font-bold">Subdomain Registrar</span> on the <span className = "font-bold">Subdomain Wrapper</span>.
                                         </div>
                                         
@@ -559,9 +601,8 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                     type      = "submit" 
                                                     disabled  = {isSubdomainRegistrarApprovalPending} 
                                                     onClick   = {onClickApproveSubdomainRegistrar} 
-                                                    className = "mt-2">
-                                                        {isSubdomainRegistrarApprovalPending && (CommonIcons.miniLoader)}
-                                                        Approve Subdomain Registrar in Subdomain Wrapper
+                                                    className = "mt-2 disabled:cursor-not-allowed">
+                                                        {isSubdomainRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subdomain Registrar in Subdomain Wrapper"}
                                                 </Button>
                                         
                                                 {/* The Subname registrar needs to be approved on the Subname Wrapper*/}
@@ -586,7 +627,11 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                             toast({
                                                                 duration: 5000,
                                                                 className: "bg-green-200 dark:bg-green-800 border-0",
-                                                                description: (<p>Subdomain registrar successfully approved on the NameWrapper.</p>),
+                                                                description: (
+                                                                    <p>
+                                                                        <span className = "font-bold">Subdomain Registrar</span> successfully approved on the <span className = "font-bold">NameWrapper</span>.
+                                                                    </p>
+                                                                ),
                                                             });
                                                         }}
                                                         onAlways = {() => {
@@ -597,16 +642,18 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                                             toast({
                                                                 duration: 5000,
                                                                 className: "bg-red-200 dark:bg-red-800 border-0",
-                                                                description: (<p>There was a problem aproving the subdomain registrar on the NameWrapper.</p>),
+                                                                description: (
+                                                                    <p>
+                                                                        There was a problem approving the <span className = "font-bold">Subdomain Registrar</span> on the <span className = "font-bold">NameWrapper</span>.
+                                                                    </p>
+                                                                ),
                                                             });
                                                         }}>
                                                         <div>
                                                             {/*Show nothing when approving - we do it on the button*/}
                                                         </div>
                                                         <div>
-                                                            <div>
-                                                                {CommonIcons.check} Approved
-                                                            </div>
+                                                            {/*Show nothing when approved - we do it in the else*/}
                                                         </div>
                                                     </ TransactionConfirmationState>
                                                 )}
@@ -617,317 +664,433 @@ console.log("lastRenewalPriceIndex price do work2", pricingData);
                                             </div>
                                         )}
                                     </>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
+                            
+                                </AccordionContent>
+                            </AccordionItem>
+                        )}
 
+
+    
                         <AccordionItem value="item-subdomain-registration-config">
-                            <AccordionTrigger>Subdomain Registration Config</AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionTrigger>Subdomain Registration Configuration</AccordionTrigger>
+                            <AccordionContent asChild>
 
-                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                    This section details configuration options for registration of subdomains under {name}.
-                                </div>
+                                <>
 
-                                {!isEditingSubdomainRegistrationConfig ? (
-                                    <>
-                                        {registerPricingData ? (
-                                            <Table>
-                                                <TableBody>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Offers subdomains</TableCell>
-                                                        <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Renewal Controller</TableCell>
-                                                        <TableCell>{registerPricingData?.renewalController}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Min Duration</TableCell>
-                                                        <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Min Characters</TableCell>
-                                                        <TableCell>{registerPricingData?.minChars}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Max Characters</TableCell>
-                                                        <TableCell>{registerPricingData?.maxChars}</TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>  
-                                        ) : (
-                                            <div>No pricing data</div>
-                                        )}
+                                    <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                        This section details configuration options for registration of subdomains under <span className = "font-bold">{name}</span>.
+                                    </div>
 
-                                        {isOwnedByUser && (
-                                            <div className = "text-center mt-4">
-                                                <Button 
-                                                    type    ="submit" 
-                                                    onClick   = {(e) => {
-                                                        setIsEditingSubdomainRegistrationConfig(true);
-                                                    }} 
-                                                    className = "mt-4">
-                                                    Edit
-                                                </Button>
+                                    {!isEditingSubdomainRegistrationConfig ? (
+                                        <>
+                                            {registerPricingData ? (
+                                                <Table>
+                                                    <TableBody>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">Offers subdomains</TableCell>
+                                                            <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">Renewal Controller</TableCell>
+                                                            <TableCell>{registerPricingData?.renewalController}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">Min Duration</TableCell>
+                                                            <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">Min Characters</TableCell>
+                                                            <TableCell>{registerPricingData?.minChars}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">Max Characters</TableCell>
+                                                            <TableCell>{registerPricingData?.maxChars}</TableCell>
+                                                        </TableRow>
+                                                    </TableBody>
+                                                </Table>  
+                                            ) : (
+                                                <div>No pricing data</div>
+                                            )}
 
-                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                    You have this option because you own <span className = "font-bold">{name}</span>.
+                                            {isOwnedByUser && (
+                                                <div className = "text-center mt-4">
+                                                    <Button 
+                                                        type    ="submit" 
+                                                        onClick   = {(e) => {
+                                                            setIsEditingSubdomainRegistrationConfig(true);
+                                                        }} 
+                                                        className = "mt-4">
+                                                        Edit Configuration
+                                                    </Button>
+
+                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                        You have this option because you own <span className = "font-bold">{name}</span>.
+                                                    </div>
                                                 </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+
+                                            <div className = "my-2">
+                                                <Checkbox 
+                                                    id             = "offerSubdomains"
+                                                    ref            = {offerSubnamesRef} 
+                                                    defaultChecked = {registerPricingData?.offerSubnames}
+                                                    disabled       = {isSavingRegistrationConfigurationData} />
+                                                <label
+                                                    htmlFor="offerSubdomains"
+                                                    className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Offer subdomains
+                                                </label>
                                             </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
 
-                                        <div className = "my-2">
-                                            <Checkbox 
-                                                id             = "offerSubdomains"
-                                                ref            = {offerSubnamesRef} 
-                                                defaultChecked = {registerPricingData?.offerSubnames} />
-                                            <label
-                                                htmlFor="offerSubdomains"
-                                                className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                            >
-                                                Offer subdomains
-                                            </label>
-                                        </div>
+                                            <Label htmlFor="renewalController">Renewal Controller</Label>
 
-                                        <Label htmlFor="renewalController">Renewal Controller</Label>
+                                            <Select 
+                                                value           = {(currentRenewalController?.value)}
+                                                onValueChange   = {(value) => setRenewalControllerInput(value)}
+                                                disabled        = {isSavingRegistrationConfigurationData}>
+                                                <SelectTrigger className = "my-2">
+                                                    <SelectValue placeholder="Select a renewal controller" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {renewalControllerOptions.map((option) => {
+                                                            
+                                                            return (
+                                                                <SelectItem 
+                                                                    key   = {"renewal-controller-option-" + option.value}
+                                                                    value = {option.value}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
 
-                                        <Select 
-                                            value           = {(currentRenewalController?.value)}
-                                            onValueChange   = {(value) => setRenewalControllerInput(value)}>
-                                            <SelectTrigger className = "my-2">
-                                                <SelectValue placeholder="Select a renewal controller" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {renewalControllerOptions.map((option) => {
-                                                        
-                                                        return (
-                                                            <SelectItem 
-                                                                key   = {option.value}
-                                                                value = {option.value}>
-                                                                {option.label}
-                                                            </SelectItem>
-                                                        );
-                                                    })}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
+                                            <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
+                                            <Input 
+                                                type         = "text" 
+                                                id           = "minRegistrationDuration" 
+                                                ref          = {minRegistrationDurationInputRef} 
+                                                defaultValue = {registerPricingData?.minRegistrationDuration} 
+                                                className    = "my-2"
+                                                disabled     = {isSavingRegistrationConfigurationData} />
 
-                                        <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
-                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {registerPricingData?.minRegistrationDuration} className = "my-2" />
+                                            <Label htmlFor="minChars">Minimum Characters</Label>
+                                            <Input 
+                                                type         = "text" 
+                                                id           = "minChars" 
+                                                ref          = {minCharactersInputRef} 
+                                                defaultValue = {registerPricingData?.minChars} 
+                                                className    = "my-2"
+                                                disabled     = {isSavingRegistrationConfigurationData} />
 
-                                        <Label htmlFor="minChars">Minimum Characters</Label>
-                                        <Input type = "text" id = "minChars" ref = {minCharactersInputRef} defaultValue = {registerPricingData?.minChars} className = "my-2" />
+                                            <Label htmlFor="maxChars">Maximum Characters</Label>
+                                            <Input 
+                                                type         = "text" 
+                                                id           = "maxChars" 
+                                                ref          = {maxCharactersInputRef} 
+                                                defaultValue = {registerPricingData?.maxChars} 
+                                                className    = "my-2"
+                                                disabled     = {isSavingRegistrationConfigurationData} />
 
-                                        <Label htmlFor="maxChars">Maximum Characters</Label>
-                                        <Input type = "text" id = "maxChars" ref = {maxCharactersInputRef} defaultValue = {registerPricingData?.maxChars} className = "my-2" />
-
-                                        {!isSavingRegistrationPricingData ? (
                                             <Button 
-                                                type="submit" 
-                                                onClick = {(e) => {
-                                                    setIsSavingRegistrationPricingData(true);
-                                                }} className = "mt-2">
-                                                Save Changes
+                                                type        = "submit" 
+                                                onClick     = {(e) => {
+                                                    setIsSavingRegistrationConfigurationData(true);
+                                                }} 
+                                                disabled    = {isSavingRegistrationConfigurationData}
+                                                className   = "mt-2 disabled:cursor-not-allowed">
+                                                {isSavingRegistrationConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
                                             </Button>
-                                        ) : (
-                                            <TransactionConfirmationState 
-                                                key = {"save-subdomain-registration-config-" + name}
-                                                contract = {subnameRegistrar}
-                                                txArgs = {{
-                                                    args: [
-                                                        namehashHex,
-                                                        true,
-                                                        //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
-                                                        renewalControllerInput,
-                                                        minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current!.value : null,
-                                                        minCharactersInputRef ? minCharactersInputRef.current!.value : null,
-                                                        maxCharactersInputRef ? maxCharactersInputRef.current!.value : null,
-                                                    ],
-                                                    overrides: {
-                                                        gasLimit: ethers.BigNumber.from("5000000"),
-                                                        //value: "10000000000000000000"
-                                                    }
-                                                }}
-                                                txFunction = 'setParams'
-                                                onConfirmed = {() => {
-                                                    console.log("setParams done");
-                                                    setIsEditingSubdomainRegistrationConfig(false);
 
-                                                    toast({
-                                                        duration: 5000,
-                                                        className: "bg-green-200 dark:bg-green-800 border-0",
-                                                        description: (<p>Subdomain registration config confirmed on chain.</p>),
-                                                    });
-                                                }}
-                                                onAlways = {() => {
-                                                    refetchRegisterPricingData();
-                                                }}
-                                                onError = {() => {
-                                                    toast({
-                                                        duration: 5000,
-                                                        className: "bg-red-200 dark:bg-red-800 border-0",
-                                                        description: (<p>There was a problem updating your subdomain registration config.</p>),
-                                                    });
-                                                }}>
-                                                <div>
-                                                    {CommonIcons.miniLoader} Saving pricing data..
-                                                </div>
-                                                <div>
-                                                    SUCCESS
-                                                </div>
-                                            </ TransactionConfirmationState>
-                                        )}
-                                    </> 
-                                )}
+                                            {isSavingRegistrationConfigurationData && (
+                                                <TransactionConfirmationState 
+                                                    key = {"save-subdomain-registration-config-" + name}
+                                                    contract = {subnameRegistrar}
+                                                    txArgs = {{
+                                                        args: [
+                                                            namehashHex,
+                                                            true,
+                                                            //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
+                                                            renewalControllerInput,
+                                                            minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current?.value : null,
+                                                            minCharactersInputRef ? minCharactersInputRef.current?.value : null,
+                                                            maxCharactersInputRef ? maxCharactersInputRef.current?.value : null,
+                                                        ],
+                                                        overrides: {
+                                                            gasLimit: ethers.BigNumber.from("5000000"),
+                                                            //value: "10000000000000000000"
+                                                        }
+                                                    }}
+                                                    txFunction = 'setParams'
+                                                    onConfirmed = {() => {
+                                                        console.log("setParams done");
+
+                                                        toast({
+                                                            duration: 5000,
+                                                            className: "bg-green-200 dark:bg-green-800 border-0",
+                                                            description: (
+                                                                <p>
+                                                                    Subdomain registration configuration changes saved on chain.
+                                                                </p>
+                                                            ),
+                                                        });
+                                                    }}
+                                                    onAlways = {() => {
+                                                        setIsEditingSubdomainRegistrationConfig(false);
+                                                        refetchRegisterPricingData();
+                                                    }}
+                                                    onError = {() => {
+                                                        toast({
+                                                            duration: 5000,
+                                                            className: "bg-red-200 dark:bg-red-800 border-0",
+                                                            description: (
+                                                                <p>
+                                                                    There was a problem saving your subdomain registration configuration changes.
+                                                                </p>
+                                                            ),
+                                                        });
+                                                    }}>
+                                                    <div>
+                                                        {/*Handled manually*/}
+                                                    </div>
+                                                    <div>
+                                                        {/*Handled manually*/}
+                                                    </div>
+                                                </ TransactionConfirmationState>
+                                            )}
+                                        </> 
+                                    )}
+                                </>
                             </AccordionContent>
                         </AccordionItem>
 
                         <AccordionItem value="item-subdomain-renewal-config">
-                            <AccordionTrigger>Subdomain Renewal Config</AccordionTrigger>
+                            <AccordionTrigger>Subdomain Renewal Configuration</AccordionTrigger>
                             <AccordionContent>
 
                                 <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
                                     This section details configuration options for renewal of subdomains under <span className = "font-bold">{name}</span>.
                                 </div>
 
-                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                    The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to set pricing <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
-                                </div>
 
+                            
+                                {registerPricingData?.renewalController == "0x0000000000000000000000000000000000000000" ? (
 
+                                    <p className = "text-xs text-red-800">This domain <span className = "font-bold">does not</span> have a renewal controller set.</p>
+                                ) : (
 
-                                {!isEditingSubdomainRenewalConfig ? (
                                     <>
-                                        {renewalPricingData ? (
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead className="font-medium">Characters</TableHead>
-                                                        <TableHead>Price (USD)</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    
-                                                
-                                                    {renewalPricingData.map((value, index) => {
+                                        <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                            The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to set pricing <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
+                                        </div>
 
-                                                        return (
+
+
+                                        {!isEditingSubdomainRenewalConfig ? (
+                                            <>
+                                                {renewalPricingData ? (
+                                                    <Table>
+                                                        <TableHeader>
                                                             <TableRow>
-                                                                <TableCell className="font-medium">
-                                                                    {lastRenewalPriceIndex && (""+(index + 1) == lastRenewalPriceIndex?.toString()) ? "All others" : (index + 1)}
-                                                                </TableCell>
-                                                                <TableCell>${value}</TableCell>
+                                                                <TableHead className="font-medium">Characters</TableHead>
+                                                                <TableHead>Price (USD)</TableHead>
                                                             </TableRow>
-                                                        );
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {renewalPricingData.map((value, index) => {
 
-                                                    })}
-                                                    
-                                                </TableBody>
-                                            </Table>  
+                                                                return (
+                                                                    <TableRow
+                                                                        key = {"renewal-price-" + index}>
+                                                                        <TableCell className="font-medium">
+                                                                            {lastRenewalPriceIndex && (""+(index) == lastRenewalPriceIndex?.toString()) ? "All others" : (index)}
+                                                                        </TableCell>
+                                                                        <TableCell>${value}</TableCell>
+                                                                    </TableRow>
+                                                                );
+
+                                                            })}      
+                                                        </TableBody>
+                                                    </Table>  
+                                                ) : (
+                                                    <div>No renewal configuration data is available.</div>
+                                                )}
+
+                                                {isOwnedByUser && (
+                                                    <div className = "text-center mt-4">
+                                                        <Button 
+                                                            type    ="submit" 
+                                                            onClick   = {(e) => {
+                                                                setIsEditingSubdomainRenewalConfig(true);
+                                                            }} 
+                                                            className = "mt-4">
+                                                            {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Edit Configuration"}
+                                                        </Button>
+
+                                                        <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                            You have this option because you own <span className = "font-bold">{name}</span>.
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         ) : (
-                                            <div>No renewal configuration data is available.</div>
-                                        )}
+                                            <>
 
-                                        {isOwnedByUser && (
-                                            <div className = "text-center mt-4">
-                                                <Button 
-                                                    type    ="submit" 
-                                                    onClick   = {(e) => {
-                                                        setIsEditingSubdomainRenewalConfig(true);
-                                                    }} 
-                                                    className = "mt-4">
-                                                    Edit
-                                                </Button>
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="font-medium">Characters</TableHead>
+                                                            <TableHead>Price (USD)</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {renewalPriceInput.map((value, index) => {
 
-                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                    You have this option because you own <span className = "font-bold">{name}</span>.
+                                                            return (
+                                                                <TableRow
+                                                                    key = {"renewal-price-" + index}>
+                                                                    <TableCell className="font-medium">
+                                                                        {index + 1 == (renewalPriceInput.length) ? "All others" : (index)}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Input 
+                                                                            type         = "text" 
+                                                                            value = {value} 
+                                                                            disabled     = {isSavingRenewalConfigurationData}
+                                                                            onChange = {(e) => {
+
+                                                                                const newInput = [...renewalPriceInput];
+                                                                                newInput[index] = e.target.value;
+
+                                                                                console.log("renewalPriceInput", newInput);
+
+                                                                                setRenewalPriceInput(newInput)
+                                                                            }} 
+                                                                            />
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+
+                                                        })}      
+                                                    </TableBody>
+                                                </Table>  
+
+                                                <div className = "flex">
+                                                    <Button 
+                                                        type="submit" 
+                                                        onClick = {(e) => {
+                                                            const newInput = [...renewalPriceInput];
+                                                            newInput.splice(newInput.length - 1, 0, 0);
+                                                            setRenewalPriceInput(newInput)
+
+                                                            console.log("NEWWW", newInput);
+
+                                                        }} 
+                                                        className = "mt-2"
+                                                        disabled     = {isSavingRenewalConfigurationData}>
+                                                        Add Another
+                                                    </Button>
+
+                                                    <div className = "w-1"></div>
+
+                                                    <Button 
+                                                        type="submit" 
+                                                        onClick = {(e) => {
+                                                            setIsSavingRenewalConfigurationData(true);
+
+                                                            console.log("tosend", renewalPriceInput.map((value) => {
+                                                                        return Math.floor((value / 31536000) * 1e18);
+                                                                    }));
+                                                        }} 
+                                                        className = "mt-2"
+                                                        disabled     = {isSavingRenewalConfigurationData}>
+                                                        {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
+                                                    </Button>
                                                 </div>
-                                            </div>
+
+                                                {isSavingRenewalConfigurationData && (
+                                                    <TransactionConfirmationState 
+                                                        key = {"save-subdomain-renewal-config-" + name}
+                                                        contract = {renewalController}
+                                                        txArgs = {{
+                                                            args: [
+                                                                renewalPriceInput.map((value) => {
+                                                                    return Math.floor((value / 31536000) * 1e18);
+                                                                })
+                                                            ],
+                                                            overrides: {
+                                                                gasLimit: ethers.BigNumber.from("5000000"),
+                                                                //value: "10000000000000000000"
+                                                            }
+                                                        }}
+                                                        txFunction = 'setPricingForAllLengths'
+                                                        onConfirmed = {() => {
+                                                            console.log("setPricingForAllLengths done");
+
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                description: (
+                                                                    <p>
+                                                                        Subdomain renewal configuration saved on chain.
+                                                                    </p>
+                                                                ),
+                                                            });
+                                                        }}
+                                                        onAlways = {() => {
+                                                            setIsSavingRenewalConfigurationData(false);
+                                                            setIsEditingSubdomainRenewalConfig(false);
+                                                            refetchLastRenewalPriceIndex();
+                                                        }}
+                                                        onError = {() => {
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                description: (
+                                                                    <p>
+                                                                        There was a problem updating your subdomain renewal configuration.
+                                                                    </p>
+                                                                ),
+                                                            });
+                                                        }}>
+                                                        <div>
+                                                            {/*Handled manually*/}
+                                                        </div>
+                                                        <div>
+                                                            {/*Handled manually*/}
+                                                        </div>
+                                                    </ TransactionConfirmationState>
+                                                )}
+                                            </> 
                                         )}
                                     </>
-                                ) : (
-                                    <>
-
-                                        <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
-                                        <Input type = "text" id = "minRegistrationDuration" ref = {minRegistrationDurationInputRef} defaultValue = {pricingData?.minRegistrationDuration} className = "my-2" />
-
-                                        {!isSavingRenewalPricingData ? (
-                                            <Button 
-                                                type="submit" 
-                                                onClick = {(e) => {
-                                                    setIsSavingRenewalPricingData(true);
-                                                }} className = "mt-2">
-                                                Save Changes
-                                            </Button>
-                                        ) : (
-                                            <TransactionConfirmationState 
-                                                key = {"save-subdomain-registration-config-" + name}
-                                                contract = {subnameRegistrar}
-                                                txArgs = {{
-                                                    args: [
-                                                        namehashHex,
-                                                        true,
-                                                        //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
-                                                        renewalControllerInput,
-                                                        minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current!.value : null,
-                                                        minCharactersInputRef ? minCharactersInputRef.current!.value : null,
-                                                        maxCharactersInputRef ? maxCharactersInputRef.current!.value : null,
-                                                    ],
-                                                    overrides: {
-                                                        gasLimit: ethers.BigNumber.from("5000000"),
-                                                        //value: "10000000000000000000"
-                                                    }
-                                                }}
-                                                txFunction = 'setParams'
-                                                onConfirmed = {() => {
-                                                    console.log("setParams done");
-                                                    setIsSavingRenewalPricingData(false);
-                                                    setIsEditingSubdomainRegistrationConfig(false);
-
-                                                    toast({
-                                                        duration: 5000,
-                                                        className: "bg-green-200 dark:bg-green-800 border-0",
-                                                        description: (<p>Subdomain registration config confirmed on chain.</p>),
-                                                    });
-                                                }}
-                                                onAlways = {() => {
-                                                    refetchRenewalPricingData();
-                                                }}
-                                                onError = {() => {
-                                                    toast({
-                                                        duration: 5000,
-                                                        className: "bg-red-200 dark:bg-red-800 border-0",
-                                                        description: (<p>There was a problem updating your subdomain registration config.</p>),
-                                                    });
-                                                }}>
-                                                <div>
-                                                    {CommonIcons.miniLoader} Saving pricing data..
-                                                </div>
-                                                <div>
-                                                    SUCCESS
-                                                </div>
-                                            </ TransactionConfirmationState>
-                                        )}
-                                    </> 
                                 )}
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-fuses">
                             <AccordionTrigger>Fuses</AccordionTrigger>
                             <AccordionContent>
-                                <FuseList name = {name} />
+                                <>
+                                    <p className = "text-xs text-red-800">This section details the fuses that have been burned on this domain.
+                                    </p> 
+                                    <p className = "text-xs text-red-800 mt-2">
+                                        For more information on fuses please see the <a className = "underline" href = "https://support.ens.domains/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.</p>
+
+                                    <FuseList name = {name} />
+                                </>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction>Close</AlertDialogAction>
+                <AlertDialogAction className = "mt-8">Close</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     )

@@ -1,23 +1,57 @@
+
 # SubnameWrapper Demo Interface
 
-Start an anvil node
+## For Foundry
+
+ - Start an anvil node
+
 ```bash
 anvil --block-time 5
 ```
 
-Run the deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
+ - Run the deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
+
 ```bash
 forge script script/DeploySNW_1.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --verify -vvvv
 ```
 
-Run the server
+ - Run the server
+
 ```bash
 pnpm dev
 ```
 
-Or view the [deployed version](https://turbo-eth-git-main-clowestab.vercel.app/register).
+ - Or view the [deployed version](https://turbo-eth-git-main-clowestab.vercel.app/register).
 
 **Note:** Make sure you are connected to the Foundry network. If you are using Metamask etc you might have to add a custom network.
+
+
+## For Goerli
+
+ - Deploy the core [ENS contracts](https://github.com/ensdomains/ens-contracts).
+ 
+ **Note:** We can't use the ENS Labs deployed contracts because we need to have appropriate control to authorise the various subname contracts at the various levels. 
+
+```bash
+npx hardhat deploy --network goerli --tags wrapper
+npx hardhat deploy --network goerli --tags ethregistrar
+npx hardhat deploy --network goerli --tags PublicResolver
+```
+
+ - Get the addresses of the deployed contracts and update them in `wagmi.config.ts`
+ - Regenerate `blockchain.ts` using `wagmi-cli`
+
+```bash
+pnpm wagmi generate
+```
+
+ - Deploy SubnameWrapper contracts
+
+```bash
+forge script script/DeploySNW_1.s.sol --rpc-url https://eth-goerli.g.alchemy.com/v2/vrPUMZ7TORr_WepAY2PaOFhwSiSqxxa0 -vvvv --slow --broadcast
+```
+
+ - Get the addresses of the deployed contracts and update them in `wagmi.config.ts`
 
 ---
 

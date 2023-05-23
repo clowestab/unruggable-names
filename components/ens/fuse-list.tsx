@@ -142,12 +142,19 @@ export function FuseList({ name }: FuseListProps) {
         toast({
             duration: 5000,
             className: "bg-red-200 dark:bg-red-800 border-0",
-          //title: "Scheduled: Catch up ",
-            description: error,
+            description: (
+                <>
+                    <div className = "text-center mb-4">
+                        <Icon 
+                            className = "inline-block"
+                            icon      = "akar-icons:triangle-alert"
+                            width     = "48"
+                            height    = "48" />
+                    </div> 
+                    {error}
+                </>
+            ),
             variant: "destructive",
-          //action: (
-          //  <ToastAction altText="Goto schedule to undo">Undo</ToastAction>
-          //),
         })
 
         console.log("post toast");
