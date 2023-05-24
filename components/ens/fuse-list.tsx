@@ -442,9 +442,8 @@ export function FuseList({ name }: FuseListProps) {
                                         {!isBurned && (
                                             <Button 
                                                 type      = "submit" 
-                                                disabled  = {typeof signer === "undefined"} 
-                                                onClick   = {(e) => burnFuse(fuseKey)}
-                                                className = "disabled:cursor-not-allowed">
+                                                disabled  = {typeof signer === "undefined" || fuseBeingBurned == fuseKey} 
+                                                onClick   = {(e) => burnFuse(fuseKey)}>
                                                 {fuseBeingBurned == fuseKey ? CommonIcons.miniLoader : "Burn Fuse"}
                                             </Button>
                                         )}

@@ -1,22 +1,18 @@
+const ethPrice = 1820;
 
 import React                                from 'react'
 
 import classNames                           from 'clsx'
 import { ethers }                           from "ethers";
-import { HiCheckCircle, HiXCircle }         from 'react-icons/hi'
 import { 
     useAccount, 
     useProvider, 
     useSigner,
-    useWaitForTransaction 
 }                                           from 'wagmi'
 
 import {
     AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
@@ -30,11 +26,7 @@ import {
 }                                           from "@/components/ui/tooltip"
 
 import { CountdownText }                    from './countdown-text'
-import {
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress,
-}                                           from '../../helpers/contract-addresses';
+
 import { 
   generateSalt,
   hexEncodeName 
@@ -42,49 +34,46 @@ import {
 import { 
     useSubnameRegistrar, 
     useSubnameRegistrarCommit, 
-    useSubnameRegistrarCommitments, 
     useSubnameRegistrarMakeCommitment, 
     useSubnameRegistrarMinCommitmentAge, 
     useSubnameRegistrarRead, 
-    useSubnameRegistrarRegister,
-    useRenewalControllerRead 
+    useRenewalControllerRead,
+    subnameRegistrarAddress 
 }                                           from '../../lib/blockchain'
 import { SubdomainWhoisAlert }              from '../ens/subdomain-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
 import { TransactionConfirmationState }     from '../shared/transaction-confirmation-state'
 
-import { useToast }                     from '@/lib/hooks/use-toast'
-
-const REGISTRATION_STATE = {
-    COMMITTED:  'COMMITTED',
-    REGISTERED: 'REGISTERED',
-}
+import { useToast }                         from '@/lib/hooks/use-toast'
 
 interface SearchResultRowProps {
     className?:  string,
     name:        string,
     resultIndex: number,
     onRegister?: () => void,
-    doLookup?: any
+    doLookup?:   any
 }
 
 
 export function SubdomainSearchResultRow({ className, name, resultIndex, onRegister, doLookup }: SearchResultRowProps) {
 
-    const provider                                          = useProvider();
-    const { data: signer }  = useSigner()
-    const { address }                                       = useAccount()
+    const provider         = useProvider();
+    const { data: signer } = useSigner()
+    const { address }      = useAccount()
     const { toast }        = useToast()
 
+    //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
-        address:          subnameRegistrarAddress,
         signerOrProvider: signer
     });
 
-    console.log("subnameRegistrar", subnameRegistrar);
-
+    //Boolean indiciating if the subdomain is being registered
     const [isRegistering, setIsRegistering]                             = React.useState(false);
+
+    //The unix timestamp at which the commitment becomes valid on chain
     const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(null);
+
+    //Set once the commitment validity countdown has completed
     const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
     const domainParts                          = name.split(".");
@@ -93,16 +82,16 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName)  as `0x${string}`;
     const encodedNameToRegister: `0x${string}` = hexEncodeName(name) as `0x${string}`;
 
+    //Discern if the subdomain is available in the SubnameRegistrar
     const  { data: isAvailable }    = useSubnameRegistrarRead({
-        address:      subnameRegistrarAddress,
         functionName: 'available',
         args:         [encodedNameToRegister],
     });
 
     console.log("isAvailable", !isAvailable);
 
+    //Get pricing data for the parent name from the SubnameRegistrar
     const  { data: pricingData }  = useSubnameRegistrarRead({
-        address:      subnameRegistrarAddress,
         functionName: 'pricingData',
         args:         [parentNamehash],
     });
@@ -111,17 +100,17 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     console.log("Pricing data", pricingData);
 
     const addressToRegisterTo      = address;
-    const registerForTimeInSeconds = ethers.BigNumber.from("10000000");//31536000;
+    const registerForTimeInSeconds = ethers.BigNumber.from("31536000");;
     const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
 
     const  { data: rentPrice }  = useRenewalControllerRead({
-        address:      renewalControllerAddress,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
     });
 
     console.log("rentprice", rentPrice);
 
+    //A salt for the registration commitment
     const [salt, setSalt] = React.useState<`0x${string}`>(`0x${generateSalt()}`);
 
     console.log("encodedNameToRegister", encodedNameToRegister);
@@ -130,14 +119,13 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     console.log("salt", salt);
     console.log("addressToResolveTo", addressToResolveTo);
 
-    const { data: MIN_COMMITMENT_TIME_IN_SECONDS } = useSubnameRegistrarMinCommitmentAge({
-        address: subnameRegistrarAddress,
-    });
+    //Get the minimum commitment time required for a valid commitment from the SubnameRegistrar
+    const { 
+        data: MIN_COMMITMENT_TIME_IN_SECONDS 
+    }                               = useSubnameRegistrarMinCommitmentAge({});
 
-    console.log("MIN_COMMITMENT_TIME_IN_SECONDS", MIN_COMMITMENT_TIME_IN_SECONDS?.toString());
-
-    const { data: commitment } = useSubnameRegistrarMakeCommitment({
-        address: subnameRegistrarAddress,
+    //Generate a commitment hashs
+    const { data: commitment }      = useSubnameRegistrarMakeCommitment({
         args: [
             encodedNameToRegister, 
             addressToRegisterTo!, 
@@ -157,8 +145,9 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
      * Triggered when register button clicked
      */ 
     const doRegister = () => {
-        setIsRegistering(true);
 
+        //Setting this will update the UI
+        setIsRegistering(true);
         console.log("register", commitment);
     }
 
@@ -188,160 +177,167 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
         setCommitmentCompleteTimestamp(currentTimestamp);
     }
 
-
-    const classes = classNames(className, 'flex');
-
-
-  return (
-    <div className = {classes}>
-        <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center w-full')}>
-            <div className = "text-center">
-                {name}
-                <div className = "cursor-pointer text-xs underline" onClick = {() => { doLookup(parentName); }}>view parent</div>
-            </div>
-            <div className = "w-8" />
-            <div className = "flex items-center justify-center">
-                {isAvailable ? (
-                    <React.Fragment key = {"available-" + name}>
-                        <HiCheckCircle /><div className = "w-1" /> Available
-                    </React.Fragment>
-                ) : (
-                    <React.Fragment key = {"taken-" + name}>
-                        <HiXCircle /><div className = "w-1" /> 
-                        {isOfferingSubdomains ? (
-                            <div>
-                                <span>Registered</span>
-                                <div className = "w-1" />
-                                <AlertDialog key = {"whois-" + name} >
-                                    <AlertDialogTrigger asChild>
-                                        <span className = "cursor-pointer text-xs underline">whois</span>
-                                    </AlertDialogTrigger>
-                                    <SubdomainWhoisAlert key = {"alert-" + name} name = {name} />
-                                </AlertDialog>
-                            </div>
-                        ) : (
-                            <span>Not offering subdomains</span>
-                        )}
-                    </React.Fragment>
-                )}
-            </div>
-
-            <div className = "w-8" />
-
-            <div className = "flex items-center justify-center">
-                {isAvailable && rentPrice && (
-                    <span>Ξ {ethers.utils.formatEther(rentPrice.toString())}</span>
-                )}
-            </div>
-
-            <div className = "w-8" />
-
-            {isAvailable && (
-                <>
-                    {isRegistering ? (
-                        <>
-                            {/* Set when the transaction is committed and 60 seconds has passed */}
-                            {!commitmentCompleteTimestamp ? (
-
-                                <>
-                                    {commitment != null && (
-                                        <TransactionConfirmationState 
-                                            key      = {"commitment-" + resultIndex}
-                                            contract = {subnameRegistrar}
-                                            txArgs   = {{
-                                                address: subnameRegistrarAddress,
-                                                args: [
-                                                    commitment, //secret
-                                                ],
-                                                overrides: {
-                                                    gasLimit: ethers.BigNumber.from("200000")
-                                                }
-                                            }}
-                                            txFunction  = 'commit'
-                                            onConfirmed = {onCommitmentConfirmed}>
-                                                <div>
-                                                    {CommonIcons.miniLoader} Submitting registration commitment..
-                                                </div>
-                                                <div>
-                                                    {commitmentReadyTimestamp && (
-                                                        <CountdownText 
-                                                            timestamp  = {commitmentReadyTimestamp}
-                                                            onComplete = {onCommitmentBecomesValid} />
-                                                    )}
-                                                </div>
-                                        </ TransactionConfirmationState>
-                                    )}
-                                </>
-                        ) : (
-
-                            <TransactionConfirmationState 
-                                key      = {"registration-" + resultIndex}
-                                contract = {subnameRegistrar}
-                                txArgs   = {{
-                                    address: subnameRegistrarAddress,
-                                    args: [
-                                        encodedNameToRegister,
-                                        addressToRegisterTo, //owner
-                                        '0x9A676e781A523b5d0C0e43731313A708CB607508', //referer
-                                        registerForTimeInSeconds,
-                                        salt, //secret
-                                        addressToResolveTo, //resolver
-                                        [], //calldata
-                                        0 //fuses
-                                    ],
-                                    overrides: {
-                                        gasLimit: ethers.BigNumber.from("500000"),
-                                        value:    rentPrice?.toString()
-                                    }
-                                }}
-                                txFunction  = 'register'
-                                onConfirmed = {() => {
-                                    console.log("Registration confirmed la");
-                                    toast({
-                                        duration: 5000,
-                                        className: "bg-green-200 dark:bg-green-800 border-0",
-                                        description: (<p>You have successfully registered <span className = "font-bold">{name}</span>.</p>),
-                                    });
-                                    onRegister?.();
-                                }}>
+    return (
+        <div className = {classNames(className, 'flex')}>
+            <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center w-full')}>
+                <div className = "text-center">
+                    {name}
+                    <div 
+                        className   = "cursor-pointer text-xs underline" 
+                        onClick     = {() => { doLookup(parentName); }}>
+                        view parent
+                    </div>
+                </div>
+                <div className = "w-8" />
+                <div className = "flex items-center justify-center">
+                    {isAvailable ? (
+                        <React.Fragment key = {"available-" + name}>
+                            {CommonIcons.check}<div className = "w-1" /> Available
+                        </React.Fragment>
+                    ) : (
+                        <React.Fragment key = {"taken-" + name}>
+                            {CommonIcons.cross}<div className = "w-1" /> 
+                            {isOfferingSubdomains ? (
                                 <div>
-                                    {CommonIcons.miniLoader} Registering domain..
+                                    <span>Registered</span>
+                                    <div className = "w-1" />
+                                    <AlertDialog key = {"whois-" + name} >
+                                        <AlertDialogTrigger asChild>
+                                            <span className = "cursor-pointer text-xs underline">whois</span>
+                                        </AlertDialogTrigger>
+                                        <SubdomainWhoisAlert key = {"alert-" + name} name = {name} />
+                                    </AlertDialog>
                                 </div>
-                                <div>
-                                    SUCCESS
-                                </div>
-                            </ TransactionConfirmationState>
-                        )}
-                    </>
+                            ) : (
+                                <span>Not offering subdomains</span>
+                            )}
+                        </React.Fragment>
+                    )}
+                </div>
 
-                ) : (
+                <div className = "w-8" />
+
+                <div className = "flex items-center justify-center">
+                    {isAvailable && rentPrice && (
+                        <div>
+                        <span>Ξ {ethers.utils.formatEther(rentPrice.toString())}</span>
+                        <div className = "text-xs text-center text-green-800 mt-2">${Math.round(ethers.utils.formatEther(rentPrice.toString()) * ethPrice)}</div>
+
+                        </div>
+                    )}
+                </div>
+
+                <div className = "w-8" />
+
+                {isAvailable && (
                     <>
-                        <Button 
-                            type      = "submit" 
-                            disabled  = {isRegistering || !address} 
-                            onClick   = {doRegister} 
-                            className = "disabled:cursor-not-allowed">
-                                {isRegistering && CommonIcons.miniLoader}
-                                Register
-                        </Button>
+                        {isRegistering ? (
+                            <>
+                                {/* Set when the transaction is committed and 60 seconds has passed */}
+                                {!commitmentCompleteTimestamp ? (
 
-                        {!address && (
-                            <div className = "ml-2">
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <span className = "cursor-pointer">{CommonIcons.tooltip}</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </div>
-                        )}
+                                    <>
+                                        {commitment != null && (
+                                            <TransactionConfirmationState 
+                                                key      = {"commitment-" + resultIndex}
+                                                contract = {subnameRegistrar}
+                                                txArgs   = {{
+                                                    address: subnameRegistrarAddress,
+                                                    args: [
+                                                        commitment, //secret
+                                                    ],
+                                                    overrides: {
+                                                        gasLimit: ethers.BigNumber.from("200000")
+                                                    }
+                                                }}
+                                                txFunction  = 'commit'
+                                                onConfirmed = {onCommitmentConfirmed}>
+                                                    <div>
+                                                        {CommonIcons.miniLoader} Submitting registration commitment..
+                                                    </div>
+                                                    <div>
+                                                        {commitmentReadyTimestamp && (
+                                                            <CountdownText 
+                                                                timestamp  = {commitmentReadyTimestamp}
+                                                                onComplete = {onCommitmentBecomesValid} />
+                                                        )}
+                                                    </div>
+                                            </ TransactionConfirmationState>
+                                        )}
+                                    </>
+                            ) : (
+
+                                <TransactionConfirmationState 
+                                    key      = {"registration-" + resultIndex}
+                                    contract = {subnameRegistrar}
+                                    txArgs   = {{
+                                        address: subnameRegistrarAddress,
+                                        args: [
+                                            encodedNameToRegister,
+                                            addressToRegisterTo, //owner
+                                            '0x9A676e781A523b5d0C0e43731313A708CB607508', //referer
+                                            registerForTimeInSeconds,
+                                            salt, //secret
+                                            addressToResolveTo, //resolver
+                                            [], //calldata
+                                            0 //fuses
+                                        ],
+                                        overrides: {
+                                            gasLimit: ethers.BigNumber.from("500000"),
+                                            value:    rentPrice?.toString()
+                                        }
+                                    }}
+                                    txFunction  = 'register'
+                                    onConfirmed = {() => {
+                                        console.log("Registration confirmed la");
+                                        toast({
+                                            duration: 5000,
+                                            className: "bg-green-200 dark:bg-green-800 border-0",
+                                            description: (
+                                                <p>
+                                                    You have successfully registered <span className = "font-bold">{name}</span>.
+                                                </p>
+                                            ),
+                                        });
+                                        onRegister?.();
+                                    }}>
+                                    <div>
+                                        {CommonIcons.miniLoader} Registering domain..
+                                    </div>
+                                    <div>
+                                        SUCCESS
+                                    </div>
+                                </ TransactionConfirmationState>
+                            )}
+                        </>
+
+                    ) : (
+                        <>
+                            <Button 
+                                type      = "submit" 
+                                disabled  = {isRegistering || !address} 
+                                onClick   = {doRegister}>
+                                    {isRegistering && CommonIcons.miniLoader}
+                                    Register
+                            </Button>
+
+                            {!address && (
+                                <div className = "ml-2">
+                                    <Tooltip delayDuration={0}>
+                                        <TooltipTrigger asChild>
+                                            <span className = "cursor-pointer">{CommonIcons.tooltip}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            )}
+                        </>
+                    )}  
                     </>
-                )}  
-                </>
-            )}
+                )}
+            </div>
         </div>
-    </div>
-  )
+    )
 }

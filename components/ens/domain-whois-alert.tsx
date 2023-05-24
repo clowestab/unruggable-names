@@ -11,6 +11,7 @@ import {
     useAccount, 
     useProvider, 
     useSigner, 
+    useNetwork,
     useWaitForTransaction 
 }                                         from 'wagmi'
 import { foundry }                        from 'wagmi/chains'
@@ -80,7 +81,7 @@ import {
 
 import {
     renewalLengthOptions,
-    renewalControllerOptions
+    getRenewalControllerOptions
 }                                         from '../../helpers/select-options';
 
 import { 
@@ -160,6 +161,11 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     const { toast, dismiss }              = useToast()
 
     const { address }                     = useAccount()
+    const { chain }                       = useNetwork()
+
+    const renewalControllerOptions        = getRenewalControllerOptions(chain.id);
+
+
     const { 
         data: signer, 
     }                                     = useSigner()
@@ -183,7 +189,10 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
 
 
     //Gets the number of characters for which prices have been set from our basic renewal controller
-    const  { data: lastRenewalPriceIndex, refetch: refetchLastRenewalPriceIndex }  = useRenewalControllerRead({
+    const  { 
+        data: lastRenewalPriceIndex, 
+        refetch: refetchLastRenewalPriceIndex 
+    }                                     = useRenewalControllerRead({
         functionName:  'getLastCharIndex',
         args:          [],
     });
@@ -194,7 +203,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
         console.log("lastRenewalPriceIndex changedDD", renewalController);
 
         var secondsPricingData = [];
-        var pricingData = [];
+        var pricingData        = [];
 
         console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
         console.log("lastRenewalPriceIndex do work1", renewalController);
@@ -240,9 +249,13 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
     }, [signer, lastRenewalPriceIndex]);
 
 
-    const  { data: renewalPrice }  = useRenewalControllerRead({
+    //The renewal price for a second level domain comes direct from the EthRegistrarController
+    const  { data: renewalPrice }  = useEthRegistrarControllerRead({
         functionName:  'rentPrice',
-        args:          [encodedNameToRenew, renewForTimeInSeconds],
+        args:          [name, renewForTimeInSeconds],
+        select: (data) => {
+            return data.base.add(data.premium)
+        },
     });
 
     console.log("renewalPrice", renewalPrice);
@@ -387,8 +400,8 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         <Select 
                                                             disabled        = {isRenewing}
                                                             onValueChange   = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
-                                                            <SelectTrigger className="w-[180px]">
-                                                                <SelectValue placeholder={renewalLengthOptions[0].label} />
+                                                            <SelectTrigger className = "w-[180px]">
+                                                                <SelectValue placeholder = {renewalLengthOptions[0].label} />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectGroup>
@@ -527,7 +540,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         type      = "submit" 
                                                         disabled  = {isNameWrapperApprovalPending} 
                                                         onClick   = {onClickApproveForAllNameWrapper} 
-                                                        className = "mt-2 disabled:cursor-not-allowed">
+                                                        className = "mt-2">
                                                         {isNameWrapperApprovalPending ? CommonIcons.miniLoader : "Approve Subdomain Wrapper in Name Wrapper"}
                                                     </Button>
 
@@ -601,7 +614,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                     type      = "submit" 
                                                     disabled  = {isSubdomainRegistrarApprovalPending} 
                                                     onClick   = {onClickApproveSubdomainRegistrar} 
-                                                    className = "mt-2 disabled:cursor-not-allowed">
+                                                    className = "mt-2">
                                                         {isSubdomainRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subdomain Registrar in Subdomain Wrapper"}
                                                 </Button>
                                         
@@ -804,7 +817,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                     setIsSavingRegistrationConfigurationData(true);
                                                 }} 
                                                 disabled    = {isSavingRegistrationConfigurationData}
-                                                className   = "mt-2 disabled:cursor-not-allowed">
+                                                className   = "mt-2">
                                                 {isSavingRegistrationConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
                                             </Button>
 
@@ -909,7 +922,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                                     <TableRow
                                                                         key = {"renewal-price-" + index}>
                                                                         <TableCell className="font-medium">
-                                                                            {lastRenewalPriceIndex && (""+(index) == lastRenewalPriceIndex?.toString()) ? "All others" : (index)}
+                                                                            {lastRenewalPriceIndex && (index == 0) ? "Default" : (index)}
                                                                         </TableCell>
                                                                         <TableCell>${value}</TableCell>
                                                                     </TableRow>
@@ -956,7 +969,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                                 <TableRow
                                                                     key = {"renewal-price-" + index}>
                                                                     <TableCell className="font-medium">
-                                                                        {index + 1 == (renewalPriceInput.length) ? "All others" : (index)}
+                                                                        {index == 0 ? "Default" : (index)}
                                                                     </TableCell>
                                                                     <TableCell>
                                                                         <Input 
@@ -986,7 +999,7 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         type="submit" 
                                                         onClick = {(e) => {
                                                             const newInput = [...renewalPriceInput];
-                                                            newInput.splice(newInput.length - 1, 0, 0);
+                                                            newInput.push(0);
                                                             setRenewalPriceInput(newInput)
 
                                                             console.log("NEWWW", newInput);
@@ -1046,7 +1059,12 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                                         onAlways = {() => {
                                                             setIsSavingRenewalConfigurationData(false);
                                                             setIsEditingSubdomainRenewalConfig(false);
-                                                            refetchLastRenewalPriceIndex();
+
+                                                            if (renewalPriceInput.length != renewalPricingData.length) {
+                                                                refetchLastRenewalPriceIndex();
+                                                            } else {
+                                                                refetchRenewalConfiguration();
+                                                            }
                                                         }}
                                                         onError = {() => {
                                                             toast({
@@ -1080,7 +1098,8 @@ export function DomainWhoisAlert({ name }: DomainWhoisAlertProps): React.ReactEl
                                     <p className = "text-xs text-red-800">This section details the fuses that have been burned on this domain.
                                     </p> 
                                     <p className = "text-xs text-red-800 mt-2">
-                                        For more information on fuses please see the <a className = "underline" href = "https://support.ens.domains/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.</p>
+                                        For more information on fuses please see the <a className = "underline" href = "https://support.ens.domains/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
+                                    </p>
 
                                     <FuseList name = {name} />
                                 </>

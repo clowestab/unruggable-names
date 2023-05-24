@@ -336,8 +336,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                 <Button 
                                     type      = "submit" 
                                     disabled  = {isRegistering || !address} 
-                                    onClick   = {doRegister} 
-                                    className = "disabled:cursor-not-allowed">
+                                    onClick   = {doRegister}>
                                     {isRegistering && CommonIcons.miniLoader}
                                     Register
                                 </Button>

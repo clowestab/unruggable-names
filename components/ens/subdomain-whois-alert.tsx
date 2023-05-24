@@ -4,23 +4,19 @@ import React                            from 'react'
 
 import { ethers }                       from "ethers";
 import { 
-    useAccount, 
-    useProvider, 
+    useAccount,
+    useNetwork, 
     useSigner, 
-    useWaitForTransaction 
 }                                       from 'wagmi'
-import { foundry }                      from 'wagmi/chains'
 
 import {
-        AlertDialog,
-        AlertDialogAction,
-        AlertDialogCancel,
-        AlertDialogContent,
-        AlertDialogDescription,
-        AlertDialogFooter,
-        AlertDialogHeader,
-        AlertDialogTitle,
-        AlertDialogTrigger,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 }                                       from "@/components/ui/alert-dialog"
 
 import {
@@ -28,17 +24,16 @@ import {
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-}                                         from "@/components/ui/accordion"
+}                                       from "@/components/ui/accordion"
 
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
-}                                         from "@/components/ui/table"
+}                                       from "@/components/ui/table"
 
 import { Button }                       from "@/components/ui/button"
 import {
@@ -52,40 +47,29 @@ import {
 }                                       from "@/components/ui/select"
 
 import {
-    ensRegistryAddress,
-    ethRegistrarControllerAddress,
-    nameWrapperAddress,
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress
-}                                       from '../../helpers/contract-addresses';
-
-import {
     renewalLengthOptions,
-    renewalControllerOptions
-}                                         from '../../helpers/select-options';
+    getRenewalControllerOptions
+}                                       from '../../helpers/select-options';
 
-import { FuseList }                           from '@/components/ens/fuse-list';
+import { FuseList }                     from '@/components/ens/fuse-list';
 
 import { 
     formatExpiry, 
     hexEncodeName 
-}                               from '../../helpers/Helpers.jsx';
+}      
+                                        from '../../helpers/Helpers.jsx';
 import { 
     useEnsRegistryRead, 
     useNameWrapperRead, 
     useRenewalController, 
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
-    useSubnameRegistrarRenew, 
     useSubnameWrapperRead,
-    useRenewalControllerRead 
+    useRenewalControllerRead,
+    subnameRegistrarAddress 
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
-
-
-
 
 interface SubdomainWhoisAlertProps {
     name:        string,
@@ -94,49 +78,43 @@ interface SubdomainWhoisAlertProps {
 // @ts-ignore
 export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.ReactElement | null {
 
-    const { address }       = useAccount()
+    const { address }                       = useAccount()
+    const { chain }                         = useNetwork()
+
+    const renewalControllerOptions          = getRenewalControllerOptions(chain.id);
+
 
     const { 
         data: signer, 
-    }             = useSigner()
+    }                                       = useSigner()
 
-    console.log("SIGNER", signer);
-
-    const subnameRegistrar = useSubnameRegistrar({
-        address:          subnameRegistrarAddress,
+    //Basic RenewalController Instance
+    const renewalController                 = useRenewalController({
         signerOrProvider: signer
     });
 
-    const renewalController = useRenewalController({
-        address:          renewalControllerAddress,
-        signerOrProvider: signer
-    });
-
+    //Boolean indicating if we are in the process of renewing the subdomain
     const [isRenewing, setIsRenewing]       = React.useState(false);
 
     const namehash: `0x${string}`           = ethers.utils.namehash(name) as `0x${string}`;
     const tokenId                           = ethers.BigNumber.from(namehash);
     const encodedNameToRenew: `0x${string}` = hexEncodeName(name) as `0x${string}`;
-    const [renewForTimeInSeconds, setRenewForTimeInSeconds]           = React.useState(ethers.BigNumber.from("31536000"));
+    //Holds the selected time in seconds for a renewal
+    const [
+        renewForTimeInSeconds, 
+        setRenewForTimeInSeconds
+    ]                                     = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
     const refererAddress                    = "0x0000000000000000000000000000000000005627";
 
-    const  { data: ownerAddress }  = useSubnameWrapperRead({
-        address:       subnameWrapperAddress,
+    //Owner of the subdoomain in the SubnameWrapper
+    const  { data: ownerAddress }           = useSubnameWrapperRead({
         functionName:  'ownerOf',
         args:          [tokenId],
     });
 
-    const  { data: rentPrice }  = useSubnameRegistrarRead({
-        address:       subnameRegistrarAddress,
-        functionName:  'rentPrice',
-        args:          [encodedNameToRenew, renewForTimeInSeconds],
-    });
-
-    console.log("register price for " + name, rentPrice);
-
-
-    const  { data: renewalPrice }  = useRenewalControllerRead({
-        address:       renewalControllerAddress,
+    //The renewal price as pulled from the basic renewal controller
+    //In reality this should be pulled from the specific renewal controller set for the subdomain
+    const  { data: renewalPrice }           = useRenewalControllerRead({
         functionName:  'rentPrice',
         args:          [encodedNameToRenew, renewForTimeInSeconds],
     });
@@ -144,14 +122,15 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
     console.log("renewal price for " + name, renewalPrice);
 
 
-    const  { data: nameData, refetch: refetchData  }  = useSubnameWrapperRead({
-        address:       subnameWrapperAddress,
+    const  { 
+        data: nameData, 
+        refetch: refetchData  
+    }                                       = useSubnameWrapperRead({
         functionName:  'getData',
         args:          [tokenId],
     });
 
-    const  { data: canRegistrarModifyName }  = useSubnameWrapperRead({
-        address:       subnameWrapperAddress,
+    const  { data: canRegistrarModifyName } = useSubnameWrapperRead({
         functionName:  'canModifyName',
         args:          [namehash, subnameRegistrarAddress],
     });
@@ -161,14 +140,14 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
 
     console.log("name data", nameData);
 
-    const  { data: nameWrapperOwnerAddress }  = useNameWrapperRead({
-        address:       nameWrapperAddress,
+    const  { 
+        data: nameWrapperOwnerAddress 
+    }                                       = useNameWrapperRead({
         functionName:  'ownerOf',
         args:          [tokenId],
     });
 
-    const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-        address:       ensRegistryAddress,
+    const  { data: registryOwnerAddress }   = useEnsRegistryRead({
         functionName:  'owner',
         args:          [namehash],
     });
@@ -196,11 +175,13 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
     const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
     const expiryString  = expiryDate.toLocaleString();
 
+    const currentRenewalControllerData = renewalControllerOptions.find((option) => option.value == renewalControllerToUse);
+
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{name}</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogDescription asChild>
 
                     <Accordion type="single" collapsible className="w-full" defaultValue="item-whois">
                         <AccordionItem value="item-whois">
@@ -228,11 +209,11 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                                     <>
                                                          {renewalControllerToUse != null ? (
                                                             <>
-                                                                <div className = "flex mt-2">
+                                                                <div className = "flex mt-8">
 
                                                                     <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
                                                                         <SelectTrigger className="w-[180px]">
-                                                                            <SelectValue placeholder="Select a duration" />
+                                                                            <SelectValue placeholder={renewalLengthOptions[0].label} />
                                                                         </SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectGroup>
@@ -263,12 +244,12 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
 
                                                                 {renewalPrice && (
                                                                     <p className = "text-xs mt-2">
-                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
+                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${Math.round((ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2))}).
                                                                     </p>
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This domain is using the <span className = "font-bold">{(renewalControllerOptions.find((option) => option.value == renewalControllerToUse)).label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
+                                                                    This domain is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
@@ -331,7 +312,15 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                         <AccordionItem value="item-fuses">
                             <AccordionTrigger>Fuses</AccordionTrigger>
                             <AccordionContent>
-                                <FuseList name = {name} />
+                                <>
+                                    <p className = "text-xs text-red-800">This section details the fuses that have been burned on this domain.
+                                    </p> 
+                                    <p className = "text-xs text-red-800 mt-2">
+                                        For more information on fuses please see the <a className = "underline" href = "https://support.ens.domains/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
+                                    </p>
+                                
+                                    <FuseList name = {name} />
+                                </>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
