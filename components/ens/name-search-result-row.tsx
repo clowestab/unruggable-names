@@ -59,7 +59,7 @@ import {
     subnameRegistrarAddress,
     subnameWrapperAddress 
 }                                       from '../../lib/blockchain'
-import { DomainWhoisAlert }             from '../ens/domain-whois-alert'
+import { NameWhoisAlert }               from '../ens/name-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
@@ -81,7 +81,7 @@ interface SearchResultRowProps {
 }
 
 
-export function DomainSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
+export function NameSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
 
     const provider         = useProvider();
     const { data: signer } = useSigner()
@@ -100,10 +100,10 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(null);
     const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
-    const domainParts               = name.split(".");
-    const label                     = domainParts[0];
+    const nameParts               = name.split(".");
+    const label                     = nameParts[0];
     const encodedNameToRegister     = hexEncodeName(name);
-    const domainNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
+    const nameNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
 
     const  { data: isAvailable }    = useEthRegistrarControllerRead({
          functionName: 'available',
@@ -113,7 +113,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
     console.log("isAvailable data", isAvailable);
 
     const  { data: pricingData }  = useSubnameRegistrarPricingData({
-         args:    [domainNamehash],
+         args:    [nameNamehash],
      });
 
     console.log("Pricing data", pricingData);
@@ -211,23 +211,23 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
 
     return (
         <div className = {classes}>
-            <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": !isAvailable}, "p-4", 'flex justify-center items-center w-full')}>
+            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex justify-center items-center w-full')}>
                 <>{name}</>
                 <div className = "w-8" />
                 <div className = "flex items-center justify-center">
                     {isAvailable ? (
-                        <><HiCheckCircle /><div className = "w-1" /> Available</>
+                        <>{CommonIcons.check} Available</>
                     ) : (
                         <>
-                            <HiXCircle /><div className = "w-1" />
-                            <div>
+                            {CommonIcons.cross} 
+                            <div className = "ml-2">
                                 <span>Registered</span>
                                 <div className = "w-1" />
                                 <AlertDialog key = {"whois-" + name} >
                                     <AlertDialogTrigger asChild>
-                                        <span className = "cursor-pointer text-xs underline">whois</span>
+                                        <span className = "cursor-pointer text-xs underline">more info</span>
                                     </AlertDialogTrigger>
-                                    <DomainWhoisAlert name = {name} />
+                                    <NameWhoisAlert name = {name} />
                                 </AlertDialog>
                             </div>
                         </>
@@ -284,7 +284,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                 ) : (
 
                                     <TransactionConfirmationState 
-                                        key         = {"domain-registration-" + resultIndex}
+                                        key         = {"name-registration-" + resultIndex}
                                         contract    = {ethRegistrarController}
                                         txArgs      = {{
                                             address: ethRegistrarControllerAddress,
@@ -322,7 +322,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                             });
                                         }}>
                                         <div>
-                                            {CommonIcons.miniLoader} Registering domain..
+                                            {CommonIcons.miniLoader} Registering name..
                                         </div>
                                         <div>
                                             SUCCESS
@@ -348,7 +348,7 @@ export function DomainSearchResultRow({ className, name, resultIndex, onRegister
                                                 <span className = "cursor-pointer">{CommonIcons.tooltip}</span>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <p>Connect a wallet to register a domain</p>
+                                                <p>Connect a wallet to register a name</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>

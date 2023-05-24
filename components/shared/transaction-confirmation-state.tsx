@@ -44,11 +44,11 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
         if (!hasStarted && signer !== undefined) {
             console.log("Lets write..");
             
-            contract.callStatic[txFunction](...txArgs.args, txArgs.overrides)
-                .then(() => {
+            contract/*.callStatic*/[txFunction](...txArgs.args, txArgs.overrides)
+                /*.then(() => {
 
                     return contract[txFunction](...txArgs.args, txArgs.overrides);
-                })
+                })*/
                 .then((methodResponse: any) => {
 
                     console.log("methodResponse", methodResponse);
@@ -65,7 +65,7 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
                         onConfirmed?.(contract);
                     }
 
-                    //return lookupDomain();
+                    //return lookupName();
                 })
                 .catch((error: any) => {
 

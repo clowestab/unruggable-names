@@ -19,6 +19,8 @@ import {
     AlertDialogTitle,
 }                                       from "@/components/ui/alert-dialog"
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import {
     Accordion,
     AccordionContent,
@@ -71,12 +73,12 @@ import {
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
-interface SubdomainWhoisAlertProps {
+interface SubnameWhoisAlertProps {
     name:        string,
 }
 
 // @ts-ignore
-export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.ReactElement | null {
+export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.ReactElement | null {
 
     const { address }                       = useAccount()
     const { chain }                         = useNetwork()
@@ -93,7 +95,7 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
         signerOrProvider: signer
     });
 
-    //Boolean indicating if we are in the process of renewing the subdomain
+    //Boolean indicating if we are in the process of renewing the subname
     const [isRenewing, setIsRenewing]       = React.useState(false);
 
     const namehash: `0x${string}`           = ethers.utils.namehash(name) as `0x${string}`;
@@ -113,7 +115,7 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
     });
 
     //The renewal price as pulled from the basic renewal controller
-    //In reality this should be pulled from the specific renewal controller set for the subdomain
+    //In reality this should be pulled from the specific renewal controller set for the subname
     const  { data: renewalPrice }           = useRenewalControllerRead({
         functionName:  'rentPrice',
         args:          [encodedNameToRenew, renewForTimeInSeconds],
@@ -183,10 +185,17 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                 <AlertDialogTitle>{name}</AlertDialogTitle>
                 <AlertDialogDescription asChild>
 
-                    <Accordion type="single" collapsible className="w-full" defaultValue="item-whois">
-                        <AccordionItem value="item-whois">
-                            <AccordionTrigger>Whois</AccordionTrigger>
-                            <AccordionContent>
+
+                    <Tabs defaultValue="item-profile">
+                        <TabsList className="flex w-fit mx-auto">
+                            <TabsTrigger value="item-profile">Profile</TabsTrigger>
+                            <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="item-profile" asChild>
+
+                            <>
+                                <h1 className = "my-4 text-lg">Profile</h1>
 
                                 <Table>
                                     <TableBody>
@@ -249,11 +258,11 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This domain is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
+                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
-                                                            <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This subdomain cannot be renewed because it does not have a renewal controller set.</div>
+                                                            <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This subname cannot be renewed because it does not have a renewal controller set.</div>
                                                         )}
                                                     </>
 
@@ -282,7 +291,7 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                                             refetchData();
                                                         }}>
                                                         <div>
-                                                                {CommonIcons.miniLoader} Renewing domain..
+                                                                {CommonIcons.miniLoader} Renewing name..
                                                         </div>
                                                         <div>
                                                                 SUCCESS
@@ -306,24 +315,24 @@ export function SubdomainWhoisAlert({ name }: SubdomainWhoisAlertProps): React.R
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>
-                                </Table>          
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-fuses">
-                            <AccordionTrigger>Fuses</AccordionTrigger>
-                            <AccordionContent>
-                                <>
-                                    <p className = "text-xs text-red-800">This section details the fuses that have been burned on this domain.
-                                    </p> 
-                                    <p className = "text-xs text-red-800 mt-2">
-                                        For more information on fuses please see the <a className = "underline" href = "https://support.ens.domains/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
-                                    </p>
-                                
-                                    <FuseList name = {name} />
-                                </>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
+                                </Table> 
+                            </>         
+                        </TabsContent>
+
+                        <TabsContent value="item-fuses" asChild>
+                            <>
+                                <h1 className = "my-4 text-lg">Fuses</h1>
+
+                                <p className = "text-xs text-red-800">This section details the fuses that have been burned on this name.
+                                </p> 
+                                <p className = "text-xs text-red-800 mt-2">
+                                    For more information on fuses please see the <a className = "underline" href = "https://support.ens.names/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
+                                </p>
+                            
+                                <FuseList name = {name} />
+                            </>
+                        </TabsContent>
+                    </Tabs>
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

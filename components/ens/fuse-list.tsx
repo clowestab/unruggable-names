@@ -68,23 +68,23 @@ interface FuseListProps {
 export function FuseList({ name }: FuseListProps) {
 
 
-    const domainParts                     = name.split(".");
-    const label: string                           = domainParts.shift()!;
+    const nameParts                     = name.split(".");
+    const label: string                           = nameParts.shift()!;
     const labelhash: `0x${string}`        = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
     const namehash                        = ethers.utils.namehash(name)
     const namehashHex: `0x${string}`      = namehash as `0x${string}`;
 
-    const domainNodeString                                      = domainParts.join(".");
-    const isDotEth                                              = domainNodeString == "eth";
-    const is2ld                                                 = isDotEth && domainParts.length == 1;
-    const domainNodeNamehash: `0x${string}`                     = ethers.utils.namehash(domainNodeString)  as `0x${string}`;
+    const nameNodeString                                      = nameParts.join(".");
+    const isDotEth                                              = nameNodeString == "eth";
+    const is2ld                                                 = isDotEth && nameParts.length == 1;
+    const nameNodeNamehash: `0x${string}`                     = ethers.utils.namehash(nameNodeString)  as `0x${string}`;
     
 
     console.log("namehash", typeof namehash);
     console.log("namehashHex", namehashHex);
 
     const tokenId                         = ethers.BigNumber.from(namehash);
-    const domainNodeTokenId                         = ethers.BigNumber.from(domainNodeNamehash);
+    const nameNodeTokenId                         = ethers.BigNumber.from(nameNodeNamehash);
 
 
     const { 
@@ -116,7 +116,7 @@ export function FuseList({ name }: FuseListProps) {
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
          functionName: 'getData',
-         args:         [domainNodeTokenId],
+         args:         [nameNodeTokenId],
      });
     const {owner: nameWrapperParentOwnerAddress, fuses: parentWrapperFuses} = parentNameData ?? {};
 
@@ -124,7 +124,7 @@ export function FuseList({ name }: FuseListProps) {
 
     const  { data: isWrapped, refetch: refetchIsWrapped }  = useNameWrapperRead({
          functionName: 'isWrapped',
-         args:         [domainNodeNamehash, labelhash],
+         args:         [nameNodeNamehash, labelhash],
      });
 
 
@@ -184,7 +184,7 @@ export function FuseList({ name }: FuseListProps) {
     }
 
     /**
-     * Burns a fuse on a .eth or a subdomain
+     * Burns a fuse on a .eth or a subname
      */ 
     const burnFuse = async (fuseKey: string) => {
 
@@ -247,14 +247,14 @@ export function FuseList({ name }: FuseListProps) {
                 return;
             }
 
-            console.log("Burning child fuse on subdomain", fuseKey);
-            console.log("domainNodeNamehash", domainNodeNamehash);
+            console.log("Burning child fuse on subname", fuseKey);
+            console.log("nameNodeNamehash", nameNodeNamehash);
             console.log("labelhash", labelhash);
 
             await nameWrapper
                 .callStatic
                 .setChildFuses(
-                    domainNodeNamehash, 
+                    nameNodeNamehash, 
                     labelhash, 
                     FUSES[fuseKey], 
                     0, 
@@ -264,7 +264,7 @@ export function FuseList({ name }: FuseListProps) {
 
                     return nameWrapper  
                         .setChildFuses(
-                            domainNodeNamehash, 
+                            nameNodeNamehash, 
                             labelhash, 
                             FUSES[fuseKey], 
                             0, 
@@ -309,7 +309,7 @@ export function FuseList({ name }: FuseListProps) {
             const calculatedExpiry = wrapperExpiry - (isDotEth ? GRACE_PERIOD : 0);
 
             if (calculatedExpiry < currentTimestamp) {
-                addError("The domain you entered has expired (" + formatExpiry(calculatedExpiry) + " ago).");
+                addError("The name you entered has expired (" + formatExpiry(calculatedExpiry) + " ago).");
                 setFuseBeingBurned(null);
                 return;
             }
@@ -325,7 +325,7 @@ export function FuseList({ name }: FuseListProps) {
 
             if ((fuseKey != 'CANNOT_UNWRAP') && !((wrapperFuses & lockedFuses) == lockedFuses)) {
 
-                addError("The domain is not locked (PARENT_CANNOT_CONTROL and CANNOT_UNWRAP have not both been burned).");
+                addError("The name is not locked (PARENT_CANNOT_CONTROL and CANNOT_UNWRAP have not both been burned).");
                 setFuseBeingBurned(null);
                 return;
             }
@@ -337,7 +337,7 @@ export function FuseList({ name }: FuseListProps) {
 
             console.log("is2ld", is2ld);
             console.log("isDotEth", isDotEth);
-            console.log("domainParts", domainParts.length);
+            console.log("nameParts", nameParts.length);
             console.log("contractToUse", contractToUse);
 
             console.log("subnameWrapper",subnameWrapper);

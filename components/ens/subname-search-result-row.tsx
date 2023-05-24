@@ -40,7 +40,7 @@ import {
     useRenewalControllerRead,
     subnameRegistrarAddress 
 }                                           from '../../lib/blockchain'
-import { SubdomainWhoisAlert }              from '../ens/subdomain-whois-alert'
+import { SubnameWhoisAlert }              from '../ens/subname-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
 import { TransactionConfirmationState }     from '../shared/transaction-confirmation-state'
 
@@ -55,7 +55,7 @@ interface SearchResultRowProps {
 }
 
 
-export function SubdomainSearchResultRow({ className, name, resultIndex, onRegister, doLookup }: SearchResultRowProps) {
+export function SubnameSearchResultRow({ className, name, resultIndex, onRegister, doLookup }: SearchResultRowProps) {
 
     const provider         = useProvider();
     const { data: signer } = useSigner()
@@ -67,7 +67,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
         signerOrProvider: signer
     });
 
-    //Boolean indiciating if the subdomain is being registered
+    //Boolean indiciating if the subname is being registered
     const [isRegistering, setIsRegistering]                             = React.useState(false);
 
     //The unix timestamp at which the commitment becomes valid on chain
@@ -76,13 +76,13 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
     //Set once the commitment validity countdown has completed
     const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
-    const domainParts                          = name.split(".");
-    domainParts.shift();
-    const parentName                           = domainParts.join(".");
+    const nameParts                          = name.split(".");
+    nameParts.shift();
+    const parentName                           = nameParts.join(".");
     const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName)  as `0x${string}`;
     const encodedNameToRegister: `0x${string}` = hexEncodeName(name) as `0x${string}`;
 
-    //Discern if the subdomain is available in the SubnameRegistrar
+    //Discern if the subname is available in the SubnameRegistrar
     const  { data: isAvailable }    = useSubnameRegistrarRead({
         functionName: 'available',
         args:         [encodedNameToRegister],
@@ -95,7 +95,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
         functionName: 'pricingData',
         args:         [parentNamehash],
     });
-    const isOfferingSubdomains = pricingData && pricingData.offerSubnames;
+    const isOfferingSubnames = pricingData && pricingData.offerSubnames;
 
     console.log("Pricing data", pricingData);
 
@@ -179,7 +179,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
 
     return (
         <div className = {classNames(className, 'flex')}>
-            <div className = {classNames({ "bg-green-100 dark:bg-green-800": isAvailable, "bg-red-100 dark:bg-red-800": isOfferingSubdomains && !isAvailable, "bg-orange-100": !isOfferingSubdomains }, "p-4", 'flex justify-center items-center w-full')}>
+            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex justify-center items-center w-full')}>
                 <div className = "text-center">
                     {name}
                     <div 
@@ -197,19 +197,19 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
                     ) : (
                         <React.Fragment key = {"taken-" + name}>
                             {CommonIcons.cross}<div className = "w-1" /> 
-                            {isOfferingSubdomains ? (
+                            {isOfferingSubnames ? (
                                 <div>
                                     <span>Registered</span>
                                     <div className = "w-1" />
                                     <AlertDialog key = {"whois-" + name} >
                                         <AlertDialogTrigger asChild>
-                                            <span className = "cursor-pointer text-xs underline">whois</span>
+                                            <span className = "cursor-pointer text-xs underline">more info</span>
                                         </AlertDialogTrigger>
-                                        <SubdomainWhoisAlert key = {"alert-" + name} name = {name} />
+                                        <SubnameWhoisAlert key = {"alert-" + name} name = {name} />
                                     </AlertDialog>
                                 </div>
                             ) : (
-                                <span>Not offering subdomains</span>
+                                <span>Not offering subnames</span>
                             )}
                         </React.Fragment>
                     )}
@@ -302,7 +302,7 @@ export function SubdomainSearchResultRow({ className, name, resultIndex, onRegis
                                         onRegister?.();
                                     }}>
                                     <div>
-                                        {CommonIcons.miniLoader} Registering domain..
+                                        {CommonIcons.miniLoader} Registering name..
                                     </div>
                                     <div>
                                         SUCCESS

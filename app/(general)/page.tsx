@@ -11,9 +11,6 @@ import { useNetwork }                   from 'wagmi'
 
 import { 
     WalletAddress, 
-    WalletBalance, 
-    WalletNonce, 
-    WalletEnsName 
 }                                       from '@turbo-eth/core-wagmi'
 import { motion }                       from 'framer-motion'
 
@@ -43,8 +40,8 @@ import {
     hexEncodeName 
 }                                       from '../../helpers/Helpers.jsx';
 
-import { SubdomainSearchResultRow }     from '@/components/ens/subdomain-search-result-row'
-import { DomainSearchResultRow }        from '@/components/ens/domain-search-result-row'
+import { SubnameSearchResultRow }     from '@/components/ens/subname-search-result-row'
+import { NameSearchResultRow }        from '@/components/ens/name-search-result-row'
 
 import { Toaster }                        from "@/components/ui/toaster"
 
@@ -84,28 +81,32 @@ export default function RegistrationForm() {
         console.log("search man", manualSearchTerm);
         console.log("search", searchTerm);
 
-        const searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
+        var searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
 
         setSearchResults([]);
 
         //Show error if no input
         if (searchTermToUse == "") { setSearchError("Please enter an input"); return; }
 
-        const domainParts       = searchTermToUse.split(".");
-        const domainExtension   = domainParts[domainParts.length - 1];
-        const isSubdomain       = domainParts.length == 3 && domainExtension == 'eth';
-        const isEth2ld          = domainParts.length == 2 && domainExtension == 'eth';
+        const nameParts       = searchTermToUse.split(".");
+        if (nameParts.length == 1) {
+            nameParts.push("eth");
+            searchTermToUse = searchTermToUse + ".eth";
+        }
+        const nameExtension   = nameParts[nameParts.length - 1];
+        const isSubname       = nameParts.length == 3 && nameExtension == 'eth';
+        const isEth2ld          = nameParts.length == 2 && nameExtension == 'eth';
 
-        //Show error if input not a valid domain or subdomain
-        if (!isSubdomain && !isEth2ld) { setSearchError("Please enter a valid domain/subdomain"); return; }
+        //Show error if input not a valid name or subname
+        if (!isSubname && !isEth2ld) { setSearchError("Please enter a valid name/subname"); return; }
 
         setIsSearching(true);
 
         const newResults = [];
-        if (isSubdomain) { 
+        if (isSubname) { 
             newResults.push({
                 name:  searchTermToUse, 
-                type:  'subdomain', 
+                type:  'subname', 
                 nonce: Math.floor(Math.random() * 100000)
             }); 
         }
@@ -113,7 +114,7 @@ export default function RegistrationForm() {
         if (isEth2ld) { 
             newResults.push({
                 name:  searchTermToUse, 
-                type:  'domain', 
+                type:  'name', 
                 nonce: Math.floor(Math.random() * 100000)
             }); 
         }
@@ -130,7 +131,7 @@ export default function RegistrationForm() {
                     {CommonIcons.alert}
                     <AlertTitle>Invalid network</AlertTitle>
                     <AlertDescription>
-                        <p>Unruggable subdomain rentals currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                        <p>Unruggable subname rentals currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
                         <Button 
                             type      = "submit" 
                             className = "mt-2"
@@ -145,19 +146,9 @@ export default function RegistrationForm() {
                 <div className="text-center">
                     <h3 className="font-primary text-2xl font-bold lg:text-4xl">
                         <span className="text-gradient-secondary">
-                            Lets find you the perfect domain <WalletEnsName />
+                            Let's find you the perfect name
                         </span>
                     </h3>
-
-                    <BranchIsWalletConnected>
-                        <span className="font-light">
-                            <WalletAddress className="mt-4 block text-xl font-light" />
-                        </span>
-                        <div>
-                            <h3 className="text-lg font-normal mt-4">Connect your wallet to register a domain.</h3>
-                            <WalletConnect className = "table mx-auto mt-2" />
-                        </div>
-                    </BranchIsWalletConnected>
                 </div>
             </div>
 
@@ -173,7 +164,7 @@ export default function RegistrationForm() {
                     <div className = "flex flex-col">
                         <Input 
                             type        = "text" 
-                            placeholder = "Enter a domain.." 
+                            placeholder = "Enter a name.." 
                             onChange    = {(e) => {
                                 setSearchError(null);
                                 setSearchTerm(e.target.value)
@@ -202,32 +193,32 @@ export default function RegistrationForm() {
 
                     {searchResults.map((result, resultIndex) => {
 
-                        if (result.type == "subdomain") {
+                        if (result.type == "subname") {
                             return (
                                 <div key = {"result-" + resultIndex}>
-                                    <SubdomainSearchResultRow 
+                                    <SubnameSearchResultRow 
                                         key             = {"result-row-" + result.name + "-" + result.nonce} {...result} 
                                         resultIndex     = {resultIndex} 
                                         onRegister      = {() => {    
                                             setSearchResults([]);
                                             doSearch();
                                         }}
-                                        doLookup = {(domain: any) => {
+                                        doLookup = {(name: any) => {
 
                                             setSearchError(null);
-                                            setSearchTerm(domain);
-                                            doSearch(domain);
+                                            setSearchTerm(name);
+                                            doSearch(name);
                                         }} />
 
                                 <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
                                 </div>
                                     
                             );
-                        } else if (result.type == "domain") {
+                        } else if (result.type == "name") {
                             return (
                                 <div key = {"result-" + resultIndex}>
-                                    <DomainSearchResultRow 
-                                        key         = {"domain-result-row-" + result.name + "-" + result.nonce} {...result} 
+                                    <NameSearchResultRow 
+                                        key         = {"name-result-row-" + result.name + "-" + result.nonce} {...result} 
                                         resultIndex = {resultIndex} 
                                         onRegister  = {() => {     
                                             setSearchResults([]);
