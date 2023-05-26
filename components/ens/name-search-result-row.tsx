@@ -226,7 +226,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                 <div className = "w-8" />
                 <div className = "flex items-center justify-center">
                     {isAvailable ? (
-                        <>{CommonIcons.check} Available</>
+                        <>{CommonIcons.check} <span className = "ml-1">Available</span></>
                     ) : (
                         <>
                             {CommonIcons.cross} 

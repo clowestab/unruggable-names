@@ -400,6 +400,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     console.log("nameData", nameData);
 
+
+    console.log("REFVAL", minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0);
+
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -745,6 +748,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 <TableCell className="font-medium">Renewal Controller</TableCell>
                                                                 <TableCell>{registerPricingData?.renewalController}</TableCell>
                                                             </TableRow>
+                                                            {/*
                                                             <TableRow>
                                                                 <TableCell className="font-medium">Min Duration</TableCell>
                                                                 <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
@@ -757,6 +761,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 <TableCell className="font-medium">Max Characters</TableCell>
                                                                 <TableCell>{registerPricingData?.maxChars}</TableCell>
                                                             </TableRow>
+                                                            */}
                                                         </TableBody>
                                                     </Table>  
                                                 ) : (
@@ -825,6 +830,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     </SelectContent>
                                                 </Select>
 
+                                                {/*
                                                 <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
                                                 <Input 
                                                     type         = "text" 
@@ -851,6 +857,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     defaultValue = {registerPricingData?.maxChars} 
                                                     className    = "my-2"
                                                     disabled     = {isSavingRegistrationConfigurationData} />
+                                                */}
 
                                                 <Button 
                                                     type        = "submit" 
@@ -869,12 +876,11 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                         txArgs = {{
                                                             args: [
                                                                 namehashHex,
-                                                                true,
-                                                                //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
+                                                                offerSubnamesRef.current ? offerSubnamesRef.current!.checked : false,
                                                                 renewalControllerInput ?? registerPricingData?.renewalController,
-                                                                minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current?.value : null,
-                                                                minCharactersInputRef ? minCharactersInputRef.current?.value : null,
-                                                                maxCharactersInputRef ? maxCharactersInputRef.current?.value : null,
+                                                                minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
+                                                                minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
+                                                                maxCharactersInputRef && maxCharactersInputRef.current?.value ? maxCharactersInputRef.current?.value : 0,
                                                             ],
                                                             overrides: {
                                                                 gasLimit: ethers.BigNumber.from("5000000"),
@@ -896,6 +902,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                             });
                                                         }}
                                                         onAlways = {() => {
+                                                            setIsSavingRegistrationConfigurationData(false);
                                                             setIsEditingSubnameRegistrationConfig(false);
                                                             refetchRegisterPricingData();
                                                         }}
