@@ -73,15 +73,6 @@ import {
 }                                         from "@/components/ui/tooltip"
 
 import {
-    ensRegistryAddress,
-    ethRegistrarControllerAddress,
-    nameWrapperAddress,
-    renewalControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress
-}                                         from '../../helpers/contract-addresses';
-
-import {
     renewalLengthOptions,
     getRenewalControllerOptions
 }                                         from '../../helpers/select-options';
@@ -101,7 +92,10 @@ import {
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameWrapper, 
-    useSubnameWrapperRead 
+    useSubnameWrapperRead,
+    nameWrapperAddress,
+    subnameRegistrarAddress,
+    subnameWrapperAddress 
 }                                         from '../../lib/blockchain'
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
@@ -319,19 +313,29 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //if (nameData === undefined) {
 
+
         //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
         const  { data: isApprovedForAllSubnameWrapper, refetch: refetchIsApprovedForAllSubnameWrapper  }  = useSubnameWrapperRead({
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, subnameRegistrarAddress],
+            args:         [nameData?.owner, subnameRegistrarAddress[chain.id]],
         });
+
+        console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
+        console.log("isApprovedForAllSubnameWrapper owner", nameData?.owner);
+        console.log("isApprovedForAllSubnameWrapper address", subnameRegistrarAddress[chain.id]);
 
         //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
         const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, subnameWrapperAddress],
+            args:         [nameData?.owner, subnameWrapperAddress[chain.id]],
          });
+
+        console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
+        console.log("isApprovedForAllNameWrapper owner", nameData?.owner);
+        console.log("isApprovedForAllNameWrapper address", subnameWrapperAddress[chain.id]);
+
 
         console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
         console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
@@ -513,7 +517,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                             <TableCell className="font-medium">Registry owner</TableCell>
                                             <TableCell>
                                                 {registryOwnerAddress}
-                                                {registryOwnerAddress == nameWrapperAddress && (
+                                                {registryOwnerAddress == nameWrapperAddress[chain.id] && (
                                                     <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper.</div>
                                                 )}
                                             </TableCell>
@@ -561,7 +565,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                         contract    = {nameWrapper}
                                                         txArgs      = {{
                                                             args: [
-                                                                subnameWrapperAddress
+                                                                subnameWrapperAddress[chain.id]
                                                             ],
                                                             overrides: {
                                                                 gasLimit: ethers.BigNumber.from("5000000"),
@@ -635,8 +639,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     key     = {"offer-subnames-" + name}
                                                     contract  = {subnameWrapper}
                                                     txArgs    = {{
+                                                        address: subnameWrapperAddress[chain.id],
                                                         args: [
-                                                            subnameRegistrarAddress
+                                                            subnameRegistrarAddress[chain.id]
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("5000000"),
@@ -776,7 +781,10 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
                                                 <Select 
                                                     value           = {(currentRenewalController?.value)}
-                                                    onValueChange   = {(value) => setRenewalControllerInput(value)}
+                                                    onValueChange   = {(value) => {
+                                                        console.log(value);
+                                                        setRenewalControllerInput(value)
+                                                    }}
                                                     disabled        = {isSavingRegistrationConfigurationData}>
                                                     <SelectTrigger className = "my-2">
                                                         <SelectValue placeholder="Select a renewal controller" />
@@ -843,7 +851,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 namehashHex,
                                                                 true,
                                                                 //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : null,
-                                                                renewalControllerInput,
+                                                                renewalControllerInput ?? registerPricingData?.renewalController,
                                                                 minRegistrationDurationInputRef ? minRegistrationDurationInputRef.current?.value : null,
                                                                 minCharactersInputRef ? minCharactersInputRef.current?.value : null,
                                                                 maxCharactersInputRef ? maxCharactersInputRef.current?.value : null,

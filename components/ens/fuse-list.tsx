@@ -33,6 +33,7 @@ import {
     useAccount,
     useProvider, 
     useSigner, 
+    useNetwork,
     useWaitForTransaction 
 }                                       from 'wagmi'
 
@@ -45,14 +46,11 @@ import {
     TooltipTrigger,
 }                                       from "@/components/ui/tooltip"
 
-import {
-    nameWrapperAddress,
-    subnameWrapperAddress
-}                                       from '../../helpers/contract-addresses';
 import { 
     useNameWrapper,
     useSubnameWrapper,
-    useNameWrapperRead
+    useNameWrapperRead,
+    nameWrapperAddress
 }                                       from '../../lib/blockchain'
 
 import CommonIcons                      from '../shared/common-icons';
@@ -91,6 +89,10 @@ export function FuseList({ name }: FuseListProps) {
         data: signer, 
     }                                     = useSigner()
 
+    const { 
+        chain, 
+    }                                     = useNetwork()
+
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
         signerOrProvider: signer
@@ -108,7 +110,7 @@ export function FuseList({ name }: FuseListProps) {
          args:         [tokenId],
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
-    const isAvailable = String(nameWrapperAddress) == String("0x0000000000000000000000000000000000000000");
+    const isAvailable = String(nameWrapperAddress[chain.id]) == String("0x0000000000000000000000000000000000000000");
 
     console.log("name data", nameData);
 

@@ -23,6 +23,7 @@ interface TransactionConfirmationStateProps {
 export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onConfirmed, onAlways, onError }: TransactionConfirmationStateProps): React.ReactElement | null {
 
     console.log("txFunction", txFunction);
+    console.log("txContract", contract);
     console.log("txArgs", txArgs);
 
     const { address }                                       = useAccount()

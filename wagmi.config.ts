@@ -29,7 +29,7 @@ export default defineConfig({
           31337: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
         },
         SubnameRegistrar: {
-          5:     '0x0AF5319bEBffe6Af35b37559EfBcb625c3F2ffDA',
+          5:     '0xbbf178ef94694d18dcabd5ebc2e1d4152f96b110',
           31337: '0x9A676e781A523b5d0C0e43731313A708CB607508',
         },
         SubnameWrapper: {

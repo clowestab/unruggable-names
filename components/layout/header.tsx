@@ -58,15 +58,18 @@ export function Header(props: Props) {
             <NavigationMenuGeneral />
           </div>*/}
 
-          {/*<div className="flex items-center gap-4">
-            <BranchButtonLoginOrAccount classNameButtonLogout="menu-item" classNameButtonLogin="menu-item colormode" />
+          <div className = "flex-grow"></div>
+          
+          {<div className="flex items-center gap-4">
+            {/*<BranchButtonLoginOrAccount classNameButtonLogout="menu-item" classNameButtonLogin="menu-item colormode" />
             <LinkComponent className="flex items-center" href="/dashboard">
               <button className="btn btn-pill bg-gradient-button hover:scale-105 hover:shadow-lg">
                 <span className="px-2">Dashboard</span>
               </button>
-            </LinkComponent>
+            </LinkComponent>*/}
+
             <ThemeToggle />
-          </div>*/}
+          </div>}
         </>
       </ResponsiveMobileAndDesktop>
     </header>

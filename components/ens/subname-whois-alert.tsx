@@ -134,7 +134,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
 
     const  { data: canRegistrarModifyName } = useSubnameWrapperRead({
         functionName:  'canModifyName',
-        args:          [namehash, subnameRegistrarAddress],
+        args:          [namehash, subnameRegistrarAddress[chain.id]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);

@@ -22,6 +22,7 @@ import {
     useAccount,
     useProvider, 
     useSigner, 
+    useNetwork,
     useWaitForTransaction 
 }                                       from 'wagmi'
 
@@ -86,6 +87,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
     const provider         = useProvider();
     const { data: signer } = useSigner()
     const { address }      = useAccount()
+    const { chain }        = useNetwork()
     const { toast }        = useToast()
 
     console.log("SIGNER", signer);
@@ -257,7 +259,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                                 key         = {"commitment-" + resultIndex}
                                                 contract    = {ethRegistrarController}
                                                 txArgs      = {{
-                                                    address: ethRegistrarControllerAddress,
+                                                    address: ethRegistrarControllerAddress[chain.id],
                                                     args: [
                                                         commitment, //secret
                                                     ],
@@ -287,7 +289,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                         key         = {"name-registration-" + resultIndex}
                                         contract    = {ethRegistrarController}
                                         txArgs      = {{
-                                            address: ethRegistrarControllerAddress,
+                                            address: ethRegistrarControllerAddress[chain.id],
                                             args: [
                                                 label,
                                                 addressToRegisterTo, //owner

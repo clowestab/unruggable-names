@@ -8,6 +8,7 @@ import {
     useAccount, 
     useProvider, 
     useSigner,
+    useNetwork
 }                                           from 'wagmi'
 
 import {
@@ -32,6 +33,7 @@ import {
   hexEncodeName 
 }                                           from '../../helpers/Helpers.jsx';
 import { 
+    useNameWrapperRead,
     useSubnameRegistrar, 
     useSubnameRegistrarCommit, 
     useSubnameRegistrarMakeCommitment, 
@@ -40,7 +42,7 @@ import {
     useRenewalControllerRead,
     subnameRegistrarAddress 
 }                                           from '../../lib/blockchain'
-import { SubnameWhoisAlert }              from '../ens/subname-whois-alert'
+import { SubnameWhoisAlert }                from '../ens/subname-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
 import { TransactionConfirmationState }     from '../shared/transaction-confirmation-state'
 
@@ -59,6 +61,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
     const provider         = useProvider();
     const { data: signer } = useSigner()
+    const { chain }        = useNetwork()
     const { address }      = useAccount()
     const { toast }        = useToast()
 
@@ -82,6 +85,9 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName)  as `0x${string}`;
     const encodedNameToRegister: `0x${string}` = hexEncodeName(name) as `0x${string}`;
 
+    const parentTokenId                         = ethers.BigNumber.from(parentNamehash);
+
+
     //Discern if the subname is available in the SubnameRegistrar
     const  { data: isAvailable }    = useSubnameRegistrarRead({
         functionName: 'available',
@@ -99,8 +105,20 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
     console.log("Pricing data", pricingData);
 
+    //Gets owner/expiry/fuses from the namewrapper
+    const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
+         functionName: 'getData',
+         args:         [parentTokenId],
+     });
+    const {owner: nameWrapperParentOwnerAddress, expiry: parentExpiry, fuses: parentWrapperFuses} = parentNameData ?? {};
+
+    const currentTimestamp = Math.ceil(Date.now() / 1000);
+    const maxRegistrationTime = parseInt(parentExpiry?.toString()) - currentTimestamp;
+    console.log("PARENT EXPIRY", parentExpiry);
+    console.log("PARENT EXPIRY maxRegistrationTime", maxRegistrationTime);
+
     const addressToRegisterTo      = address;
-    const registerForTimeInSeconds = ethers.BigNumber.from("31536000");;
+    const registerForTimeInSeconds = ethers.BigNumber.from("2592000");;
     const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
 
     const  { data: rentPrice }  = useRenewalControllerRead({
@@ -124,16 +142,12 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
     }                               = useSubnameRegistrarMinCommitmentAge({});
 
-    //Generate a commitment hashs
+    //Generate a commitment hash
     const { data: commitment }      = useSubnameRegistrarMakeCommitment({
         args: [
             encodedNameToRegister, 
             addressToRegisterTo!, 
-            registerForTimeInSeconds, 
-            salt, 
-            addressToResolveTo, 
-            [], 
-            0
+            salt
         ],
         overrides: {
             gasLimit: ethers.BigNumber.from("200000")
@@ -176,6 +190,8 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
         const currentTimestamp = Math.floor(Date.now() / 1000);
         setCommitmentCompleteTimestamp(currentTimestamp);
     }
+
+    console.log("LAAA", subnameRegistrarAddress[chain.id]);
 
     return (
         <div className = {classNames(className, 'flex')}>
@@ -242,7 +258,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                                 key      = {"commitment-" + resultIndex}
                                                 contract = {subnameRegistrar}
                                                 txArgs   = {{
-                                                    address: subnameRegistrarAddress,
+                                                    address: subnameRegistrarAddress[chain.id],
                                                     args: [
                                                         commitment, //secret
                                                     ],
@@ -271,7 +287,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                     key      = {"registration-" + resultIndex}
                                     contract = {subnameRegistrar}
                                     txArgs   = {{
-                                        address: subnameRegistrarAddress,
+                                        address: subnameRegistrarAddress[chain.id],
                                         args: [
                                             encodedNameToRegister,
                                             addressToRegisterTo, //owner
@@ -284,7 +300,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                         ],
                                         overrides: {
                                             gasLimit: ethers.BigNumber.from("500000"),
-                                            value:    rentPrice?.toString()
+                                            value:    rentPrice?.mul("2").toString()
                                         }
                                     }}
                                     txFunction  = 'register'
