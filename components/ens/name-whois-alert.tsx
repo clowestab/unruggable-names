@@ -401,7 +401,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     console.log("nameData", nameData);
 
 
-    console.log("REFVAL", minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0);
+    //console.log("REFVAL", offerSubnamesRef.current);
 
     return (
         <AlertDialogContent>
@@ -876,7 +876,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                         txArgs = {{
                                                             args: [
                                                                 namehashHex,
-                                                                offerSubnamesRef.current ? offerSubnamesRef.current!.checked : false,
+                                                                //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : false,
+                                                                true,
                                                                 renewalControllerInput ?? registerPricingData?.renewalController,
                                                                 minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
                                                                 minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
