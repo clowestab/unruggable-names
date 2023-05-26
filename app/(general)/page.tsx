@@ -7,7 +7,11 @@ import {
 } from '@rainbow-me/rainbowkit';
 
 
-import { useNetwork }                   from 'wagmi'
+import { chains, provider as rkprovider } from '@/config/networks'
+
+console.log("RK PROVIDER", rkprovider)
+
+import { useNetwork, useProvider, useChainId }                   from 'wagmi'
 
 import { 
     WalletAddress, 
@@ -54,9 +58,13 @@ interface SearchResult {
 export default function RegistrationForm() {
 
     const { chain, chains }  = useNetwork();
+    const  provider   = useProvider();
+    const  chainId   = useChainId();
     const { openChainModal } = useChainModal();
 
     console.log("chain", chain);
+    console.log("provider", provider);
+    console.log("chainId", chainId);
 
     const [searchTerm, setSearchTerm]       = React.useState<string>("");
     const [searchError, setSearchError]     = React.useState<string | null>(null);
@@ -122,11 +130,14 @@ export default function RegistrationForm() {
         setSearchResults(newResults);
     }
 
+    const hasValidNetwork = [foundry.id, goerli.id].includes(chainId);
+
+
 
     return (
         <div className = "m-8">
 
-            {chain && (![foundry.id, goerli.id].includes(chain.id)) && (
+            {!hasValidNetwork && (
                 <Alert className="border-red-800 bg-red-100 my-8" variant="destructive">
                     {CommonIcons.alert}
                     <AlertTitle>Invalid network</AlertTitle>
@@ -176,7 +187,7 @@ export default function RegistrationForm() {
                     </div>
                     <Button 
                         type     = "submit" 
-                        disabled = {isSearching} 
+                        disabled = {isSearching || !hasValidNetwork} 
                         onClick  = {doSearch}>
                         {isSearching && (<>{CommonIcons.miniLoader}</>)}
                         Search

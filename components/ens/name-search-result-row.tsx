@@ -23,7 +23,8 @@ import {
     useProvider, 
     useSigner, 
     useNetwork,
-    useWaitForTransaction 
+    useWaitForTransaction,
+    useChainId 
 }                                       from 'wagmi'
 
 import {
@@ -85,6 +86,7 @@ interface SearchResultRowProps {
 export function NameSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
 
     const provider         = useProvider();
+    const  chainId   = useChainId();
     const { data: signer } = useSigner()
     const { address }      = useAccount()
     const { chain }        = useNetwork()
@@ -93,6 +95,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
     console.log("SIGNER", signer);
 
     const ethRegistrarController = useEthRegistrarController({
+        chainId: chainId,
         signerOrProvider: signer
     });
 
@@ -108,14 +111,16 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
     const nameNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
 
     const  { data: isAvailable }    = useEthRegistrarControllerRead({
-         functionName: 'available',
-         args:         [label],
+        chainId:      chainId,
+        functionName: 'available',
+        args:         [label],
     });
 
     console.log("isAvailable data", isAvailable);
 
     const  { data: pricingData }  = useSubnameRegistrarPricingData({
-         args:    [nameNamehash],
+        chainId: chainId,
+        args:    [nameNamehash],
      });
 
     console.log("Pricing data", pricingData);
@@ -126,8 +131,9 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
 
     const  { data: rentPrice }  = useEthRegistrarControllerRead({
-         functionName: 'rentPrice',
-         args:         [encodedNameToRegister, registerForTimeInSeconds],
+        chainId: chainId,
+        functionName: 'rentPrice',
+        args:         [encodedNameToRegister, registerForTimeInSeconds],
      });
 
 
@@ -146,11 +152,13 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
 
     const { data: MIN_COMMITMENT_TIME_IN_SECONDS } = useEthRegistrarControllerMinCommitmentAge({
+        chainId: chainId
     });
 
     console.log("MIN_COMMITMENT_TIME_IN_SECONDS", MIN_COMMITMENT_TIME_IN_SECONDS?.toString());
 
     const { data: commitment } = useEthRegistrarControllerMakeCommitment({
+        chainId: chainId,
         args: [
             label, 
             addressToRegisterTo!, 
@@ -259,7 +267,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                                 key         = {"commitment-" + resultIndex}
                                                 contract    = {ethRegistrarController}
                                                 txArgs      = {{
-                                                    address: ethRegistrarControllerAddress[chain.id],
+                                                    address: ethRegistrarControllerAddress[chainId],
                                                     args: [
                                                         commitment, //secret
                                                     ],
@@ -289,7 +297,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                         key         = {"name-registration-" + resultIndex}
                                         contract    = {ethRegistrarController}
                                         txArgs      = {{
-                                            address: ethRegistrarControllerAddress[chain.id],
+                                            address: ethRegistrarControllerAddress[chainId],
                                             args: [
                                                 label,
                                                 addressToRegisterTo, //owner

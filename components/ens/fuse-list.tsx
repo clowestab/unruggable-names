@@ -34,7 +34,8 @@ import {
     useProvider, 
     useSigner, 
     useNetwork,
-    useWaitForTransaction 
+    useWaitForTransaction,
+    useChainId 
 }                                       from 'wagmi'
 
 import { Icon }                         from '@iconify/react';
@@ -93,6 +94,8 @@ export function FuseList({ name }: FuseListProps) {
         chain, 
     }                                     = useNetwork()
 
+    const  chainId   = useChainId();
+
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
         signerOrProvider: signer
@@ -100,23 +103,26 @@ export function FuseList({ name }: FuseListProps) {
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
+        chainId: chainId,
         signerOrProvider: signer
     });
 
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
+        chainId: chainId,
          functionName: 'getData',
          args:         [tokenId],
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
-    const isAvailable = String(nameWrapperAddress[chain.id]) == String("0x0000000000000000000000000000000000000000");
+    const isAvailable = String(nameWrapperAddress[chainId]) == String("0x0000000000000000000000000000000000000000");
 
     console.log("name data", nameData);
 
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
+        chainId: chainId,
          functionName: 'getData',
          args:         [nameNodeTokenId],
      });
@@ -125,6 +131,7 @@ export function FuseList({ name }: FuseListProps) {
     console.log("PARENT name data", parentNameData);
 
     const  { data: isWrapped, refetch: refetchIsWrapped }  = useNameWrapperRead({
+        chainId: chainId,
          functionName: 'isWrapped',
          args:         [nameNodeNamehash, labelhash],
      });

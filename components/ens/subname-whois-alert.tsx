@@ -6,7 +6,8 @@ import { ethers }                       from "ethers";
 import { 
     useAccount,
     useNetwork, 
-    useSigner, 
+    useSigner,
+    useChainId 
 }                                       from 'wagmi'
 
 import {
@@ -81,17 +82,23 @@ interface SubnameWhoisAlertProps {
 export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.ReactElement | null {
 
     const { address }                       = useAccount()
+    console.log("ACC ADD", address);
     const { chain }                         = useNetwork()
+    const  chainId   = useChainId();
 
-    const renewalControllerOptions          = getRenewalControllerOptions(chain.id);
+    const renewalControllerOptions          = getRenewalControllerOptions(chainId);
 
 
     const { 
         data: signer, 
     }                                       = useSigner()
 
+    const hasSigner = typeof signer !== "undefined";
+    console.log("ACC sig", signer);
+
     //Basic RenewalController Instance
     const renewalController                 = useRenewalController({
+        chainId: chainId,
         signerOrProvider: signer
     });
 
@@ -110,6 +117,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
 
     //Owner of the subdoomain in the SubnameWrapper
     const  { data: ownerAddress }           = useSubnameWrapperRead({
+        chainId: chainId,
         functionName:  'ownerOf',
         args:          [tokenId],
     });
@@ -117,6 +125,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     //The renewal price as pulled from the basic renewal controller
     //In reality this should be pulled from the specific renewal controller set for the subname
     const  { data: renewalPrice }           = useRenewalControllerRead({
+        chainId: chainId,
         functionName:  'rentPrice',
         args:          [encodedNameToRenew, renewForTimeInSeconds],
     });
@@ -128,13 +137,15 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
         data: nameData, 
         refetch: refetchData  
     }                                       = useSubnameWrapperRead({
+        chainId: chainId,
         functionName:  'getData',
         args:          [tokenId],
     });
 
     const  { data: canRegistrarModifyName } = useSubnameWrapperRead({
+        chainId: chainId,
         functionName:  'canModifyName',
-        args:          [namehash, subnameRegistrarAddress[chain.id]],
+        args:          [namehash, subnameRegistrarAddress[chainId]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);
@@ -145,11 +156,13 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     const  { 
         data: nameWrapperOwnerAddress 
     }                                       = useNameWrapperRead({
+        chainId: chainId,
         functionName:  'ownerOf',
         args:          [tokenId],
     });
 
     const  { data: registryOwnerAddress }   = useEnsRegistryRead({
+        chainId: chainId,
         functionName:  'owner',
         args:          [namehash],
     });
@@ -203,7 +216,9 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                             <TableCell className="font-medium">SubnameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {ownerAddress}
-                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is me</div>
+                                                {address == ownerAddress && (
+                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is me</div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
@@ -244,7 +259,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
 
                                                                     <Button 
                                                                         type     = "submit" 
-                                                                        disabled = {isRenewing} 
+                                                                        disabled = {isRenewing || !hasSigner} 
                                                                         onClick  = {onClickRenew}>
                                                                         {isRenewing && CommonIcons.miniLoader}
                                                                         Renew
@@ -278,7 +293,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                 ],
                                                                 overrides: {
                                                                     gasLimit: ethers.BigNumber.from("5000000"),
-                                                                    value:    "10000000000000000000"
+                                                                    value:    renewalPrice
                                                                 }
                                                         }}
                                                         txFunction = 'renew'
@@ -323,9 +338,9 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                             <>
                                 <h1 className = "my-4 text-lg">Fuses</h1>
 
-                                <p className = "text-xs text-red-800">This section details the fuses that have been burned on this name.
+                                <p className = "text-xs text-red-800 dark:text-red-200">This section details the fuses that have been burned on this name.
                                 </p> 
-                                <p className = "text-xs text-red-800 mt-2">
+                                <p className = "text-xs text-red-800 dark:text-red-200 mt-2">
                                     For more information on fuses please see the <a className = "underline" href = "https://support.ens.names/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
                                 </p>
                             

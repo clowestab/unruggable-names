@@ -24,7 +24,17 @@ export const CHAINS = process.env.NODE_ENV === 'production' ? ETH_CHAINS_PROD : 
 
 const PROVIDERS = []
 
+  console.log("NETWORKS", "TTHERE");
+
+  PROVIDERS.push(
+    alchemyProvider({
+      apiKey: "vrPUMZ7TORr_WepAY2PaOFhwSiSqxxa0" as string,
+    })
+  )
+
 if (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY) {
+
+  console.log("NETWORKS", "HERE");
   PROVIDERS.push(
     alchemyProvider({
       apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY as string,

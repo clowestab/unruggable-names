@@ -12,6 +12,7 @@ import {
     useProvider, 
     useSigner, 
     useNetwork,
+    useChainId,
     useWaitForTransaction 
 }                                         from 'wagmi'
 import { foundry }                        from 'wagmi/chains'
@@ -159,15 +160,16 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const { address }                     = useAccount()
     const { chain }                       = useNetwork()
 
-    const renewalControllerOptions        = getRenewalControllerOptions(chain.id);
+    const  chainId   = useChainId();
+
+    const renewalControllerOptions        = getRenewalControllerOptions(chainId);
 
 
     const { 
         data: signer, 
     }                                     = useSigner()
-    const { 
-        data: provider, 
-    }                                     = useProvider()
+    const provider = useProvider()
+
 
     console.log("lastRenewalPriceIndex Signer", signer);
     console.log("lastRenewalPriceIndex Signerp", provider);
@@ -175,12 +177,14 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //ETHRegistrarController instance
     const ethRegistrarController          = useEthRegistrarController({
-        signerOrProvider: signer
+        chainId: chainId,
+        signerOrProvider: signer ?? provider
     });
 
     //RenewalController instance
     const renewalController               = useRenewalController({
-        signerOrProvider: signer
+        chainId: chainId,
+        signerOrProvider: signer ?? provider
     });
 
 
@@ -189,6 +193,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         data: lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
     }                                     = useRenewalControllerRead({
+        chainId: chainId,
         functionName:  'getLastCharIndex',
         args:          [],
     });
@@ -237,16 +242,17 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         console.log("lastRenewalPriceIndex changedc", renewalController);
 
         console.log("lastRenewalPriceIndex WUT", renewalController);
-        if (signer) {
+        if (provider) {
             console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
             refetchRenewalConfiguration();
         }
 
-    }, [signer, lastRenewalPriceIndex]);
+    }, [provider, lastRenewalPriceIndex]);
 
 
     //The renewal price for a second level name comes direct from the EthRegistrarController
     const  { data: renewalPrice }  = useEthRegistrarControllerRead({
+        chainId: chainId,
         functionName:  'rentPrice',
         args:          [name, renewForTimeInSeconds],
         select: (data) => {
@@ -258,6 +264,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
+        chainId: chainId,
         signerOrProvider: signer
     });
 
@@ -281,32 +288,38 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //TODO get renewal price and implement renewals
     const  { data: rentPrice }  = useSubnameRegistrarRead({
-         functionName: 'rentPrice',
-         args:         [`${encodedNameToRenew}`, renewForTimeInSeconds],
+        chainId: chainId,
+        functionName: 'rentPrice',
+        args:         [`${encodedNameToRenew}`, renewForTimeInSeconds],
      });
 
     console.log("renewal price for " + name, rentPrice);
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
     const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useSubnameRegistrarRead({
-         functionName: 'pricingData',
-         args:         [namehashHex],
+        chainId: chainId,
+        functionName: 'pricingData',
+        args:         [namehashHex],
      });
 
     //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
-        signerOrProvider: signer
+        chainId: chainId,
+        signerOrProvider: signer ?? provider
     });
 
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
-        signerOrProvider: signer
+        chainId: chainId,
+        signerOrProvider: signer ?? provider
     });
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
-         functionName: 'getData',
-         args:         [tokenId],
+        chainId: chainId,
+        functionName: 'getData',
+        args:         [tokenId],
+        signerOrProvider: signer ?? provider
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
 
@@ -316,25 +329,27 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
         //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
         const  { data: isApprovedForAllSubnameWrapper, refetch: refetchIsApprovedForAllSubnameWrapper  }  = useSubnameWrapperRead({
+            chainId: chainId,
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, subnameRegistrarAddress[chain.id]],
+            args:         [nameData?.owner, subnameRegistrarAddress[chainId]],
         });
 
         console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
         console.log("isApprovedForAllSubnameWrapper owner", nameData?.owner);
-        console.log("isApprovedForAllSubnameWrapper address", subnameRegistrarAddress[chain.id]);
+        console.log("isApprovedForAllSubnameWrapper address", subnameRegistrarAddress[chainId]);
 
         //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
         const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
+            chainId: chainId,
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, subnameWrapperAddress[chain.id]],
+            args:         [nameData?.owner, subnameWrapperAddress[chainId]],
          });
 
         console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
         console.log("isApprovedForAllNameWrapper owner", nameData?.owner);
-        console.log("isApprovedForAllNameWrapper address", subnameWrapperAddress[chain.id]);
+        console.log("isApprovedForAllNameWrapper address", subnameWrapperAddress[chainId]);
 
 
         console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
@@ -343,8 +358,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-         functionName: 'owner',
-         args:         [namehashHex],
+        chainId: chainId,
+        functionName: 'owner',
+        args:         [namehashHex],
      });
 
     //Triggers the transaction to approve the 
@@ -382,6 +398,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
 
+    console.log("nameData", nameData);
+
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -391,7 +409,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                     <Tabs defaultValue="item-profile">
                         <TabsList className="flex w-fit mx-auto">
                             <TabsTrigger value="item-profile">Profile</TabsTrigger>
-                            <TabsTrigger value="item-approvals">Approvals</TabsTrigger>
+                            {isOwnedByUser && (
+                                <TabsTrigger value="item-approvals">Approvals</TabsTrigger>
+                            )}
                             <TabsTrigger value="item-subname-registration-config">Subnames</TabsTrigger>
                             <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
                         </TabsList>
@@ -517,7 +537,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                             <TableCell className="font-medium">Registry owner</TableCell>
                                             <TableCell>
                                                 {registryOwnerAddress}
-                                                {registryOwnerAddress == nameWrapperAddress[chain.id] && (
+                                                {registryOwnerAddress == nameWrapperAddress[chainId] && (
                                                     <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper.</div>
                                                 )}
                                             </TableCell>
@@ -565,7 +585,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                         contract    = {nameWrapper}
                                                         txArgs      = {{
                                                             args: [
-                                                                subnameWrapperAddress[chain.id]
+                                                                subnameWrapperAddress[chainId]
                                                             ],
                                                             overrides: {
                                                                 gasLimit: ethers.BigNumber.from("5000000"),
@@ -639,9 +659,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     key     = {"offer-subnames-" + name}
                                                     contract  = {subnameWrapper}
                                                     txArgs    = {{
-                                                        address: subnameWrapperAddress[chain.id],
+                                                        address: subnameWrapperAddress[chainId],
                                                         args: [
-                                                            subnameRegistrarAddress[chain.id]
+                                                            subnameRegistrarAddress[chainId]
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("5000000"),
@@ -915,7 +935,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                         
                                             {registerPricingData?.renewalController == "0x0000000000000000000000000000000000000000" ? (
 
-                                                <p className = "text-xs text-red-800">This name <span className = "font-bold">does not</span> have a renewal controller set.</p>
+                                                <p className = "text-xs text-red-800 dark:text-red-200">This name <span className = "font-bold">does not</span> have a renewal controller set.</p>
                                             ) : (
 
                                                 <>
@@ -955,7 +975,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 <div>No renewal configuration data is available.</div>
                                                             )}
 
-                                                            {isOwnedByUser && (
+                                                            {isOwnedByUser && false && (
                                                                 <div className = "text-center mt-4">
                                                                     <Button 
                                                                         type    ="submit" 
@@ -1119,9 +1139,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                         <TabsContent value="item-fuses" asChild>
                             <>
                                 <h1 className = "my-4 text-lg">Fuses</h1>
-                                <p className = "text-xs text-red-800">This section details the fuses that have been burned on this name.
+                                <p className = "text-xs text-red-800 dark:text-red-200">This section details the fuses that have been burned on this name.
                                 </p> 
-                                <p className = "text-xs text-red-800 mt-2">
+                                <p className = "text-xs text-red-800 dark:text-red-200 mt-2">
                                     For more information on fuses please see the <a className = "underline" href = "https://support.ens.names/dev-basics/namewrapper/fuses" target = "_blank">ENS documentation</a>.
                                 </p>
 
