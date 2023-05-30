@@ -17,8 +17,8 @@ interface SiteConfig {
 export const SITE_CANONICAL = 'https://turboeth.xyz'
 
 export const siteConfig: SiteConfig = {
-  name: 'Unruggable subname rentals',
-  title: 'Unruggable subname rentals',
+  name: 'Unruggable Names',
+  title: 'Unruggable Names',
   emoji: '⚡',
   description: 'Decentralized and trustless subname rentals in the Ethereum Name Service (ENS) ecosystem.',
   previewImg: `${SITE_CANONICAL}/preview.png`,

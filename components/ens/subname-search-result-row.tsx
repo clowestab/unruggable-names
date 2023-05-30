@@ -244,11 +244,16 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
                 <div className = "flex items-center justify-center">
                     {isAvailable && rentPrice && (
-                        <div>
-                        <span>Ξ {ethers.utils.formatEther(rentPrice.toString())}</span>
-                        <div className = "text-xs text-center text-green-800 mt-2">${Math.round(ethers.utils.formatEther(rentPrice.toString()) * ethPrice)}</div>
-
-                        </div>
+                        <>
+                            {rentPrice > 0 ? (
+                                <>
+                                    <span>Ξ {ethers.utils.formatEther(rentPrice.toString())}</span>
+                                    <div className = "text-xs text-center text-green-800 mt-2">${Math.round(ethers.utils.formatEther(rentPrice.toString()) * ethPrice)}</div>
+                                </>
+                            ) : (
+                                <span>FREE</span>
+                            )}
+                        </>
                     )}
                 </div>
 

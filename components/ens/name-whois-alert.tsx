@@ -109,7 +109,6 @@ interface NameWhoisAlertProps {
 export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElement | null {
 
     //References for the Subname registration configuration inputs so we can get the values when saving
-    const offerSubnamesRef                = React.useRef<HTMLButtonElement & { checked: boolean }>(null);
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
@@ -117,6 +116,11 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         renewalControllerInput, 
         setRenewalControllerInput
     ]                                     = React.useState<string | null>(null);
+
+    const [
+        offerSubnamesInput, 
+        setOfferSubnamesInput
+    ]                                     = React.useState<boolean | null>(null);
 
     //Holds the prices per character for our default renewal controller pulled from chain
     const [
@@ -399,9 +403,6 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
 
     console.log("nameData", nameData);
-
-
-    //console.log("REFVAL", offerSubnamesRef.current);
 
     return (
         <AlertDialogContent>
@@ -790,10 +791,19 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
                                                 <div className = "my-2">
                                                     <Checkbox 
-                                                        id             = "offerSubnames"
-                                                        ref            = {offerSubnamesRef} 
-                                                        defaultChecked = {registerPricingData?.offerSubnames}
-                                                        disabled       = {isSavingRegistrationConfigurationData} />
+                                                        id              = "offerSubnames"
+                                                        defaultChecked  = {registerPricingData?.offerSubnames}
+                                                        disabled        = {isSavingRegistrationConfigurationData}
+                                                        onCheckedChange = {(isChecked) => {
+
+                                                            console.log("newvalue", "value");
+
+                                                            const newValue = offerSubnamesInput != null ? !offerSubnamesInput : !registerPricingData?.offerSubnames
+
+                                                            console.log("newvalue", newValue);
+
+                                                            setOfferSubnamesInput(newValue);
+                                                        }} />
                                                     <label
                                                         htmlFor="offerSubnames"
                                                         className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -876,8 +886,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                         txArgs = {{
                                                             args: [
                                                                 namehashHex,
-                                                                //offerSubnamesRef.current ? offerSubnamesRef.current!.checked : false,
-                                                                true,
+                                                                offerSubnamesInput,
                                                                 renewalControllerInput ?? registerPricingData?.renewalController,
                                                                 minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
                                                                 minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,

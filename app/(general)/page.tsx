@@ -58,8 +58,8 @@ interface SearchResult {
 export default function RegistrationForm() {
 
     const { chain, chains }  = useNetwork();
-    const  provider   = useProvider();
-    const  chainId   = useChainId();
+    const  provider          = useProvider();
+    const  chainId           = useChainId();
     const { openChainModal } = useChainModal();
 
     console.log("chain", chain);
@@ -125,6 +125,12 @@ export default function RegistrationForm() {
                 type:  'name', 
                 nonce: Math.floor(Math.random() * 100000)
             }); 
+
+            newResults.push({
+                name:  nameParts[0] + ".testing.eth", 
+                type:  'subname', 
+                nonce: Math.floor(Math.random() * 100000)
+            }); 
         }
 
         setSearchResults(newResults);
@@ -142,7 +148,7 @@ export default function RegistrationForm() {
                     {CommonIcons.alert}
                     <AlertTitle>Invalid network</AlertTitle>
                     <AlertDescription>
-                        <p>Unruggable subname rentals currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                        <p>Unruggable Names currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
                         <Button 
                             type      = "submit" 
                             className = "mt-2"
