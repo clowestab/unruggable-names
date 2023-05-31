@@ -279,7 +279,7 @@ export default function RegistrationForm() {
             </motion.div>
 
             {searchResults.length > 0 && (
-                <div>
+                <>
                     <h2 className = "text-2xl font-semibold tracking-tight mt-8">Search results</h2>
                     <p className = "text-sm text-slate-500 dark:text-slate-400 mb-4">
                         Top picks for you based on your search input.
@@ -330,7 +330,7 @@ export default function RegistrationForm() {
                             );
                         }
                     })}
-                </div>
+                </>
             )}
         </div>
     )

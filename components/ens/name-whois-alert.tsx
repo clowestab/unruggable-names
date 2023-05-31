@@ -411,7 +411,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                 <AlertDialogDescription asChild>
 
                     <Tabs defaultValue="item-profile">
-                        <TabsList className="flex w-fit mx-auto">
+                        <TabsList className="flex flex-wrap w-fit mx-auto">
                             <TabsTrigger value="item-profile">Profile</TabsTrigger>
                             {isOwnedByUser && (
                                 <TabsTrigger value="item-approvals">Approvals</TabsTrigger>

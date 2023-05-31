@@ -208,7 +208,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
 
 
                     <Tabs defaultValue="item-profile">
-                        <TabsList className="flex w-fit mx-auto">
+                        <TabsList className="flex flex-wrap w-fit mx-auto">
                             <TabsTrigger value="item-profile">Profile</TabsTrigger>
                             <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
                         </TabsList>

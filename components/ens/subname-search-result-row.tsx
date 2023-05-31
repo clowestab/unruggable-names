@@ -279,7 +279,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                     )}
 
                     {!isParentAvailable && isAvailableRegistry && !isOfferingSubnames && (
-                        <span>Not offering subnames</span>
+                        <div className = "p-2">Not offering subnames</div>
                     )}
 
                     {!isParentAvailable && isAvailableRegistry && isOfferingSubnames && isAvailable && (
