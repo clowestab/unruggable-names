@@ -41,7 +41,10 @@ import {
 import { foundry, goerli }              from 'wagmi/chains'
 
 import { 
-    hexEncodeName 
+    hexEncodeName,
+    getCookie,
+    setCookie,
+    deleteCookie
 }                                       from '../../helpers/Helpers.jsx';
 
 import { SubnameSearchResultRow }     from '@/components/ens/subname-search-result-row'
@@ -54,6 +57,36 @@ interface SearchResult {
     type:  string,
     nonce: number
 }
+
+//setCookie("committedName", "thomas.eth", 7);
+const committedName                     = getCookie("committedName");
+const committedAddressToRegisterTo      = getCookie("committedAddressToRegisterTo");
+const committedRegisterForTimeInSeconds = getCookie("committedRegisterForTimeInSeconds");
+const committedSalt                     = getCookie("committedSalt");
+const committedAddressToResolveTo       = getCookie("committedAddressToResolveTo");
+const committedCommitmentReadyTimestamp = getCookie("committedCommitmentReadyTimestamp");
+
+const allCookies = [
+    committedName,
+    committedAddressToRegisterTo,
+    committedRegisterForTimeInSeconds,
+    committedSalt,
+    committedAddressToResolveTo,
+    committedCommitmentReadyTimestamp
+].filter(Boolean);
+
+console.log("all cookies", allCookies);
+
+const cookiedCommitment = allCookies.length == 6 ? {
+    name:                     committedName,
+    addressToRegisterTo:      committedAddressToRegisterTo,
+    registerForTimeInSeconds: committedRegisterForTimeInSeconds,
+    salt:                     committedSalt,
+    addressToResolveTo:       committedAddressToResolveTo,
+    commitmentReadyTimestamp: committedCommitmentReadyTimestamp
+} : null;
+
+console.log("cookiedCommitment", cookiedCommitment);
 
 export default function RegistrationForm() {
 
@@ -81,10 +114,26 @@ export default function RegistrationForm() {
     }, [searchResults]);
 
 
+    React.useEffect(() => {
+        
+        console.log("cookie effect", committedName);
+
+        if (committedName != null) {
+            setSearchTerm(committedName);
+            doSearch(committedName);
+        }
+
+    }, [committedName]);
+
+
     /**
      * 
      */ 
     const doSearch = (manualSearchTerm?: any) => {
+
+        if (!manualSearchTerm) {
+            clearCookies();
+        }
 
         console.log("search man", manualSearchTerm);
         console.log("search", searchTerm);
@@ -139,12 +188,40 @@ export default function RegistrationForm() {
     const hasValidNetwork = [foundry.id, goerli.id].includes(chainId);
 
 
+    const clearCookies = () => {
+
+        console.log("DELETE COOKIES");
+
+        deleteCookie("committedName");
+        deleteCookie("committedAddressToRegisterTo");
+        deleteCookie("committedRegisterForTimeInSeconds");
+        deleteCookie("committedSalt");
+        deleteCookie("committedAddressToResolveTo");
+        deleteCookie("committedCommitmentReadyTimestamp");
+    }
 
     return (
         <div className = "m-8">
 
+            <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
+                {CommonIcons.alert}
+                <AlertTitle>Testnet</AlertTitle>
+                <AlertDescription>
+                    <p>Unruggable Names currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                </AlertDescription>
+            </Alert>
+
+            <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
+                {CommonIcons.alert}
+                <AlertTitle>Feedback</AlertTitle>
+                <AlertDescription>
+                    <p>Please help us develop and improve the product by completing our <a href = "https://forms.gle/6oFshRMvXxJBcG6B6" target = "_blank" className = "underline">Feedback Form</a>.</p>
+                </AlertDescription>
+            </Alert>
+
+
             {!hasValidNetwork && (
-                <Alert className="border-red-800 bg-red-100 my-8" variant="destructive">
+                <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
                     {CommonIcons.alert}
                     <AlertTitle>Invalid network</AlertTitle>
                     <AlertDescription>
@@ -219,13 +296,16 @@ export default function RegistrationForm() {
                                         onRegister      = {() => {    
                                             setSearchResults([]);
                                             doSearch();
+                                            clearCookies();
                                         }}
                                         doLookup = {(name: any) => {
 
                                             setSearchError(null);
                                             setSearchTerm(name);
                                             doSearch(name);
-                                        }} />
+                                        }}
+                                        cookiedCommitment = {result.name == committedName ? cookiedCommitment : null}
+                                        clearCookies = {clearCookies} />
 
                                 <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
                                 </div>
@@ -240,7 +320,10 @@ export default function RegistrationForm() {
                                         onRegister  = {() => {     
                                             setSearchResults([]);
                                             doSearch();
-                                        }} />
+                                            clearCookies();
+                                        }}
+                                        cookiedCommitment = {result.name == committedName ? cookiedCommitment : null}
+                                        clearCookies = {clearCookies} />
 
                                     <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
                                 </div>  

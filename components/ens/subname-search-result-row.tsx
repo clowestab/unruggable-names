@@ -30,9 +30,13 @@ import {
 import { CountdownText }                    from './countdown-text'
 
 import { 
-  generateSalt,
-  hexEncodeName 
+    generateSalt, 
+    hexEncodeName,
+    getCookie,
+    setCookie,
+    buildErrorMessage 
 }                                           from '../../helpers/Helpers.jsx';
+
 import { 
     useNameWrapperRead,
     useSubnameRegistrar, 
@@ -41,7 +45,9 @@ import {
     useSubnameRegistrarMinCommitmentAge, 
     useSubnameRegistrarRead, 
     useRenewalControllerRead,
-    subnameRegistrarAddress 
+    subnameRegistrarAddress,
+    useEthRegistrarControllerRead,
+    useEnsRegistryRead 
 }                                           from '../../lib/blockchain'
 import { SubnameWhoisAlert }                from '../ens/subname-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
@@ -58,10 +64,10 @@ interface SearchResultRowProps {
 }
 
 
-export function SubnameSearchResultRow({ className, name, resultIndex, onRegister, doLookup }: SearchResultRowProps) {
+export function SubnameSearchResultRow({ className, name, resultIndex, onRegister, doLookup, cookiedCommitment, clearCookies }: SearchResultRowProps) {
 
     const provider         = useProvider();
-    const  chainId   = useChainId();
+    const chainId          = useChainId();
     const { data: signer } = useSigner()
     const { chain }        = useNetwork()
     const { address }      = useAccount()
@@ -73,22 +79,35 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     });
 
     //Boolean indiciating if the subname is being registered
-    const [isRegistering, setIsRegistering]                             = React.useState(false);
+    const [isRegistering, setIsRegistering]                             = React.useState(cookiedCommitment != null ? true : false);
 
     //The unix timestamp at which the commitment becomes valid on chain
-    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(null);
+    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(cookiedCommitment?.commitmentReadyTimestamp ?? null);
 
     //Set once the commitment validity countdown has completed
     const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
+
+    const namehash: `0x${string}`        = ethers.utils.namehash(name)  as `0x${string}`;
+
     const nameParts                          = name.split(".");
     nameParts.shift();
+    const parentLabel                          = nameParts[0];
     const parentName                           = nameParts.join(".");
     const parentNamehash: `0x${string}`        = ethers.utils.namehash(parentName)  as `0x${string}`;
     const encodedNameToRegister: `0x${string}` = hexEncodeName(name) as `0x${string}`;
 
     const parentTokenId                         = ethers.BigNumber.from(parentNamehash);
 
+
+    const  { data: registryOwner }    = useEnsRegistryRead({
+        chainId:      chainId,
+        functionName: 'owner',
+        args:         [namehash],
+    });
+
+    const isAvailableRegistry = registryOwner == "0x0000000000000000000000000000000000000000";
+    console.log("isAvailableRegistry", isAvailableRegistry);
 
     //Discern if the subname is available in the SubnameRegistrar
     const  { data: isAvailable }    = useSubnameRegistrarRead({
@@ -98,6 +117,12 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     });
 
     console.log("isAvailable", !isAvailable);
+
+    const  { data: isParentAvailable }    = useEthRegistrarControllerRead({
+        chainId:      chainId,
+        functionName: 'available',
+        args:         [parentLabel],
+    });
 
     //Get pricing data for the parent name from the SubnameRegistrar
     const  { data: pricingData }  = useSubnameRegistrarRead({
@@ -122,9 +147,9 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     console.log("PARENT EXPIRY", parentExpiry);
     console.log("PARENT EXPIRY maxRegistrationTime", maxRegistrationTime);
 
-    const addressToRegisterTo      = address;
-    const registerForTimeInSeconds = ethers.BigNumber.from("31536000");;
-    const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
+    const addressToRegisterTo      = cookiedCommitment?.addressToRegisterTo ?? address;
+    const registerForTimeInSeconds = ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? "31536000");
+    const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? "0x0000000000000000000000000000000000000000";
 
     const  { data: rentPrice }  = useSubnameRegistrarRead({
          chainId: chainId,
@@ -135,7 +160,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     console.log("rentprice", rentPrice);
 
     //A salt for the registration commitment
-    const [salt, setSalt] = React.useState<`0x${string}`>(`0x${generateSalt()}`);
+    const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
 
     console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);
@@ -186,7 +211,24 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
         console.log("onCommitmentConfirmed", time.toString());
         console.log("onCommitmentConfirmed block", block);
         const currentTimestamp = Math.floor(Date.now() / 1000);
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 2);
+        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5;
+
+        setCommitmentReadyTimestamp(newCommitmentReadyTimestamp);
+
+        toast({
+            duration: 5000,
+            className: "bg-green-200 dark:bg-green-800 border-0",
+            description: "Your commitment has been confirmed on chain.",
+        })
+
+        console.log("SETTING COOKIES");
+
+        setCookie("committedName", name);
+        setCookie("committedAddressToRegisterTo", addressToRegisterTo);
+        setCookie("committedRegisterForTimeInSeconds", registerForTimeInSeconds);
+        setCookie("committedSalt", salt);
+        setCookie("committedAddressToResolveTo", addressToResolveTo);
+        setCookie("committedCommitmentReadyTimestamp", newCommitmentReadyTimestamp);
     }
 
 
@@ -215,27 +257,34 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                 </div>
                 <div className = "w-8" />
                 <div className = "flex items-center justify-center">
-                    {isAvailable ? (
+
+                    {isParentAvailable && (
+                        <p><span className = "font-bold">{parentName}</span> is not registered.</p>
+                    )}
+
+                    {!isParentAvailable && !isAvailableRegistry && (
+                        <>
+                            {CommonIcons.cross} 
+                            <div className = "ml-2">   
+                                <span>Registered</span>
+                                <div className = "w-1" />
+                                <AlertDialog key = {"whois-" + name} >
+                                    <AlertDialogTrigger asChild>
+                                        <span className = "cursor-pointer text-xs underline">more info</span>
+                                    </AlertDialogTrigger>
+                                    <SubnameWhoisAlert key = {"alert-" + name} name = {name} />
+                                </AlertDialog>
+                            </div>
+                        </>
+                    )}
+
+                    {!isParentAvailable && isAvailableRegistry && !isOfferingSubnames && (
+                        <span>Not offering subnames</span>
+                    )}
+
+                    {!isParentAvailable && isAvailableRegistry && isOfferingSubnames && isAvailable && (
                         <React.Fragment key = {"available-" + name}>
                             {CommonIcons.check}<div className = "w-1" /> Available
-                        </React.Fragment>
-                    ) : (
-                        <React.Fragment key = {"taken-" + name}>
-                            {CommonIcons.cross}<div className = "w-1" /> 
-                            {isOfferingSubnames ? (
-                                <div>
-                                    <span>Registered</span>
-                                    <div className = "w-1" />
-                                    <AlertDialog key = {"whois-" + name} >
-                                        <AlertDialogTrigger asChild>
-                                            <span className = "cursor-pointer text-xs underline">more info</span>
-                                        </AlertDialogTrigger>
-                                        <SubnameWhoisAlert key = {"alert-" + name} name = {name} />
-                                    </AlertDialog>
-                                </div>
-                            ) : (
-                                <span>Not offering subnames</span>
-                            )}
                         </React.Fragment>
                     )}
                 </div>
@@ -265,36 +314,54 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                             <>
                                 {/* Set when the transaction is committed and 60 seconds has passed */}
                                 {!commitmentCompleteTimestamp ? (
-
                                     <>
-                                        {commitment != null && (
-                                            <TransactionConfirmationState 
-                                                key      = {"commitment-" + resultIndex}
-                                                contract = {subnameRegistrar}
-                                                txArgs   = {{
-                                                    address: subnameRegistrarAddress[chainId],
-                                                    args: [
-                                                        commitment, //secret
-                                                    ],
-                                                    overrides: {
-                                                        gasLimit: ethers.BigNumber.from("200000")
-                                                    }
-                                                }}
-                                                txFunction  = 'commit'
-                                                onConfirmed = {onCommitmentConfirmed}>
-                                                    <div>
-                                                        {CommonIcons.miniLoader} Submitting registration commitment..
-                                                    </div>
-                                                    <div>
-                                                        {commitmentReadyTimestamp && (
-                                                            <CountdownText 
-                                                                timestamp  = {commitmentReadyTimestamp}
-                                                                onComplete = {onCommitmentBecomesValid} />
-                                                        )}
-                                                    </div>
-                                            </ TransactionConfirmationState>
+                                        {commitmentReadyTimestamp ? (
+                                            <CountdownText 
+                                                timestamp  = {commitmentReadyTimestamp}
+                                                onComplete = {onCommitmentBecomesValid} />
+                                        ) : (
+                                            <>
+                                                {commitment != null && (
+                                                    <TransactionConfirmationState 
+                                                        key      = {"commitment-" + resultIndex}
+                                                        contract = {subnameRegistrar}
+                                                        txArgs   = {{
+                                                            address: subnameRegistrarAddress[chainId],
+                                                            args: [
+                                                                commitment, //secret
+                                                            ],
+                                                            overrides: {
+                                                                gasLimit: ethers.BigNumber.from("200000")
+                                                            }
+                                                        }}
+                                                        txFunction  = 'commit'
+                                                        onConfirmed = {onCommitmentConfirmed}
+                                                        onError     = {(error) => {
+
+                                                            console.log("error", error.code);
+
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                description: (<p>{buildErrorMessage(error)}</p>),
+                                                            });
+                                                        }}>
+                                                            <div>
+                                                                {CommonIcons.miniLoader} Submitting registration commitment..
+                                                            </div>
+                                                            <div>
+                                                                {commitmentReadyTimestamp && (
+                                                                    <CountdownText 
+                                                                        timestamp  = {commitmentReadyTimestamp}
+                                                                        onComplete = {onCommitmentBecomesValid} />
+                                                                )}
+                                                            </div>
+                                                    </ TransactionConfirmationState>
+                                                )}
+                                            </>
                                         )}
                                     </>
+
                             ) : (
 
                                 <TransactionConfirmationState 
@@ -318,6 +385,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                         }
                                     }}
                                     txFunction  = 'register'
+                                    onBefore    = {clearCookies}
                                     onConfirmed = {() => {
                                         console.log("Registration confirmed la");
                                         toast({
@@ -330,6 +398,15 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                             ),
                                         });
                                         onRegister?.();
+                                    }}
+                                    onError = {(error) => {
+
+                                        console.log("error", error);
+                                        toast({
+                                            duration: 5000,
+                                            className: "bg-red-200 dark:bg-red-800 border-0",
+                                            description: (<p>{buildErrorMessage(error)}</p>),
+                                        });
                                     }}>
                                     <div>
                                         {CommonIcons.miniLoader} Registering name..
@@ -343,25 +420,33 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
                     ) : (
                         <>
-                            <Button 
-                                type      = "submit" 
-                                disabled  = {isRegistering || !address} 
-                                onClick   = {doRegister}>
-                                    {isRegistering && CommonIcons.miniLoader}
-                                    Register
-                            </Button>
+                            
 
-                            {!address && (
+                            {!address ? (
                                 <div className = "ml-2">
                                     <Tooltip delayDuration={0}>
                                         <TooltipTrigger asChild>
-                                            <span className = "cursor-pointer">{CommonIcons.tooltip}</span>
+                                            <Button 
+                                                type      = "submit" 
+                                                disabled  = {isRegistering || !address} 
+                                                onClick   = {doRegister}>
+                                                    {isRegistering && CommonIcons.miniLoader}
+                                                    Register
+                                            </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </div>
+                            ) : (
+                                <Button 
+                                    type      = "submit" 
+                                    disabled  = {isRegistering || !address} 
+                                    onClick   = {doRegister}>
+                                        {isRegistering && CommonIcons.miniLoader}
+                                        Register
+                                </Button>
                             )}
                         </>
                     )}  

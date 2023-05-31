@@ -48,7 +48,10 @@ import {
 import { CountdownText }                from './countdown-text'
 import { 
     generateSalt, 
-    hexEncodeName 
+    hexEncodeName,
+    getCookie,
+    setCookie,
+    buildErrorMessage 
 }                                       from '../../helpers/Helpers.jsx';
 import { 
     useEthRegistrarController, 
@@ -83,10 +86,12 @@ interface SearchResultRowProps {
 }
 
 
-export function NameSearchResultRow({ className, name, resultIndex, onRegister }: SearchResultRowProps) {
+export function NameSearchResultRow({ className, name, resultIndex, onRegister, cookiedCommitment, clearCookies }: SearchResultRowProps) {
+
+    console.log("received cookiedCommitment", cookiedCommitment);
 
     const provider         = useProvider();
-    const  chainId   = useChainId();
+    const  chainId         = useChainId();
     const { data: signer } = useSigner()
     const { address }      = useAccount()
     const { chain }        = useNetwork()
@@ -101,8 +106,13 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
     console.log("ethRegistrarController", ethRegistrarController);
 
-    const [isRegistering, setIsRegistering]                             = React.useState(false);
-    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(null);
+    //Boolean indiciating if the name is being registered
+    const [isRegistering, setIsRegistering]                             = React.useState(cookiedCommitment != null ? true : false);
+
+    //The unix timestamp at which the commitment becomes valid on chain
+    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(cookiedCommitment?.commitmentReadyTimestamp ?? null);
+
+    //Set once the commitment validity countdown has completed
     const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
 
     const nameParts               = name.split(".");
@@ -125,9 +135,9 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
     console.log("Pricing data", pricingData);
 
-    const addressToRegisterTo      = address;
-    const registerForTimeInSeconds = ethers.BigNumber.from("10000000");//31536000;
-    const addressToResolveTo       = "0x0000000000000000000000000000000000000000";
+    const addressToRegisterTo      = cookiedCommitment?.addressToRegisterTo ?? address;
+    const registerForTimeInSeconds = ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? "31536000");
+    const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? "0x0000000000000000000000000000000000000000";
 
 
     const  { data: rentPrice }  = useEthRegistrarControllerRead({
@@ -139,8 +149,8 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
     console.log("rentprice", rentPrice);
 
-
-    const [salt, setSalt] = React.useState<`0x${string}`>("0x" + generateSalt() as `0x${string}`);
+    //A salt for the registration commitment
+    const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
 
     console.log("salt", salt);
 
@@ -197,14 +207,25 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
         console.log("onCommitmentConfirmed block", block);
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
+        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5;
         //Discern and set the time at which the commitment will be valid on chain
-        setCommitmentReadyTimestamp(currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5);
+        setCommitmentReadyTimestamp(newCommitmentReadyTimestamp);
 
         toast({
             duration: 5000,
             className: "bg-green-200 dark:bg-green-800 border-0",
             description: "Your commitment has been confirmed on chain.",
         })
+
+
+        console.log("SETTING COOKIES");
+
+        setCookie("committedName", name);
+        setCookie("committedAddressToRegisterTo", addressToRegisterTo);
+        setCookie("committedRegisterForTimeInSeconds", registerForTimeInSeconds);
+        setCookie("committedSalt", salt);
+        setCookie("committedAddressToResolveTo", addressToResolveTo);
+        setCookie("committedCommitmentReadyTimestamp", newCommitmentReadyTimestamp);
     }
 
     /**
@@ -262,33 +283,52 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                 {/* Set when the transaction is committed and 60 seconds has passed */}
                                 {commitmentCompleteTimestamp == null ? (
                                     <>
-                                        {commitment != null && (
-                                            <TransactionConfirmationState 
-                                                key         = {"commitment-" + resultIndex}
-                                                contract    = {ethRegistrarController}
-                                                txArgs      = {{
-                                                    address: ethRegistrarControllerAddress[chainId],
-                                                    args: [
-                                                        commitment, //secret
-                                                    ],
-                                                    overrides: {
-                                                        gasLimit: ethers.BigNumber.from("200000")
-                                                    }
-                                                }}
-                                                txFunction  = 'commit'
-                                                onConfirmed = {onCommitmentConfirmed}
-                                            >
-                                                <div>
-                                                    {CommonIcons.miniLoader} Submitting registration commitment..
-                                                </div>
-                                                <div>
-                                                    {commitmentReadyTimestamp && (
-                                                        <CountdownText 
-                                                            timestamp  = {commitmentReadyTimestamp}
-                                                            onComplete = {onCommitmentBecomesValid} />
-                                                    )}
-                                                </div>
-                                            </ TransactionConfirmationState>
+                                        {commitmentReadyTimestamp ? (
+                                            <CountdownText 
+                                                timestamp  = {commitmentReadyTimestamp}
+                                                onComplete = {onCommitmentBecomesValid} />
+                                        ) : (
+                                            <>
+
+                                                {commitment != null && (
+                                                    <TransactionConfirmationState 
+                                                        key         = {"commitment-" + resultIndex}
+                                                        contract    = {ethRegistrarController}
+                                                        txArgs      = {{
+                                                            address: ethRegistrarControllerAddress[chainId],
+                                                            args: [
+                                                                commitment, //secret
+                                                            ],
+                                                            overrides: {
+                                                                gasLimit: ethers.BigNumber.from("200000")
+                                                            }
+                                                        }}
+                                                        txFunction  = 'commit'
+                                                        onConfirmed = {onCommitmentConfirmed}
+                                                        onError     = {(error) => {
+
+                                                            console.log("error", error.code);
+
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                description: (<p>{buildErrorMessage(error)}</p>),
+                                                            });
+                                                        }}
+                                                    >
+                                                        <div>
+                                                            {CommonIcons.miniLoader} Submitting registration commitment..
+                                                        </div>
+                                                        <div>
+                                                            {commitmentReadyTimestamp && (
+                                                                <CountdownText 
+                                                                    timestamp  = {commitmentReadyTimestamp}
+                                                                    onComplete = {onCommitmentBecomesValid} />
+                                                            )}
+                                                        </div>
+                                                    </ TransactionConfirmationState>
+                                                )}
+                                            </>
                                         )}
                                     </>
                                 ) : (
@@ -314,6 +354,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                             }
                                         }}
                                         txFunction  = 'register'
+                                        onBefore    = {clearCookies}
                                         onConfirmed = {() => {
                                             console.log("Registration confirmed");
                                             toast({
@@ -325,10 +366,11 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
                                         }}
                                         onError = {(error) => {
 
+                                            console.log("error", error);
                                             toast({
                                                 duration: 5000,
                                                 className: "bg-red-200 dark:bg-red-800 border-0",
-                                                description: (<p>{error.errorName}</p>),
+                                                description: (<p>{buildErrorMessage(error)}</p>),
                                             });
                                         }}>
                                         <div>
@@ -343,25 +385,33 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister }
 
                         ) : (
                             <>
-                                <Button 
-                                    type      = "submit" 
-                                    disabled  = {isRegistering || !address} 
-                                    onClick   = {doRegister}>
-                                    {isRegistering && CommonIcons.miniLoader}
-                                    Register
-                                </Button>
+                                
 
-                                {!address && (
+                                {!address ? (
                                     <div className = "ml-2">
                                         <Tooltip delayDuration={0}>
                                             <TooltipTrigger asChild>
-                                                <span className = "cursor-pointer">{CommonIcons.tooltip}</span>
+                                                <Button 
+                                                    type      = "submit" 
+                                                    disabled  = {isRegistering || !address} 
+                                                    onClick   = {doRegister}>
+                                                    {isRegistering && CommonIcons.miniLoader}
+                                                    Register
+                                                </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <p>Connect a wallet to register a name</p>
+                                                <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>
+                                ) : (
+                                    <Button 
+                                        type      = "submit" 
+                                        disabled  = {isRegistering || !address} 
+                                        onClick   = {doRegister}>
+                                        {isRegistering && CommonIcons.miniLoader}
+                                        Register
+                                    </Button>
                                 )}
                             </>
                         )}      

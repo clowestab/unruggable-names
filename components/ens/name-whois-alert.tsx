@@ -531,19 +531,32 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                         <TableRow>
                                             <TableCell className="font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {nameWrapperOwnerAddress}
-                                                {isOwnedByUser && (
-                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is you.</div>
-                                                )}
+                                                {isOwnedByUser ? (
+                                                    <Tooltip delayDuration={0}>
+                                                        <TooltipTrigger asChild>
+                                                            <span>{nameWrapperOwnerAddress}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This is you.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (<span>{nameWrapperOwnerAddress}</span>)}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell className="font-medium">Registry owner</TableCell>
                                             <TableCell>
-                                                {registryOwnerAddress}
-                                                {registryOwnerAddress == nameWrapperAddress[chainId] && (
-                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper.</div>
-                                                )}
+                                                
+                                                {registryOwnerAddress == nameWrapperAddress[chainId] ? (
+                                                    <Tooltip delayDuration={0}>
+                                                        <TooltipTrigger asChild>
+                                                            <span>{registryOwnerAddress}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This is the NameWrapper.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (<span>{registryOwnerAddress}</span>)}
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>

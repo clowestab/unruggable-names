@@ -1,13 +1,20 @@
 import React from 'react'
 
 import classNames from 'clsx'
-import { useBlockNumber, useNetwork } from 'wagmi'
+import { useBlockNumber, useNetwork, useChainId } from 'wagmi'
 
 import { GetNetworkColor } from '@/lib/utils/get-network-color'
 
 import { LinkComponent } from '../shared/link-component'
 
+const chainNames = {
+  1:     "Mainnet",
+  5:     "Goerli",
+  31337: "Foundry"
+}
+
 export function NetworkStatus({ className }: any) {
+  const chainId = useChainId()
   const block = useBlockNumber({ watch: true })
   const network = useNetwork()
   const explorerUrl = network.chain?.blockExplorers?.default.url
@@ -21,7 +28,7 @@ export function NetworkStatus({ className }: any) {
   return (
     <div className={classes}>
       <span className={classesBadge}>
-        <span className="px-1">{network.chain?.name ?? 'Ethereum'}</span>
+        <span className="px-1">{chainNames[chainId] ?? 'Ethereum'}</span>
       </span>
       {explorerUrl && (
         <LinkComponent href={explorerUrl} className="mx-3 text-2xs dark:hover:text-gray-200">

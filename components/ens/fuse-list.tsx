@@ -9,7 +9,7 @@ const ONE_YEAR_IN_SECONDS       = 360 * 24 * 60 * 60;
 
 //Fuses
 const FUSES = {
-  CAN_DO_EVERYTHING:       0,
+  //CAN_DO_EVERYTHING:       0,
   CANNOT_UNWRAP:          1,
   CANNOT_BURN_FUSES:       2,
   CANNOT_TRANSFER:         4,

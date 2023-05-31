@@ -38,6 +38,12 @@ import {
     TableRow,
 }                                       from "@/components/ui/table"
 
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+}                                       from "@/components/ui/tooltip"
+
 import { Button }                       from "@/components/ui/button"
 import {
   Select,
@@ -69,7 +75,9 @@ import {
     useSubnameRegistrarRead, 
     useSubnameWrapperRead,
     useRenewalControllerRead,
-    subnameRegistrarAddress 
+    subnameRegistrarAddress,
+    subnameWrapperAddress,
+    nameWrapperAddress 
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
@@ -215,10 +223,16 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                         <TableRow>
                                             <TableCell className="font-medium">SubnameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {ownerAddress}
-                                                {address == ownerAddress && (
-                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is me</div>
-                                                )}
+                                                {address == ownerAddress ? (
+                                                    <Tooltip delayDuration={0}>
+                                                        <TooltipTrigger asChild>
+                                                            <span>{ownerAddress}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This is you.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (<span>{ownerAddress}</span>)}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
@@ -273,7 +287,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
+                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://" + (chainId == 5 ? "goerli." : "") + "etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
@@ -318,15 +332,31 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                         <TableRow>
                                             <TableCell className="font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {nameWrapperOwnerAddress}
-                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the SubnameWrapper</div>
+                                                {subnameWrapperAddress[chainId] == nameWrapperOwnerAddress ? (
+                                                    <Tooltip delayDuration={0}>
+                                                        <TooltipTrigger asChild>
+                                                            <span>{nameWrapperOwnerAddress}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This is the SubnameWrapper</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (<span>{nameWrapperOwnerAddress}</span>)}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell className="font-medium">Registry Owner</TableCell>
                                             <TableCell>
-                                                {registryOwnerAddress}
-                                                <div className = "mt-1 text-xs text-red-800 dark:text-red-200">This is the NameWrapper</div>
+                                                {nameWrapperAddress[chainId] == registryOwnerAddress ? (
+                                                    <Tooltip delayDuration={0}>
+                                                        <TooltipTrigger asChild>
+                                                            <span>{registryOwnerAddress}</span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This is the NameWrapper</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (<span>{registryOwnerAddress}</span>)}
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>
