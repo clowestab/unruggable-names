@@ -245,9 +245,9 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     console.log("LAAA", subnameRegistrarAddress[chainId]);
 
     return (
-        <div className = {classNames(className, 'flex')}>
-            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex justify-center items-center w-full')}>
-                <div className = "text-center">
+        <div className = {classNames(className)}>
+            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex flex-wrap justify-between items-center align-center w-full')}>
+                <div className = "text-center m-2 grow basis-0 min-w-[200px]">
                     {name}
                     <div 
                         className   = "cursor-pointer text-xs underline" 
@@ -255,8 +255,8 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                         view parent
                     </div>
                 </div>
-                <div className = "w-8" />
-                <div className = "flex items-center justify-center">
+                
+                <div className = "m-2 grow basis-0 text-center min-w-[200px]">
 
                     {isParentAvailable && (
                         <p><span className = "font-bold">{parentName}</span> is not registered.</p>
@@ -279,19 +279,17 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                     )}
 
                     {!isParentAvailable && isAvailableRegistry && !isOfferingSubnames && (
-                        <div className = "p-2">Not offering subnames</div>
+                        <div className = "p-2 text-center">Not offering subnames</div>
                     )}
 
                     {!isParentAvailable && isAvailableRegistry && isOfferingSubnames && isAvailable && (
-                        <React.Fragment key = {"available-" + name}>
-                            {CommonIcons.check}<div className = "w-1" /> Available
-                        </React.Fragment>
+                        <div key = {"available-" + name}>
+                            {CommonIcons.check}<span className = "ml-1">Available</span>
+                        </div>
                     )}
                 </div>
 
-                <div className = "w-8" />
-
-                <div className = "flex items-center justify-center">
+                <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                     {isAvailable && rentPrice && (
                         <>
                             {rentPrice > 0 ? (
@@ -306,10 +304,8 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                     )}
                 </div>
 
-                <div className = "w-8" />
-
                 {isAvailable && (
-                    <>
+                    <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                         {isRegistering ? (
                             <>
                                 {/* Set when the transaction is committed and 60 seconds has passed */}
@@ -362,68 +358,65 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                         )}
                                     </>
 
-                            ) : (
+                                ) : (
 
-                                <TransactionConfirmationState 
-                                    key      = {"registration-" + resultIndex}
-                                    contract = {subnameRegistrar}
-                                    txArgs   = {{
-                                        address: subnameRegistrarAddress[chainId],
-                                        args: [
-                                            encodedNameToRegister,
-                                            addressToRegisterTo, //owner
-                                            '0x9A676e781A523b5d0C0e43731313A708CB607508', //referer
-                                            registerForTimeInSeconds,
-                                            salt, //secret
-                                            addressToResolveTo, //resolver
-                                            [], //calldata
-                                            0 //fuses
-                                        ],
-                                        overrides: {
-                                            gasLimit: ethers.BigNumber.from("500000"),
-                                            value:    rentPrice?.mul("2").toString()
-                                        }
-                                    }}
-                                    txFunction  = 'register'
-                                    onBefore    = {clearCookies}
-                                    onConfirmed = {() => {
-                                        console.log("Registration confirmed la");
-                                        toast({
-                                            duration: 5000,
-                                            className: "bg-green-200 dark:bg-green-800 border-0",
-                                            description: (
-                                                <p>
-                                                    You have successfully registered <span className = "font-bold">{name}</span>.
-                                                </p>
-                                            ),
-                                        });
-                                        onRegister?.();
-                                    }}
-                                    onError = {(error) => {
+                                    <TransactionConfirmationState 
+                                        key      = {"registration-" + resultIndex}
+                                        contract = {subnameRegistrar}
+                                        txArgs   = {{
+                                            address: subnameRegistrarAddress[chainId],
+                                            args: [
+                                                encodedNameToRegister,
+                                                addressToRegisterTo, //owner
+                                                '0x9A676e781A523b5d0C0e43731313A708CB607508', //referer
+                                                registerForTimeInSeconds,
+                                                salt, //secret
+                                                addressToResolveTo, //resolver
+                                                [], //calldata
+                                                0 //fuses
+                                            ],
+                                            overrides: {
+                                                gasLimit: ethers.BigNumber.from("500000"),
+                                                value:    rentPrice?.mul("2").toString()
+                                            }
+                                        }}
+                                        txFunction  = 'register'
+                                        onBefore    = {clearCookies}
+                                        onConfirmed = {() => {
+                                            console.log("Registration confirmed la");
+                                            toast({
+                                                duration: 5000,
+                                                className: "bg-green-200 dark:bg-green-800 border-0",
+                                                description: (
+                                                    <p>
+                                                        You have successfully registered <span className = "font-bold">{name}</span>.
+                                                    </p>
+                                                ),
+                                            });
+                                            onRegister?.();
+                                        }}
+                                        onError = {(error) => {
 
-                                        console.log("error", error);
-                                        toast({
-                                            duration: 5000,
-                                            className: "bg-red-200 dark:bg-red-800 border-0",
-                                            description: (<p>{buildErrorMessage(error)}</p>),
-                                        });
-                                    }}>
-                                    <div>
-                                        {CommonIcons.miniLoader} Registering name..
-                                    </div>
-                                    <div>
-                                        SUCCESS
-                                    </div>
-                                </ TransactionConfirmationState>
-                            )}
-                        </>
+                                            console.log("error", error);
+                                            toast({
+                                                duration: 5000,
+                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                description: (<p>{buildErrorMessage(error)}</p>),
+                                            });
+                                        }}>
+                                        <div>
+                                            {CommonIcons.miniLoader} Registering name..
+                                        </div>
+                                        <div>
+                                            SUCCESS
+                                        </div>
+                                    </ TransactionConfirmationState>
+                                )}
+                            </>
 
-                    ) : (
-                        <>
-                            
-
-                            {!address ? (
-                                <div className = "ml-2">
+                        ) : (
+                            <>
+                                {!address ? (
                                     <Tooltip delayDuration={0}>
                                         <TooltipTrigger asChild>
                                             <Button 
@@ -438,19 +431,18 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                             <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
                                         </TooltipContent>
                                     </Tooltip>
-                                </div>
-                            ) : (
-                                <Button 
-                                    type      = "submit" 
-                                    disabled  = {isRegistering || !address} 
-                                    onClick   = {doRegister}>
-                                        {isRegistering && CommonIcons.miniLoader}
-                                        Register
-                                </Button>
-                            )}
-                        </>
-                    )}  
-                    </>
+                                ) : (
+                                    <Button 
+                                        type      = "submit" 
+                                        disabled  = {isRegistering || !address} 
+                                        onClick   = {doRegister}>
+                                            {isRegistering && CommonIcons.miniLoader}
+                                            Register
+                                    </Button>
+                                )}
+                            </>
+                        )}  
+                    </div>
                 )}
             </div>
         </div>

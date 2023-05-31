@@ -201,7 +201,7 @@ export default function RegistrationForm() {
     }
 
     return (
-        <div className = "m-8">
+        <div className = "m-8 p-4 w-full">
 
             <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
                 {CommonIcons.alert}

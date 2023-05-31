@@ -238,14 +238,13 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
         setCommitmentCompleteTimestamp(currentTimestamp);
     }
 
-    const classes = classNames(className, 'flex');
+    const classes = classNames(className);
 
     return (
         <div className = {classes}>
-            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex justify-center items-center w-full')}>
-                <>{name}</>
-                <div className = "w-8" />
-                <div className = "flex items-center justify-center">
+            <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex flex-wrap justify-between items-center align-center w-full')}>
+                <div className = "text-center m-2 grow basis-0 min-w-[200px]">{name}</div>
+                <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                     {isAvailable ? (
                         <>{CommonIcons.check} <span className = "ml-1">Available</span></>
                     ) : (
@@ -265,18 +264,14 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                     )}
                 </div>
 
-                <div className = "w-8" />
-
-                <div className = "flex items-center justify-center">
+                <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                     {isAvailable && rentPrice && (
                         <span>Ξ {ethers.utils.formatEther(rentPrice.base.toString())}</span>
                     )}
                 </div>
 
-                <div className = "w-8" />
-
                 {isAvailable && (
-                    <>
+                    <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                         {isRegistering ? (
 
                             <>
@@ -385,25 +380,21 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
 
                         ) : (
                             <>
-                                
-
                                 {!address ? (
-                                    <div className = "ml-2">
-                                        <Tooltip delayDuration={0}>
-                                            <TooltipTrigger asChild>
-                                                <Button 
-                                                    type      = "submit" 
-                                                    disabled  = {isRegistering || !address} 
-                                                    onClick   = {doRegister}>
-                                                    {isRegistering && CommonIcons.miniLoader}
-                                                    Register
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </div>
+                                    <Tooltip delayDuration={0}>
+                                        <TooltipTrigger asChild>
+                                            <Button 
+                                                type      = "submit" 
+                                                disabled  = {isRegistering || !address} 
+                                                onClick   = {doRegister}>
+                                                {isRegistering && CommonIcons.miniLoader}
+                                                Register
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Connect a wallet to register <span className = "font-bold">{name}</span></p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : (
                                     <Button 
                                         type      = "submit" 
@@ -415,7 +406,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                                 )}
                             </>
                         )}      
-                    </>
+                    </div>
                 )}
             </div>
         </div>
