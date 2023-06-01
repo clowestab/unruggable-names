@@ -14,11 +14,24 @@ import { LinkComponent } from '../shared/link-component'
 import { ResponsiveMobileAndDesktop } from '../shared/responsive-mobile-and-desktop'
 import { ThemeToggle } from '../shared/theme-toggle'
 
+import { useAccount, useEnsAvatar } from 'wagmi'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+
 interface Props {
   className?: string
 }
 
 export function Header(props: Props) {
+
+  const { address }      = useAccount()
+
+  const { data: avatar, isError, isLoading } = useEnsAvatar({
+    address: address,
+  })
+
+  console.log("avatar", avatar);
+
   const scrolled = useScroll(50)
   const classes = classNames(
     props.className,
@@ -69,6 +82,13 @@ export function Header(props: Props) {
             </LinkComponent>*/}
 
             <ThemeToggle />
+
+            {avatar && (
+              <Avatar>
+                <AvatarImage src={avatar} />
+                <AvatarFallback>YOU</AvatarFallback>
+              </Avatar>
+            )}
           </div>}
         </>
       </ResponsiveMobileAndDesktop>

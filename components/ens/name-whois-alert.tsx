@@ -516,7 +516,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                     className: "bg-red-200 dark:bg-red-800 border-0",
                                                                     description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
                                                                 });
-                                                            }}>
+                                                            }}
+                                                            checkStatic = {true}>
                                                             <div>
                                                                 {/* Renewing interface handled manually*/}
                                                             </div>
@@ -637,7 +638,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                     </p>
                                                                 ),
                                                             });
-                                                        }}>
+                                                        }}
+                                                        checkStatic = {true}>
                                                         <div>
                                                             {/*Show nothing when approving - we do it on the button*/}
                                                         </div>
@@ -713,7 +715,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 </p>
                                                             ),
                                                         });
-                                                    }}>
+                                                    }}
+                                                    checkStatic = {true}>
                                                     <div>
                                                         {/*Show nothing when approving - we do it on the button*/}
                                                     </div>
@@ -939,7 +942,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                     </p>
                                                                 ),
                                                             });
-                                                        }}>
+                                                        }}
+                                                        checkStatic = {true}>
                                                         <div>
                                                             {/*Handled manually*/}
                                                         </div>
@@ -1146,7 +1150,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                                 </p>
                                                                             ),
                                                                         });
-                                                                    }}>
+                                                                    }}
+                                                                    checkStatic = {true}>
                                                                     <div>
                                                                         {/*Handled manually*/}
                                                                     </div>

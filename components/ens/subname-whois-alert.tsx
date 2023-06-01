@@ -318,7 +318,8 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                             console.log("2ld renewal onAlways");
                                                             setIsRenewing(false);
                                                             refetchData();
-                                                        }}>
+                                                        }}
+                                                        checkStatic = {true}>
                                                         <div>
                                                                 {CommonIcons.miniLoader} Renewing name..
                                                         </div>

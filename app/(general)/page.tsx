@@ -47,10 +47,12 @@ import {
     deleteCookie
 }                                       from '../../helpers/Helpers.jsx';
 
-import { SubnameSearchResultRow }     from '@/components/ens/subname-search-result-row'
-import { NameSearchResultRow }        from '@/components/ens/name-search-result-row'
+import { SubnameSearchResultRow }       from '@/components/ens/subname-search-result-row'
+import { NameSearchResultRow }          from '@/components/ens/name-search-result-row'
 
-import { Toaster }                        from "@/components/ui/toaster"
+import { Toaster }                      from "@/components/ui/toaster"
+
+import {ens_normalize}                  from '@adraffy/ens-normalize'; // or require()
 
 interface SearchResult {
     name:  string,
@@ -139,6 +141,7 @@ export default function RegistrationForm() {
         console.log("search", searchTerm);
 
         var searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
+        searchTermToUse = ens_normalize(searchTermToUse);
 
         setSearchResults([]);
 
@@ -201,9 +204,9 @@ export default function RegistrationForm() {
     }
 
     return (
-        <div className = "m-8 p-4 w-full">
+        <div className = "mx-8 p-4 w-full">
 
-            <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
+            <Alert className="border-red-800 bg-red-200 dark:bg-red-800 mb-8" variant="destructive">
                 {CommonIcons.alert}
                 <AlertTitle>Testnet</AlertTitle>
                 <AlertDescription>
@@ -261,7 +264,7 @@ export default function RegistrationForm() {
                             placeholder = "Enter a name.." 
                             onChange    = {(e) => {
                                 setSearchError(null);
-                                setSearchTerm(e.target.value)
+                                setSearchTerm(e.target.value.toLowerCase())
                             }}
                             value       = {searchTerm} />
                         {searchError != null && (
@@ -289,9 +292,9 @@ export default function RegistrationForm() {
 
                         if (result.type == "subname") {
                             return (
-                                <div key = {"result-" + resultIndex}>
+                                <div key = {"result-row-" + result.name + "-" + result.nonce}>
                                     <SubnameSearchResultRow 
-                                        key             = {"result-row-" + result.name + "-" + result.nonce} {...result} 
+                                        {...result} 
                                         resultIndex     = {resultIndex} 
                                         onRegister      = {() => {    
                                             setSearchResults([]);
@@ -313,9 +316,9 @@ export default function RegistrationForm() {
                             );
                         } else if (result.type == "name") {
                             return (
-                                <div key = {"result-" + resultIndex}>
+                                <div key = {"name-result-row-" + result.name + "-" + result.nonce}>
                                     <NameSearchResultRow 
-                                        key         = {"name-result-row-" + result.name + "-" + result.nonce} {...result} 
+                                        {...result} 
                                         resultIndex = {resultIndex} 
                                         onRegister  = {() => {     
                                             setSearchResults([]);

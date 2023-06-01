@@ -9,6 +9,8 @@ import { foundry }              from 'wagmi/chains'
 
 import { useSubnameRegistrar }  from '../../lib/blockchain'
 
+import { useToast }             from '@/lib/hooks/use-toast'
+
 interface TransactionConfirmationStateProps {
     contract:     any,
     txFunction:   string,
@@ -16,17 +18,20 @@ interface TransactionConfirmationStateProps {
     children:     Array<React.ReactElement>,
     onConfirmed?: Function,
     onAlways?:    Function,
+    checkStatic:  boolean
 }
 
 //
 // @ts-ignore
-export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError }: TransactionConfirmationStateProps): React.ReactElement | null {
+export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError, checkStatic }: TransactionConfirmationStateProps): React.ReactElement | null {
+
+    const { toast }        = useToast()
 
     console.log("txFunction", txFunction);
     console.log("txContract", contract);
     console.log("txArgs", txArgs);
 
-    const { address }                                       = useAccount()
+    const { address, connector, isConnected }               = useAccount()
     const provider                                          = useProvider();
     const { data: signer }                                  = useSigner()
 
@@ -39,6 +44,8 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
     console.log("provider", provider);
     console.log("SIGNER", signer);
 
+    console.log("method connector", connector);
+
 
     React.useEffect(() => {
 
@@ -46,12 +53,25 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
             console.log("Lets write..");
             
             onBefore?.();
-            
-            contract/*.callStatic*/[txFunction](...txArgs.args, txArgs.overrides)
-                /*.then(() => {
 
-                    return contract[txFunction](...txArgs.args, txArgs.overrides);
-                })*/
+            toast({
+                duration: 8000,
+                className: "bg-blue-200 dark:bg-blue-800 border-0",
+                description: (<>Please confirm the transaction using your wallet provider (<span className = "font-bold">{connector.name}</span>).</>),
+            });
+
+            (checkStatic ? contract.callStatic : contract)[txFunction](...txArgs.args, txArgs.overrides)
+                .then((thing) => {
+
+                    if (checkStatic) {
+
+                        return contract[txFunction](...txArgs.args, txArgs.overrides);
+
+                    } else {
+
+                        return thing;
+                    }
+                })
                 .then((methodResponse: any) => {
 
                     console.log("methodResponse", methodResponse);
