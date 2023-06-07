@@ -419,7 +419,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                                             description: (<p>{buildErrorMessage(error)}</p>),
                                                         });
                                                     }}
-                                                    checkStatic = {true}>
+                                                    checkStatic = {false}>
                                                     <div>
                                                         {CommonIcons.miniLoader} Registering name..
                                                     </div>
