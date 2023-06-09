@@ -47,7 +47,8 @@ import {
     useRenewalControllerRead,
     subnameRegistrarAddress,
     useEthRegistrarControllerRead,
-    useEnsRegistryRead 
+    useEnsRegistryRead,
+    useSubnameRegistrarPricingData 
 }                                           from '../../lib/blockchain'
 import { SubnameWhoisAlert }                from '../ens/subname-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
@@ -89,6 +90,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
 
     const namehash: `0x${string}`        = ethers.utils.namehash(name)  as `0x${string}`;
+    const tokenId                           = ethers.BigNumber.from(namehash);
 
     const nameParts                          = name.split(".");
     nameParts.shift();
@@ -160,6 +162,44 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     });
 
     console.log("rentprice", rentPrice);
+
+
+    const  { 
+        data: nameData, 
+        refetch: refetchData  
+    }                                       = useSubnameRegistrarPricingData({
+        chainId: chainId,
+        args:          [parentNamehash],
+    });
+
+
+    console.log("namedata", nameData);
+
+    var renewalControllerToUse = null;
+
+    //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
+    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+
+    console.log("renewalControllerToUse", renewalControllerToUse);
+
+
+    const renewForTimeInSeconds = 31536000;
+    const encodedNameToRenew    = encodedNameToRegister;
+
+    //const renewalPrice = null;
+    //The renewal price as pulled from the basic renewal controller
+    //In reality this should be pulled from the specific renewal controller set for the subname
+    const  { data: renewalPrice }           = useRenewalControllerRead({
+        address:      renewalControllerToUse,
+        chainId:      chainId,
+        functionName: 'rentPrice',
+        args:         [encodedNameToRenew, renewForTimeInSeconds],
+    });
+
+    console.log("params", [encodedNameToRenew, renewForTimeInSeconds]);
+
+    console.log("renewalPrice", renewalPrice);
+
 
     //A salt for the registration commitment
     const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
@@ -307,6 +347,12 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                         </>
                                     ) : (
                                         <span>FREE</span>
+                                    )}
+
+                                    {renewalPrice && (
+                                        <p className = "text-xs mt-2">
+                                            Renews at <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${Math.round((ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2))}) per year.
+                                        </p>
                                     )}
                                 </>
                             )}

@@ -112,15 +112,6 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
-    const [
-        renewalControllerInput, 
-        setRenewalControllerInput
-    ]                                     = React.useState<string | null>(null);
-
-    const [
-        offerSubnamesInput, 
-        setOfferSubnamesInput
-    ]                                     = React.useState<boolean | null>(null);
 
     //Holds the prices per character for our default renewal controller pulled from chain
     const [
@@ -210,7 +201,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         var secondsPricingData = [];
         var pricingData        = [];
 
-        console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
+        //console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
         console.log("lastRenewalPriceIndex do work1", renewalController);
 
         for (var i = 0; i <= lastRenewalPriceIndex; i++) {
@@ -290,14 +281,6 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         setIsEditingSubnameRenewalConfig
     ]                                         = React.useState(false);
 
-    //TODO get renewal price and implement renewals
-    const  { data: rentPrice }  = useSubnameRegistrarRead({
-        chainId: chainId,
-        functionName: 'rentPrice',
-        args:         [`${encodedNameToRenew}`, renewForTimeInSeconds],
-     });
-
-    console.log("renewal price for " + name, rentPrice);
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
     const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useSubnameRegistrarRead({
@@ -305,6 +288,11 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         functionName: 'pricingData',
         args:         [namehashHex],
      });
+
+    const [
+        offerSubnamesInput, 
+        setOfferSubnamesInput
+    ]                                     = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
 
     //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
@@ -327,6 +315,12 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
 
+    var renewalControllerToUse = null;
+
+    //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
+    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+
+    console.log("renewalControllerToUse", renewalControllerToUse);
 
     //if (nameData === undefined) {
 
@@ -401,6 +395,11 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     console.log("CURRENT RC", registerPricingData?.renewalController);
 
     const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
+
+    const [
+        renewalControllerInput, 
+        setRenewalControllerInput
+    ]                                     = React.useState<string | null>(currentRenewalController?.value ?? null);
 
     console.log("nameData", nameData);
 
@@ -762,8 +761,17 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
                                                             </TableRow>
                                                             <TableRow>
-                                                                <TableCell className="font-medium">Renewal Controller</TableCell>
-                                                                <TableCell>{registerPricingData?.renewalController}</TableCell>
+                                                                <TableCell>Renewal Controller</TableCell>
+                                                                <TableCell>
+                                                                    <>
+                                                                        <a href = {"https://" + (chainId == 5 ? "goerli." : "") + "etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
+                                                                        {currentRenewalController && (
+                                                                            <div className = "text-xs mt-2">
+                                                                                The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className="font-bold">{currentRenewalController?.controlDescription}</span>
+                                                                            </div> 
+                                                                        )}
+                                                                    </>
+                                                                </TableCell>
                                                             </TableRow>
                                                             {/*
                                                             <TableRow>
@@ -831,7 +839,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                 <Label htmlFor="renewalController">Renewal Controller</Label>
 
                                                 <Select 
-                                                    value           = {(currentRenewalController?.value)}
+                                                    value           = {renewalControllerInput}
                                                     onValueChange   = {(value) => {
                                                         console.log(value);
                                                         setRenewalControllerInput(value)
@@ -974,10 +982,13 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
                                                 <>
                                                     <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                                        The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to set pricing <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
+                                                        The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
                                                     </div>
 
 
+                                                    {currentRenewalController?.showConfig && (
+
+                                                        <>
 
                                                     {!isEditingSubnameRenewalConfig ? (
                                                         <>
@@ -1161,6 +1172,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                 </ TransactionConfirmationState>
                                                             )}
                                                         </> 
+                                                    )}
+
+                                                    </>
                                                     )}
                                                 </>
                                             )}

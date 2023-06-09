@@ -19,14 +19,19 @@ export default defineConfig({
         'SubnameWrapper.sol/**',
         'SubnameRegistrar.sol/**',
         'RenewalController.sol/**',
+        'FixedPriceRenewalController.sol/**',
         'NameWrapper.sol/**',
         'ENSRegistry.sol/**',
         'ETHRegistrarController.sol/**'
       ],
       deployments: {
         RenewalController: {
-          5:     '0xa326d1117Eb5F83126589eD5683c2Ec45d75d352',
+          5:     '0xe80e73A7A42AD0f82315b361Bd0a3c3a95A88F5C',
           31337: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+        },
+        FixedPriceRenewalController: {
+          5:     '0xf7941569BaA791E80059cbB8E0b5104bd70adC99',
+          31337: '0x7B4f352Cd40114f12e82fC675b5BA8C7582FC513',
         },
         SubnameRegistrar: {
           5:     '0xbbf178ef94694d18dcabd5ebc2e1d4152f96b110',

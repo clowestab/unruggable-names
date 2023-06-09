@@ -104,11 +104,6 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     const hasSigner = typeof signer !== "undefined";
     console.log("ACC sig", signer);
 
-    //Basic RenewalController Instance
-    const renewalController                 = useRenewalController({
-        chainId: chainId,
-        signerOrProvider: signer
-    });
 
     //Boolean indicating if we are in the process of renewing the subname
     const [isRenewing, setIsRenewing]       = React.useState(false);
@@ -130,17 +125,6 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
         args:          [tokenId],
     });
 
-    //The renewal price as pulled from the basic renewal controller
-    //In reality this should be pulled from the specific renewal controller set for the subname
-    const  { data: renewalPrice }           = useRenewalControllerRead({
-        chainId: chainId,
-        functionName:  'rentPrice',
-        args:          [encodedNameToRenew, renewForTimeInSeconds],
-    });
-
-    console.log("renewal price for " + name, renewalPrice);
-
-
     const  { 
         data: nameData, 
         refetch: refetchData  
@@ -148,6 +132,31 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
         chainId: chainId,
         functionName:  'getData',
         args:          [tokenId],
+    });
+
+    var renewalControllerToUse = null;
+
+    //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
+    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+
+    console.log("renewalControllerToUse", renewalControllerToUse);
+
+
+    //The renewal price as pulled from the basic renewal controller
+    //In reality this should be pulled from the specific renewal controller set for the subname
+    const  { data: renewalPrice }           = useRenewalControllerRead({
+        address:      renewalControllerToUse,
+        chainId:      chainId,
+        functionName: 'rentPrice',
+        args:         [encodedNameToRenew, renewForTimeInSeconds],
+    });
+
+    console.log("renewal price for " + name, renewalPrice);
+
+    const renewalControllerToUseInstance                 = useRenewalController({
+        address:      renewalControllerToUse,
+        chainId: chainId,
+        signerOrProvider: signer
     });
 
     const  { data: canRegistrarModifyName } = useSubnameWrapperRead({
@@ -186,13 +195,6 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     const isOwnedByUser = nameData?.owner == address;
 
     //const canRenewThroughSubnameRegistrar = nameData && nameData.renewalController == "0x0000000000000000000000000000000000000000" && isOwnedByUser && canRegistrarModifyName;
-
-    var renewalControllerToUse = null;
-
-    //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
-    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
-
-    console.log("renewalControllerToUse", renewalControllerToUse);
 
     //@ts-ignore
     const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
@@ -298,7 +300,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                 ) : (
                                                     <TransactionConfirmationState 
                                                         key      = {"renewal-" + name}
-                                                        contract = {renewalController}
+                                                        contract = {renewalControllerToUseInstance}
                                                         txArgs   = {{
                                                                 args: [
                                                                     encodedNameToRenew,

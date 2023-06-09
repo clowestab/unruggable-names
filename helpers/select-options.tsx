@@ -1,5 +1,6 @@
 import { 
-    renewalControllerAddress 
+    renewalControllerAddress,
+    fixedPriceRenewalControllerAddress 
 }                                       from '@/lib/blockchain'
 
 export const renewalLengthOptions = [
@@ -15,7 +16,14 @@ export const getRenewalControllerOptions = (chainId) => {
         {
             label:              "Basic Renewal Controller", 
             value:              renewalControllerAddress[chainId], 
-            controlDescription: "on a per character basis."
+            controlDescription: "set pricing on a per character basis.",
+            showConfig: true
         },
+        {
+            label:              "$5 Renewal Controller", 
+            value:              fixedPriceRenewalControllerAddress[chainId], 
+            controlDescription: "sell subnames for a fixed $5 fee.",
+            showConfig: false
+        }
     ]
 }
