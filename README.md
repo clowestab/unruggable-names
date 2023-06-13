@@ -12,7 +12,7 @@ anvil --block-time 5
  - Run the hardhat deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
 
 ```bash
-npx hardhat deploy --network localhost --tags tags
+npx hardhat deploy --network localhost --tags renewal-controllers
 ```
 
 **Note:** These deploy scripts depend on the ENS core contracts (registry, registrar controller, name wrapper etc) being deployed and the path to those deployments being specified in `hardhat.config.ts`
@@ -40,13 +40,15 @@ npx hardhat deploy --network goerli --tags ethregistrar
 npx hardhat deploy --network goerli --tags PublicResolver
 ```
 
- - Deploy SubnameWrapper contracts
+ - Run the hardhat deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
 
 ```bash
-npx hardhat deploy --network goerli --tags tags
+npx hardhat deploy --network goerli --tags renewal-controllers
 ```
 
- - Export the data for our deployed contracts using `hardhat-deploy`
+## Always
+
+ - Export the data for our deployed contracts using `hardhat-deploy` from the SubnameWrapper repo
 
  ```bash
  npx hardhat export --export-all ../nextjs/turbo-eth/exported-contracts.json
@@ -59,6 +61,8 @@ npx hardhat deploy --network goerli --tags tags
 ```bash
 pnpm wagmi generate
 ```
+
+**Note:** Optionally add `--watch` to automatically watch for changes to our contracts and rebuild our `blockchain.ts` file.
 
 ---
 
