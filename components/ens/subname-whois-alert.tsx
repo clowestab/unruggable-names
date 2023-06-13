@@ -70,11 +70,11 @@ import {
 import { 
     useEnsRegistryRead, 
     useNameWrapperRead, 
-    useRenewalController, 
+    useIRenewalController, 
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameWrapperRead,
-    useRenewalControllerRead,
+    useIRenewalControllerRead,
     subnameRegistrarAddress,
     subnameWrapperAddress,
     nameWrapperAddress 
@@ -142,18 +142,18 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     console.log("renewalControllerToUse", renewalControllerToUse);
 
 
-    //The renewal price as pulled from the basic renewal controller
-    //In reality this should be pulled from the specific renewal controller set for the subname
-    const  { data: renewalPrice }           = useRenewalControllerRead({
+    const  { data: renewalPriceData }           = useIRenewalControllerRead({
         address:      renewalControllerToUse,
         chainId:      chainId,
         functionName: 'rentPrice',
-        args:         [encodedNameToRenew, renewForTimeInSeconds],
+        args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
 
-    console.log("renewal price for " + name, renewalPrice);
+    const { weiPrice: renewalPriceWei, usdPrice: renewalPriceUsd } = renewalPriceData ?? {weiPrice: 0, usdPrice: 0};
 
-    const renewalControllerToUseInstance                 = useRenewalController({
+    console.log("renewalPriceUsd", renewalPriceUsd);
+
+    const renewalControllerToUseInstance                 = useIRenewalController({
         address:      renewalControllerToUse,
         chainId: chainId,
         signerOrProvider: signer
@@ -282,9 +282,9 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                     </Button>
                                                                 </div>
 
-                                                                {renewalPrice && (
+                                                                {renewalPriceData && (
                                                                     <p className = "text-xs mt-2">
-                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${Math.round((ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2))}).
+                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPriceWei)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}).
                                                                     </p>
                                                                 )}
 
@@ -309,7 +309,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                 ],
                                                                 overrides: {
                                                                     gasLimit: ethers.BigNumber.from("5000000"),
-                                                                    value:    renewalPrice
+                                                                    value:    renewalPriceWei
                                                                 }
                                                         }}
                                                         txFunction = 'renew'

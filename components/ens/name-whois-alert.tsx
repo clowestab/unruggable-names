@@ -5,7 +5,6 @@ import * as React                         from 'react'
 import { Icon }                           from '@iconify/react';
 
 import { ethers }                         from "ethers";
-const yearInSeconds = ethers.BigNumber.from("31536000");
 
 import { 
     useAccount, 
@@ -88,15 +87,15 @@ import {
     useEthRegistrarControllerRead, 
     useNameWrapper, 
     useNameWrapperRead, 
-    useRenewalController, 
-    useRenewalControllerRead,
     useSubnameRegistrar, 
     useSubnameRegistrarRead, 
     useSubnameWrapper, 
     useSubnameWrapperRead,
     nameWrapperAddress,
     subnameRegistrarAddress,
-    subnameWrapperAddress 
+    subnameWrapperAddress,
+    useLengthBasedRenewalController,
+    useLengthBasedRenewalControllerRead 
 }                                         from '../../lib/blockchain'
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
@@ -177,7 +176,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     });
 
     //RenewalController instance
-    const renewalController               = useRenewalController({
+    const renewalController               = useLengthBasedRenewalController({
         chainId: chainId,
         signerOrProvider: signer ?? provider
     });
@@ -187,7 +186,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const  { 
         data: lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
-    }                                     = useRenewalControllerRead({
+    }                                     = useLengthBasedRenewalControllerRead({
         chainId: chainId,
         functionName:  'getLastCharIndex',
         args:          [],
@@ -200,10 +199,12 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
         var secondsPricingData = [];
         var pricingData        = [];
+        const yearInSeconds    = ethers.BigNumber.from("31536000");
 
         //console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
         console.log("lastRenewalPriceIndex do work1", renewalController);
 
+        
         for (var i = 0; i <= lastRenewalPriceIndex; i++) {
 
             const price = await renewalController.charAmounts(i);

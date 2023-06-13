@@ -40,11 +40,10 @@ import {
 import { 
     useNameWrapperRead,
     useSubnameRegistrar, 
-    useSubnameRegistrarCommit, 
     useSubnameRegistrarMakeCommitment, 
     useSubnameRegistrarMinCommitmentAge, 
     useSubnameRegistrarRead, 
-    useRenewalControllerRead,
+    useIRenewalControllerRead,
     subnameRegistrarAddress,
     useEthRegistrarControllerRead,
     useEnsRegistryRead,
@@ -126,17 +125,22 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
         args:         [parentLabel],
     });
 
+
     //Get pricing data for the parent name from the SubnameRegistrar
-    const  { data: pricingData, isLoading: isLoadingPricingData }  = useSubnameRegistrarRead({
+    const  { 
+        data:      nameData, 
+        isLoading: isLoadingNameData,
+        refetch:   refetchData  
+    }                                       = useSubnameRegistrarPricingData({
         chainId: chainId,
-        functionName: 'pricingData',
-        args:         [parentNamehash],
+        args:    [parentNamehash],
     });
-    const isOfferingSubnames = pricingData && pricingData.offerSubnames;
 
-    console.log("Pricing data", pricingData);
 
-    const isLoading = isLoadingRegistryOwner || isLoadingRegistrarAvailability ||isLoadingParentAvailability || isLoadingPricingData;
+    console.log("namedata", nameData);
+    const isOfferingSubnames = nameData && nameData.offerSubnames;
+
+    const isLoading = isLoadingRegistryOwner || isLoadingRegistrarAvailability ||isLoadingParentAvailability || isLoadingNameData;
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
@@ -155,25 +159,19 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     const registerForTimeInSeconds = ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? "31536000");
     const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? "0x0000000000000000000000000000000000000000";
 
-    const  { data: rentPrice }  = useSubnameRegistrarRead({
-         chainId: chainId,
+
+    const  { data: registerPriceData }  = useSubnameRegistrarRead({
+        chainId:      chainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
     });
 
-    console.log("rentprice", rentPrice);
+    const { weiPrice: registerPriceWei, usdPrice: registerPriceUsd } = registerPriceData ?? {weiPrice: 0, usdPrice: 0};
 
 
-    const  { 
-        data: nameData, 
-        refetch: refetchData  
-    }                                       = useSubnameRegistrarPricingData({
-        chainId: chainId,
-        args:          [parentNamehash],
-    });
+console.log("registerPriceData", registerPriceData);
+console.log("registerPriceWei", registerPriceWei);
 
-
-    console.log("namedata", nameData);
 
     var renewalControllerToUse = null;
 
@@ -186,20 +184,19 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
     const renewForTimeInSeconds = 31536000;
     const encodedNameToRenew    = encodedNameToRegister;
 
-    //const renewalPrice = null;
     //The renewal price as pulled from the basic renewal controller
     //In reality this should be pulled from the specific renewal controller set for the subname
-    const  { data: renewalPrice }           = useRenewalControllerRead({
+    const  { data: renewalPriceData }           = useIRenewalControllerRead({
         address:      renewalControllerToUse,
         chainId:      chainId,
         functionName: 'rentPrice',
-        args:         [encodedNameToRenew, renewForTimeInSeconds],
+        args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
 
-    console.log("params", [encodedNameToRenew, renewForTimeInSeconds]);
+    const { weiPrice: renewalPriceWei, usdPrice: renewalPriceUsd } = renewalPriceData ?? {weiPrice: 0, usdPrice: 0};
 
-    console.log("renewalPrice", renewalPrice);
 
+console.log("renewalPrice", renewalPriceData);
 
     //A salt for the registration commitment
     const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
@@ -286,7 +283,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
     console.log("LAAA", subnameRegistrarAddress[chainId]);
 
-    return (
+    return(
         <div className = {classNames(className)}>
             <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex flex-wrap justify-between items-center align-center w-full')}>
                 <div className = "text-center m-2 grow basis-0 min-w-[200px]">
@@ -338,20 +335,20 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                 <div className = "m-2 grow basis-0 text-center min-w-[200px]">
                     {isLoading ? CommonIcons.miniLoader :  (
                         <>
-                            {isAvailable && rentPrice && (
+                            {isAvailable && registerPriceWei && (
                                 <>
-                                    {rentPrice > 0 ? (
+                                    {registerPriceWei > 0 ? (
                                         <>
-                                            <span>Ξ {ethers.utils.formatEther(rentPrice.toString())}</span>
-                                            <div className = "text-xs text-center text-green-800 mt-2">${Math.round(ethers.utils.formatEther(rentPrice.toString()) * ethPrice)}</div>
+                                            <span>Ξ {ethers.utils.formatEther(registerPriceWei)}</span>
+                                            <div className = "text-xs text-center text-green-800 mt-2">${registerPriceUsd.toString()}</div>
                                         </>
                                     ) : (
                                         <span>FREE</span>
                                     )}
 
-                                    {renewalPrice && (
+                                    {renewalPriceWei && (
                                         <p className = "text-xs mt-2">
-                                            Renews at <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${Math.round((ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2))}) per year.
+                                            Renews at <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPriceWei)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}) per year.
                                         </p>
                                     )}
                                 </>
@@ -438,7 +435,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("500000"),
-                                                            value:    rentPrice?.mul("2").toString()
+                                                            value:    registerPriceWei?.mul("2").toString()
                                                         }
                                                     }}
                                                     txFunction  = 'register'

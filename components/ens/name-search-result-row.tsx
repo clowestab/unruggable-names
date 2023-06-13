@@ -71,7 +71,6 @@ import {
     useEthRegistrarControllerRead, 
     useSubnameRegistrarPricingData,
     ethRegistrarControllerAddress,
-    renewalControllerAddress,
     subnameRegistrarAddress,
     subnameWrapperAddress 
 }                                       from '../../lib/blockchain'
@@ -296,7 +295,9 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
 
                             {isAvailable && (
                                 <>
-                                    <Select onValueChange = {(value) => setRegisterForTimeInSeconds(ethers.BigNumber.from(value))}>
+                                    <Select 
+                                        onValueChange = {(value) => setRegisterForTimeInSeconds(ethers.BigNumber.from(value))}
+                                        disabled      = {isRegistering}>
                                         <SelectTrigger className="w-[180px] mx-auto mb-4">
                                             <SelectValue placeholder={renewalLengthOptions[0].label} />
                                         </SelectTrigger>
@@ -317,7 +318,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                                     </Select>
 
                                     {rentPrice && (
-                                        <span>Ξ {ethers.utils.formatEther(rentPrice.base.toString())}</span>
+                                        <span className = "text-xs">Ξ {ethers.utils.formatEther(rentPrice.base.toString())}</span>
                                     )}
                                 </>
                             )}
