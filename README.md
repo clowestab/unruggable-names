@@ -9,11 +9,13 @@
 anvil --block-time 5
 ```
 
- - Run the deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
+ - Run the hardhat deploy scripts from the [SubnameWrapper](https://github.com/nxt3d/SubnameWrapper/tree/version/no-XAP) repo
 
 ```bash
-forge script script/DeploySNW_1.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --verify -vvvv
+npx hardhat deploy --network localhost --tags tags
 ```
+
+**Note:** These deploy scripts depend on the ENS core contracts (registry, registrar controller, name wrapper etc) being deployed and the path to those deployments being specified in `hardhat.config.ts`
 
  - Run the server
 
@@ -21,7 +23,7 @@ forge script script/DeploySNW_1.s.sol --rpc-url http://127.0.0.1:8545 --broadcas
 pnpm dev
 ```
 
- - Or view the [deployed version](https://turbo-eth-git-main-clowestab.vercel.app/register).
+ - Or view the live version: [Unruggable Names](https://unruggablenames.com).
 
 **Note:** Make sure you are connected to the Foundry network. If you are using Metamask etc you might have to add a custom network.
 
@@ -38,20 +40,25 @@ npx hardhat deploy --network goerli --tags ethregistrar
 npx hardhat deploy --network goerli --tags PublicResolver
 ```
 
- - Get the addresses of the deployed contracts and update them in `wagmi.config.ts`
+ - Deploy SubnameWrapper contracts
+
+```bash
+npx hardhat deploy --network goerli --tags tags
+```
+
+ - Export the data for our deployed contracts using `hardhat-deploy`
+
+ ```bash
+ npx hardhat export --export-all ../nextjs/turbo-eth/exported-contracts.json
+ ```
+
+ *Note:* Our `wagmi.config.ts` sources address data from this exported JSON file.
+
  - Regenerate `blockchain.ts` using `wagmi-cli`
 
 ```bash
 pnpm wagmi generate
 ```
-
- - Deploy SubnameWrapper contracts
-
-```bash
-forge script script/DeploySNW_1.s.sol --rpc-url https://eth-goerli.g.alchemy.com/v2/vrPUMZ7TORr_WepAY2PaOFhwSiSqxxa0 -vvvv --slow --broadcast
-```
-
- - Get the addresses of the deployed contracts and update them in `wagmi.config.ts`
 
 ---
 
