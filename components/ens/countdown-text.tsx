@@ -1,15 +1,10 @@
 import React           from 'react'
-
-import classNames      from 'classnames'
-
 import { useInterval } from '../../helpers/Helpers.jsx';
 
-
 interface CountdownTextProps {
-    timestamp:  number,
+    timestamp:   number,
     onComplete?: () => void
 }
-
 
 export function CountdownText({ timestamp, onComplete }: CountdownTextProps) {
 	
@@ -22,7 +17,9 @@ export function CountdownText({ timestamp, onComplete }: CountdownTextProps) {
 		setCurrentTimeLeft(currentTimeLeft - 1);
 
 		if (currentTimeLeft <= 0 && !isCompleted) {
+
 			console.log("Countdown complete");
+			
 			onComplete?.();
 			setIsCompleted(true);
 		}
@@ -32,9 +29,9 @@ export function CountdownText({ timestamp, onComplete }: CountdownTextProps) {
 	if (currentTimeLeft > 0) {
 
 		return (
-			<div>
+			<>
 			  	{currentTimeLeft}
-			</div>
+			</>
 		);
 	}
 

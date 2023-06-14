@@ -8996,7 +8996,7 @@
           ]
         },
         "FixedPriceRenewalController": {
-          "address": "0x7CC66AA0198bf0F9D800e8E35FD3b4FC185719A7",
+          "address": "0x0be43D448019F980c58d075dB43F7BD2C23E9155",
           "abi": [
             {
               "inputs": [
@@ -9586,7 +9586,7 @@
           ]
         },
         "LengthBasedRenewalController": {
-          "address": "0x5d590054F28c823e3E695865d2F96c05a2778907",
+          "address": "0x04e4013874F396695d4dFd6f26051c077FF18143",
           "abi": [
             {
               "inputs": [
@@ -10220,7 +10220,7 @@
           ]
         },
         "SubnameRegistrar": {
-          "address": "0xC77abB1a5D26ef13a1aefCd4984c0ED83adAd955",
+          "address": "0x8013E8f1070dCd4c2171abFBCEb24310b35fdF05",
           "abi": [
             {
               "inputs": [
@@ -11101,7 +11101,7 @@
           ]
         },
         "SubnameWrapper": {
-          "address": "0x39b0B9fABB1cA4D0E261abd6DBfCbcc5916ce494",
+          "address": "0x05c5a1441031B5fb0648cD56DD236A804dD9016c",
           "abi": [
             {
               "inputs": [
@@ -12343,7 +12343,7 @@
           ]
         },
         "USDOracleMock": {
-          "address": "0x0dFc4aD9B14C123C045f52311b8761D7D8922579",
+          "address": "0xEE93e275847e45f827a1991A8F1144C90a486014",
           "abi": [
             {
               "inputs": [],
@@ -19095,7 +19095,7 @@
           ]
         },
         "FixedPriceRenewalController": {
-          "address": "0xeC827421505972a2AE9C320302d3573B42363C26",
+          "address": "0xc0Bb1650A8eA5dDF81998f17B5319afD656f4c11",
           "abi": [
             {
               "inputs": [
@@ -19685,7 +19685,7 @@
           ]
         },
         "LengthBasedRenewalController": {
-          "address": "0xb007167714e2940013EC3bb551584130B7497E22",
+          "address": "0x5322471a7E37Ac2B8902cFcba84d266b37D811A0",
           "abi": [
             {
               "inputs": [
@@ -20319,7 +20319,7 @@
           ]
         },
         "SubnameRegistrar": {
-          "address": "0x2e8880cAdC08E9B438c6052F5ce3869FBd6cE513",
+          "address": "0xA3307BF348ACC4bEDdd67CCA2f7F0c4349d347Db",
           "abi": [
             {
               "inputs": [
@@ -22442,7 +22442,7 @@
           ]
         },
         "USDOracleMock": {
-          "address": "0x627b9A657eac8c3463AD17009a424dFE3FDbd0b1",
+          "address": "0x76cec9299B6Fa418dc71416FF353737AB7933A7D",
           "abi": [
             {
               "inputs": [],

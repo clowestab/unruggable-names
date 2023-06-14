@@ -1,5 +1,3 @@
-const ethPrice = 1820;
-
 import React                                from 'react'
 
 import classNames                           from 'clsx'
@@ -36,7 +34,9 @@ import {
     setCookie,
     buildErrorMessage 
 }                                           from '../../helpers/Helpers.jsx';
-
+import {
+    ZERO_ADDRESS,
+}                                           from '../../helpers/constants'
 import { 
     useNameWrapperRead,
     useSubnameRegistrar, 
@@ -107,7 +107,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
         args:         [namehash],
     });
 
-    const isAvailableRegistry = registryOwner == "0x0000000000000000000000000000000000000000";
+    const isAvailableRegistry = registryOwner == ZERO_ADDRESS;
     console.log("isAvailableRegistry", isAvailableRegistry);
 
     //Discern if the subname is available in the SubnameRegistrar
@@ -157,7 +157,7 @@ export function SubnameSearchResultRow({ className, name, resultIndex, onRegiste
 
     const addressToRegisterTo      = cookiedCommitment?.addressToRegisterTo ?? address;
     const registerForTimeInSeconds = ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? "31536000");
-    const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? "0x0000000000000000000000000000000000000000";
+    const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
 
     const  { data: registerPriceData }  = useSubnameRegistrarRead({
@@ -176,7 +176,7 @@ console.log("registerPriceWei", registerPriceWei);
     var renewalControllerToUse = null;
 
     //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
-    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+    if (nameData && nameData.renewalController != ZERO_ADDRESS) { renewalControllerToUse = nameData.renewalController; } 
 
     console.log("renewalControllerToUse", renewalControllerToUse);
 
@@ -250,7 +250,7 @@ console.log("renewalPrice", renewalPriceData);
         console.log("onCommitmentConfirmed", time.toString());
         console.log("onCommitmentConfirmed block", block);
         const currentTimestamp = Math.floor(Date.now() / 1000);
-        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5;
+        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 1;
 
         setCommitmentReadyTimestamp(newCommitmentReadyTimestamp);
 

@@ -1,41 +1,17 @@
-//Fuses
-const FUSES = {
-  CAN_DO_EVERYTHING:       0,
-  CANNOT_UNWRAP:          1,
-  CANNOT_BURN_FUSES:       2,
-  CANNOT_TRANSFER:         4,
-  CANNOT_SET_RESOLVER:     8,
-  CANNOT_SET_TTL:          16,
-  CANNOT_CREATE_SUBDOMAIN: 32,
-  CANNOT_APPROVE:          64,
-  PARENT_CANNOT_CONTROL:   2 ** 16,
-  IS_DOT_ETH:              2 ** 17,
-  CAN_EXTEND_EXPIRY:       2 ** 18,
-}
-
 import React                            from 'react'
 
 import classNames                       from 'clsx'
 import { ethers }                       from "ethers";
-import { HiCheckCircle, HiXCircle }     from 'react-icons/hi'
 import { 
     useAccount,
     useProvider, 
     useSigner, 
     useNetwork,
-    useWaitForTransaction,
     useChainId 
 }                                       from 'wagmi'
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogTrigger,
 }                                       from "@/components/ui/alert-dialog"
 
@@ -44,7 +20,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 }                                       from "@/components/ui/select"
@@ -60,10 +35,13 @@ import { CountdownText }                from './countdown-text'
 import { 
     generateSalt, 
     hexEncodeName,
-    getCookie,
     setCookie,
     buildErrorMessage 
 }                                       from '../../helpers/Helpers.jsx';
+import {
+    ZERO_ADDRESS,
+    FUSES
+}                                       from '../../helpers/constants'
 import { 
     useEthRegistrarController, 
     useEthRegistrarControllerMakeCommitment, 
@@ -71,8 +49,6 @@ import {
     useEthRegistrarControllerRead, 
     useSubnameRegistrarPricingData,
     ethRegistrarControllerAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress 
 }                                       from '../../lib/blockchain'
 import { NameWhoisAlert }               from '../ens/name-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
@@ -82,23 +58,15 @@ import { useToast }                     from '@/lib/hooks/use-toast'
 
 import {
     renewalLengthOptions,
-    getRenewalControllerOptions
 }                                       from '../../helpers/select-options';
-
-const REGISTRATION_STATE = {
-    COMMITTED:  'COMMITTED',
-    REGISTERED: 'REGISTERED',
-}
- 
 
 interface SearchResultRowProps {
     className?:  string,
     name:        string,
     resultIndex: number,
     onRegister?: () => void,
-    doLookup?: any
+    doLookup?:   any
 }
-
 
 export function NameSearchResultRow({ className, name, resultIndex, onRegister, cookiedCommitment, clearCookies }: SearchResultRowProps) {
 
@@ -113,63 +81,70 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
 
     console.log("SIGNER", signer);
 
-    const ethRegistrarController = useEthRegistrarController({
-        chainId: chainId,
+    const ethRegistrarController        = useEthRegistrarController({
+        chainId:          chainId,
         signerOrProvider: signer
     });
 
     console.log("ethRegistrarController", ethRegistrarController);
 
     //Boolean indiciating if the name is being registered
-    const [isRegistering, setIsRegistering]                             = React.useState(cookiedCommitment != null ? true : false);
+    const [
+        isRegistering, 
+        setIsRegistering
+    ]                                   = React.useState(cookiedCommitment != null ? true : false);
 
     //Holds the selected time in seconds for a renewal
     const [
         registerForTimeInSeconds, 
         setRegisterForTimeInSeconds
-    ]                                     = React.useState(ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? renewalLengthOptions[0].value));
+    ]                                   = React.useState(ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? renewalLengthOptions[0].value));
 
     //The unix timestamp at which the commitment becomes valid on chain
-    const [commitmentReadyTimestamp, setCommitmentReadyTimestamp]       = React.useState<number | null>(cookiedCommitment?.commitmentReadyTimestamp ?? null);
+    const [
+        commitmentReadyTimestamp, 
+        setCommitmentReadyTimestamp
+    ]                                   = React.useState<number | null>(cookiedCommitment?.commitmentReadyTimestamp ?? null);
 
     //Set once the commitment validity countdown has completed
-    const [commitmentCompleteTimestamp, setCommitmentCompleteTimestamp] = React.useState<number | null>(null);
+    const [
+        commitmentCompleteTimestamp, 
+        setCommitmentCompleteTimestamp
+    ]                                   = React.useState<number | null>(null);
 
-    const nameParts               = name.split(".");
-    const label                     = nameParts[0];
-    const encodedNameToRegister     = hexEncodeName(name);
-    const nameNamehash: `0x${string}`            = ethers.utils.namehash(name) as `0x${string}`;
+    const nameParts                     = name.split(".");
+    const label                         = nameParts[0];
+    const encodedNameToRegister         = hexEncodeName(name);
+    const nameNamehash: `0x${string}`   = ethers.utils.namehash(name) as `0x${string}`;
 
-    const  { data: isAvailable, isLoading: isLoadingAvailability }    = useEthRegistrarControllerRead({
+    const  { 
+        data:      isAvailable, 
+        isLoading: isLoadingAvailability 
+    }                                   = useEthRegistrarControllerRead({
         chainId:      chainId,
         functionName: 'available',
         args:         [label],
     });
 
-    console.log("isAvailable data", isAvailable);
-
-    const  { data: pricingData }  = useSubnameRegistrarPricingData({
+    const  { data: pricingData }        = useSubnameRegistrarPricingData({
         chainId: chainId,
         args:    [nameNamehash],
      });
 
-    console.log("Pricing data", pricingData);
 
-    const addressToRegisterTo      = cookiedCommitment?.addressToRegisterTo ?? address;
-    const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? "0x0000000000000000000000000000000000000000";
+    const addressToRegisterTo           = cookiedCommitment?.addressToRegisterTo ?? address;
+    const addressToResolveTo            = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
 
-    const  { data: rentPrice }  = useEthRegistrarControllerRead({
+    const  { data: rentPrice }          = useEthRegistrarControllerRead({
         chainId: chainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
      });
 
 
-    console.log("rentprice", rentPrice);
-
     //A salt for the registration commitment
-    const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
+    const [salt, setSalt]               = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
 
     console.log("salt", salt);
 
@@ -226,7 +201,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
         console.log("onCommitmentConfirmed block", block);
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 5;
+        const newCommitmentReadyTimestamp = currentTimestamp + parseInt(MIN_COMMITMENT_TIME_IN_SECONDS!.toString()) + 1;
         //Discern and set the time at which the commitment will be valid on chain
         setCommitmentReadyTimestamp(newCommitmentReadyTimestamp);
 

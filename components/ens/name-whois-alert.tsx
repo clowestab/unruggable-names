@@ -1,5 +1,3 @@
-const ethPrice = 1854;
-
 import * as React                         from 'react'
 
 import { Icon }                           from '@iconify/react';
@@ -81,6 +79,9 @@ import {
     formatExpiry, 
     hexEncodeName 
 }                                         from '../../helpers/Helpers.jsx';
+import {
+    ZERO_ADDRESS,
+}                                         from '../../helpers/constants'
 import { 
     useEnsRegistryRead, 
     useEthRegistrarController, 
@@ -95,7 +96,9 @@ import {
     subnameRegistrarAddress,
     subnameWrapperAddress,
     useLengthBasedRenewalController,
-    useLengthBasedRenewalControllerRead 
+    useLengthBasedRenewalControllerRead,
+    useIusdOracleRead,
+    useEthRegistrarControllerPrices 
 }                                         from '../../lib/blockchain'
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
@@ -319,7 +322,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     var renewalControllerToUse = null;
 
     //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
-    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+    if (nameData && nameData.renewalController != ZERO_ADDRESS) { renewalControllerToUse = nameData.renewalController; } 
 
     console.log("renewalControllerToUse", renewalControllerToUse);
 
@@ -357,10 +360,12 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-        chainId: chainId,
+        chainId:      chainId,
         functionName: 'owner',
         args:         [namehashHex],
      });
+
+    const ethPrice = 1600;
 
     //Triggers the transaction to approve the 
     const onClickApproveSubnameRegistrar = () => {
@@ -796,14 +801,31 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
                                                 {isOwnedByUser && (
                                                     <div className = "text-center mt-4">
-                                                        <Button 
-                                                            type    ="submit" 
-                                                            onClick   = {(e) => {
-                                                                setIsEditingSubnameRegistrationConfig(true);
-                                                            }} 
-                                                            className = "mt-4">
-                                                            Edit Configuration
-                                                        </Button>
+
+                                                        {(!isApprovedForAllNameWrapper || !isApprovedForAllSubnameWrapper) ? (
+                                                            <Tooltip delayDuration = {0}>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button 
+                                                                        type      = "submit" 
+                                                                        disabled  = {true}
+                                                                        className = "mt-4">
+                                                                        Edit Configuration
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>You must provide the appropriate contract approvals prior to offering subnames.</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <Button 
+                                                                type    ="submit" 
+                                                                onClick   = {(e) => {
+                                                                    setIsEditingSubnameRegistrationConfig(true);
+                                                                }} 
+                                                                className = "mt-4">
+                                                                Edit Configuration
+                                                            </Button>
+                                                        )}
 
                                                         <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
                                                             You have this option because you own <span className = "font-bold">{name}</span>.
@@ -837,7 +859,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     </label>
                                                 </div>
 
-                                                <Label htmlFor="renewalController">Renewal Controller</Label>
+                                                <Label htmlFor = "renewalController">
+                                                    Renewal Controller
+                                                </Label>
 
                                                 <Select 
                                                     value           = {renewalControllerInput}
@@ -847,7 +871,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     }}
                                                     disabled        = {isSavingRegistrationConfigurationData}>
                                                     <SelectTrigger className = "my-2">
-                                                        <SelectValue placeholder="Select a renewal controller" />
+                                                        <SelectValue placeholder="Select a renewal controller">{renewalControllerInput != null ? (renewalControllerOptions.find((item) => item.value == renewalControllerInput)).label : "Select a renewal controller"}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectGroup>
@@ -976,7 +1001,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
 
                                         
-                                            {registerPricingData?.renewalController == "0x0000000000000000000000000000000000000000" ? (
+                                            {registerPricingData?.renewalController == ZERO_ADDRESS ? (
 
                                                 <p className = "text-xs text-red-800 dark:text-red-200">This name <span className = "font-bold">does not</span> have a renewal controller set.</p>
                                             ) : (

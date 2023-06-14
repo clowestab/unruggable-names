@@ -179,7 +179,13 @@ export default function RegistrationForm() {
             }); 
 
             newResults.push({
-                name:  nameParts[0] + ".testing.eth", 
+                name:  nameParts[0] + ".fivedollars.eth", 
+                type:  'subname', 
+                nonce: Math.floor(Math.random() * 100000)
+            }); 
+
+            newResults.push({
+                name:  nameParts[0] + ".pricepercharacter.eth", 
                 type:  'subname', 
                 nonce: Math.floor(Math.random() * 100000)
             }); 

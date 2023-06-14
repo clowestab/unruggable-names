@@ -1,40 +1,9 @@
-//Useful constants
-const REQUIRED_CHAIN_ID         = 5;
-const ETH_NODE                  = ethers.utils.namehash('eth');
-const ZERO_ADDRESS              = '0x0000000000000000000000000000000000000000'
-const DUMMY_ADDRESS             = '0x0000000000000000000000000000000000000001'
-const DAY                       = 86400
-const GRACE_PERIOD              = 90 * DAY
-const ONE_YEAR_IN_SECONDS       = 360 * 24 * 60 * 60;
-
-//Fuses
-const FUSES = {
-  //CAN_DO_EVERYTHING:       0,
-  CANNOT_UNWRAP:          1,
-  CANNOT_BURN_FUSES:       2,
-  CANNOT_TRANSFER:         4,
-  CANNOT_SET_RESOLVER:     8,
-  CANNOT_SET_TTL:          16,
-  CANNOT_CREATE_SUBDOMAIN: 32,
-  CANNOT_APPROVE:          64,
-  PARENT_CANNOT_CONTROL:   2 ** 16,
-  IS_DOT_ETH:              2 ** 17,
-  CAN_EXTEND_EXPIRY:       2 ** 18,
-}
-
-const PARENT_CONTROLLED_FUSES   = 0xFFFF0000;
-// all fuses apart from IS_DOT_ETH
-const USER_SETTABLE_FUSES           = 0xFFFDFFFF;
-
 import React                            from 'react'
-import { ethers }                         from "ethers";
+import { ethers }                       from "ethers";
 
 import { 
-    useAccount,
-    useProvider, 
     useSigner, 
     useNetwork,
-    useWaitForTransaction,
     useChainId 
 }                                       from 'wagmi'
 
@@ -55,9 +24,16 @@ import {
 }                                       from '../../lib/blockchain'
 
 import CommonIcons                      from '../shared/common-icons';
-import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
-import { ToastAction }                  from "@/components/ui/toast"
+import {
+    ZERO_ADDRESS,
+    FUSES,
+    PARENT_CONTROLLED_FUSES,
+    USER_SETTABLE_FUSES,
+    DAY,
+    GRACE_PERIOD
+}                                           from '../../helpers/constants'
+
 import { useToast }                     from '@/lib/hooks/use-toast'
 
 interface FuseListProps {
@@ -66,91 +42,87 @@ interface FuseListProps {
 
 export function FuseList({ name }: FuseListProps) {
 
+    const nameParts                         = name.split(".");
+    const label: string                     = nameParts.shift()!;
+    const labelhash: `0x${string}`          = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
+    const namehash                          = ethers.utils.namehash(name)
 
-    const nameParts                     = name.split(".");
-    const label: string                           = nameParts.shift()!;
-    const labelhash: `0x${string}`        = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
-    const namehash                        = ethers.utils.namehash(name)
-    const namehashHex: `0x${string}`      = namehash as `0x${string}`;
-
-    const nameNodeString                                      = nameParts.join(".");
-    const isDotEth                                              = nameNodeString == "eth";
-    const is2ld                                                 = isDotEth && nameParts.length == 1;
-    const nameNodeNamehash: `0x${string}`                     = ethers.utils.namehash(nameNodeString)  as `0x${string}`;
+    const nameNodeString                    = nameParts.join(".");
+    const isDotEth                          = nameNodeString == "eth";
+    const is2ld                             = isDotEth && nameParts.length == 1;
+    const nameNodeNamehash: `0x${string}`   = ethers.utils.namehash(nameNodeString)  as `0x${string}`;
     
+    const tokenId                           = ethers.BigNumber.from(namehash);
+    const nameNodeTokenId                   = ethers.BigNumber.from(nameNodeNamehash);
 
-    console.log("namehash", typeof namehash);
-    console.log("namehashHex", namehashHex);
 
-    const tokenId                         = ethers.BigNumber.from(namehash);
-    const nameNodeTokenId                         = ethers.BigNumber.from(nameNodeNamehash);
-
+    const { toast }                         = useToast()
 
     const { 
         data: signer, 
-    }                                     = useSigner()
+    }                                       = useSigner()
 
     const { 
         chain, 
-    }                                     = useNetwork()
+    }                                       = useNetwork()
 
-    const  chainId   = useChainId();
+    const  chainId                          = useChainId();
 
     //NameWrapper instance
-    const nameWrapper = useNameWrapper({
+    const nameWrapper                       = useNameWrapper({
         signerOrProvider: signer
     });
 
     //SubnameWrapper instance
-    const subnameWrapper = useSubnameWrapper({
+    const subnameWrapper                    = useSubnameWrapper({
         chainId: chainId,
         signerOrProvider: signer
     });
 
 
     //Gets owner/expiry/fuses from the namewrapper
-    const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
+    const  { 
+        data: nameData, 
+        refetch: refetchData 
+    }                                       = useNameWrapperRead({
         chainId: chainId,
          functionName: 'getData',
          args:         [tokenId],
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
-    const isAvailable = String(nameWrapperAddress[chainId]) == String("0x0000000000000000000000000000000000000000");
-
-    console.log("name data", nameData);
-
+    const isAvailable = String(nameWrapperAddress[chainId]) == ZERO_ADDRESS;
 
     //Gets owner/expiry/fuses from the namewrapper
-    const  { data: parentNameData, refetch: refetchParentData }  = useNameWrapperRead({
+    const  { 
+        data: parentNameData, 
+        refetch: refetchParentData 
+    }                                       = useNameWrapperRead({
         chainId: chainId,
          functionName: 'getData',
          args:         [nameNodeTokenId],
-     });
+    });
+
     const {owner: nameWrapperParentOwnerAddress, fuses: parentWrapperFuses} = parentNameData ?? {};
 
-    console.log("PARENT name data", parentNameData);
-
-    const  { data: isWrapped, refetch: refetchIsWrapped }  = useNameWrapperRead({
+    const  { 
+        data: isWrapped, 
+        refetch: refetchIsWrapped 
+    }                                       = useNameWrapperRead({
         chainId: chainId,
          functionName: 'isWrapped',
          args:         [nameNodeNamehash, labelhash],
-     });
+    });
 
-
-    console.log("iswrapped", isWrapped);
-
-
-    const [fuseBeingBurned, setFuseBeingBurned]                 = React.useState<string | null>(null);
-
-    const { toast } = useToast()
+    const [
+        fuseBeingBurned, 
+        setFuseBeingBurned
+    ]                                       = React.useState<string | null>(null);
 
     const addError = (error: any) => {
 
-        console.log("adderror", error);
-
         toast({
-            duration: 5000,
-            className: "bg-red-200 dark:bg-red-800 border-0",
+            duration:    5000,
+            className:   "bg-red-200 dark:bg-red-800 border-0",
             description: (
                 <>
                     <div className = "text-center mb-4">
@@ -165,8 +137,6 @@ export function FuseList({ name }: FuseListProps) {
             ),
             variant: "destructive",
         })
-
-        console.log("post toast");
     }
 
 
@@ -185,6 +155,7 @@ export function FuseList({ name }: FuseListProps) {
             }
 
         } else if (error.reason != null) {
+
             errorString = error.reason;
         }
 
@@ -394,16 +365,16 @@ export function FuseList({ name }: FuseListProps) {
                 <table className = "mt-8 items-center bg-transparent w-full border-collapse ">
                     <thead>
                         <tr>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                                 Fuse
                             </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                                 Type
                             </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                                 Burned?
                             </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                                 Actions
                             </th>
                         </tr>
@@ -422,15 +393,15 @@ export function FuseList({ name }: FuseListProps) {
 
                             return (
                                 <tr key = {fuseKey}>
-                                    <th className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
+                                    <th className = "border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                                             {fuseKey}
                                     </th>
 
                                   
 
-                                    <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
+                                    <td className = "border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
 
-                                        <Tooltip delayDuration={0}>
+                                        <Tooltip delayDuration = {0}>
                                             <TooltipTrigger asChild>
                                                 <Icon 
                                                     className   = "inline-block"
@@ -444,10 +415,10 @@ export function FuseList({ name }: FuseListProps) {
                                         </Tooltip>
                                     </td>
 
-                                    <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
+                                    <td className = "border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                                             {isBurned ? CommonIcons.check : CommonIcons.cross}
                                     </td>
-                                    <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
+                                    <td className = "border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                                         {!isBurned && (
                                             <Button 
                                                 type      = "submit" 

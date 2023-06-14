@@ -1,5 +1,3 @@
-const ethPrice = 1800;
-
 import React                            from 'react'
 
 import { ethers }                       from "ethers";
@@ -20,21 +18,17 @@ import {
     AlertDialogTitle,
 }                                       from "@/components/ui/alert-dialog"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-}                                       from "@/components/ui/accordion"
+import { 
+    Tabs, 
+    TabsContent, 
+    TabsList, 
+    TabsTrigger 
+}                                       from "@/components/ui/tabs"
 
 import {
     Table,
     TableBody,
     TableCell,
-    TableHead,
-    TableHeader,
     TableRow,
 }                                       from "@/components/ui/table"
 
@@ -50,7 +44,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 }                                       from "@/components/ui/select"
@@ -67,12 +60,15 @@ import {
     hexEncodeName 
 }      
                                         from '../../helpers/Helpers.jsx';
+
+import {
+    ZERO_ADDRESS,
+}                                       from '../../helpers/constants'
+
 import { 
     useEnsRegistryRead, 
     useNameWrapperRead, 
     useIRenewalController, 
-    useSubnameRegistrar, 
-    useSubnameRegistrarRead, 
     useSubnameWrapperRead,
     useIRenewalControllerRead,
     subnameRegistrarAddress,
@@ -83,27 +79,23 @@ import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
 interface SubnameWhoisAlertProps {
-    name:        string,
+    name: string,
 }
 
 // @ts-ignore
 export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.ReactElement | null {
 
     const { address }                       = useAccount()
-    console.log("ACC ADD", address);
     const { chain }                         = useNetwork()
-    const  chainId   = useChainId();
+    const  chainId                          = useChainId();
 
     const renewalControllerOptions          = getRenewalControllerOptions(chainId);
-
 
     const { 
         data: signer, 
     }                                       = useSigner()
 
     const hasSigner = typeof signer !== "undefined";
-    console.log("ACC sig", signer);
-
 
     //Boolean indicating if we are in the process of renewing the subname
     const [isRenewing, setIsRenewing]       = React.useState(false);
@@ -115,92 +107,86 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
     const [
         renewForTimeInSeconds, 
         setRenewForTimeInSeconds
-    ]                                     = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
+    ]                                       = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
     const refererAddress                    = "0x0000000000000000000000000000000000005627";
 
     //Owner of the subdoomain in the SubnameWrapper
     const  { data: ownerAddress }           = useSubnameWrapperRead({
-        chainId: chainId,
-        functionName:  'ownerOf',
-        args:          [tokenId],
+        chainId:      chainId,
+        functionName: 'ownerOf',
+        args:         [tokenId],
     });
 
     const  { 
-        data: nameData, 
+        data:    nameData, 
         refetch: refetchData  
     }                                       = useSubnameWrapperRead({
-        chainId: chainId,
-        functionName:  'getData',
-        args:          [tokenId],
+        chainId:      chainId,
+        functionName: 'getData',
+        args:         [tokenId],
     });
 
     var renewalControllerToUse = null;
 
-    //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
-    if (nameData && nameData.renewalController != "0x0000000000000000000000000000000000000000") { renewalControllerToUse = nameData.renewalController; } 
+    if (nameData && nameData.renewalController != ZERO_ADDRESS) { 
+        renewalControllerToUse = nameData.renewalController; 
+    } 
 
-    console.log("renewalControllerToUse", renewalControllerToUse);
-
-
-    const  { data: renewalPriceData }           = useIRenewalControllerRead({
+    const  { data: renewalPriceData }        = useIRenewalControllerRead({
         address:      renewalControllerToUse,
         chainId:      chainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
 
-    const { weiPrice: renewalPriceWei, usdPrice: renewalPriceUsd } = renewalPriceData ?? {weiPrice: 0, usdPrice: 0};
+    const { 
+        weiPrice: renewalPriceWei, 
+        usdPrice: renewalPriceUsd 
+    }                                        = renewalPriceData ?? {weiPrice: 0, usdPrice: 0};
 
     console.log("renewalPriceUsd", renewalPriceUsd);
 
-    const renewalControllerToUseInstance                 = useIRenewalController({
-        address:      renewalControllerToUse,
-        chainId: chainId,
+    const renewalControllerToUseInstance     = useIRenewalController({
+        address:          renewalControllerToUse,
+        chainId:          chainId,
         signerOrProvider: signer
     });
 
-    const  { data: canRegistrarModifyName } = useSubnameWrapperRead({
-        chainId: chainId,
-        functionName:  'canModifyName',
-        args:          [namehash, subnameRegistrarAddress[chainId]],
+    const  { data: canRegistrarModifyName }  = useSubnameWrapperRead({
+        chainId:      chainId,
+        functionName: 'canModifyName',
+        args:         [namehash, subnameRegistrarAddress[chainId]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);
 
-
-    console.log("name data", nameData);
-
     const  { 
         data: nameWrapperOwnerAddress 
-    }                                       = useNameWrapperRead({
-        chainId: chainId,
-        functionName:  'ownerOf',
-        args:          [tokenId],
+    }                                        = useNameWrapperRead({
+        chainId:      chainId,
+        functionName: 'ownerOf',
+        args:         [tokenId],
     });
 
-    const  { data: registryOwnerAddress }   = useEnsRegistryRead({
-        chainId: chainId,
-        functionName:  'owner',
-        args:          [namehash],
+    const  { data: registryOwnerAddress }    = useEnsRegistryRead({
+        chainId:      chainId,
+        functionName: 'owner',
+        args:         [namehash],
     });
 
-    console.log("owner address " + name, ownerAddress);
-
-    const onClickRenew = () => {
-
-        console.log("renew");
-        setIsRenewing(true);
-    }
-
-    const isOwnedByUser = nameData?.owner == address;
-
-    //const canRenewThroughSubnameRegistrar = nameData && nameData.renewalController == "0x0000000000000000000000000000000000000000" && isOwnedByUser && canRegistrarModifyName;
+    const isOwnedByUser                     = nameData?.owner == address;
 
     //@ts-ignore
-    const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
-    const expiryString  = expiryDate.toLocaleString();
+    const expiryDate                        = new Date(parseInt(nameData?.expiry) * 1000);
+    const expiryString                      = expiryDate.toLocaleString();
 
-    const currentRenewalControllerData = renewalControllerOptions.find((option) => option.value == renewalControllerToUse);
+    const currentRenewalControllerData      = renewalControllerOptions.find((option) => option.value == renewalControllerToUse);
+
+    //Handler for when the 'Renew' button is clicked
+    const onClickRenew = () => {
+
+        setIsRenewing(true);
+    }
 
     return (
         <AlertDialogContent>
@@ -208,14 +194,13 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                 <AlertDialogTitle>{name}</AlertDialogTitle>
                 <AlertDialogDescription asChild>
 
-
-                    <Tabs defaultValue="item-profile">
-                        <TabsList className="flex flex-wrap w-fit mx-auto">
-                            <TabsTrigger value="item-profile">Profile</TabsTrigger>
-                            <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
+                    <Tabs defaultValue = "item-profile">
+                        <TabsList className = "flex flex-wrap w-fit mx-auto">
+                            <TabsTrigger value = "item-profile">Profile</TabsTrigger>
+                            <TabsTrigger value = "item-fuses">Fuses</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="item-profile" asChild>
+                        <TabsContent value = "item-profile" asChild>
 
                             <>
                                 <h1 className = "my-4 text-lg">Profile</h1>
@@ -223,10 +208,12 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                 <Table>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell className="font-medium">SubnameWrapper Owner</TableCell>
+                                            <TableCell className = "font-medium">
+                                                SubnameWrapper Owner
+                                            </TableCell>
                                             <TableCell>
                                                 {address == ownerAddress ? (
-                                                    <Tooltip delayDuration={0}>
+                                                    <Tooltip delayDuration = {0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{ownerAddress}</span>
                                                         </TooltipTrigger>
@@ -238,11 +225,13 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell className="font-medium">Expiry</TableCell>
+                                            <TableCell className = "font-medium">Expiry</TableCell>
                                             <TableCell>
                                                 
                                                 <p>{expiryString}</p>
-                                                <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(nameData?.expiry)}</div>
+                                                <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">
+                                                    {formatExpiry(nameData?.expiry)}
+                                                </div>
 
                                                 {!isRenewing ? (  
 
@@ -252,7 +241,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                 <div className = "flex mt-8">
 
                                                                     <Select onValueChange = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
-                                                                        <SelectTrigger className="w-[180px]">
+                                                                        <SelectTrigger className = "w-[180px]">
                                                                             <SelectValue placeholder={renewalLengthOptions[0].label} />
                                                                         </SelectTrigger>
                                                                         <SelectContent>
@@ -271,7 +260,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                                         </SelectContent>
                                                                     </Select>
 
-                                                                    <div className="w-2" />
+                                                                    <div className = "w-2" />
 
                                                                     <Button 
                                                                         type     = "submit" 
@@ -314,7 +303,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                         }}
                                                         txFunction = 'renew'
                                                         onConfirmed = {() => {
-                                                                console.log("renewal confirmed");
+                                                            console.log("renewal confirmed");
                                                         }}
                                                         onAlways  = {() => {
                                                             console.log("2ld renewal onAlways");
@@ -323,17 +312,17 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                         }}
                                                         checkStatic = {true}>
                                                         <div>
-                                                                {CommonIcons.miniLoader} Renewing name..
+                                                            {CommonIcons.miniLoader} Renewing name..
                                                         </div>
                                                         <div>
-                                                                SUCCESS
+                                                            SUCCESS
                                                         </div>
                                                     </ TransactionConfirmationState>
                                                 )}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell className="font-medium">NameWrapper Owner</TableCell>
+                                            <TableCell className = "font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {subnameWrapperAddress[chainId] == nameWrapperOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
@@ -348,7 +337,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell className="font-medium">Registry Owner</TableCell>
+                                            <TableCell className = "font-medium">Registry Owner</TableCell>
                                             <TableCell>
                                                 {nameWrapperAddress[chainId] == registryOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
@@ -367,7 +356,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                             </>         
                         </TabsContent>
 
-                        <TabsContent value="item-fuses" asChild>
+                        <TabsContent value = "item-fuses" asChild>
                             <>
                                 <h1 className = "my-4 text-lg">Fuses</h1>
 

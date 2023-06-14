@@ -14,16 +14,16 @@ export const getRenewalControllerOptions = (chainId) => {
 
     return [
         {
-            label:              "Basic Renewal Controller", 
-            value:              lengthBasedRenewalControllerAddress[chainId], 
-            controlDescription: "set pricing on a per character basis.",
-            showConfig:         true
-        },
-        {
             label:              "$5 Renewal Controller", 
             value:              fixedPriceRenewalControllerAddress[chainId], 
             controlDescription: "sell subnames for a fixed $5 fee.",
             showConfig:         false
-        }
+        },
+        {
+            label:              "Length Based Renewal Controller", 
+            value:              lengthBasedRenewalControllerAddress[chainId], 
+            controlDescription: "set pricing on a per character basis.",
+            showConfig:         true
+        },
     ]
 }
