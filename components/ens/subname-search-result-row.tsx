@@ -348,7 +348,7 @@ console.log("renewalPrice", renewalPriceData);
 
                                     {renewalPriceWei && (
                                         <p className = "text-xs mt-2">
-                                            Renews at <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPriceWei)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}) per year.
+                                            Renews at <span className = "font-bold">Ξ{(+ethers.utils.formatEther(renewalPriceWei)).toFixed(4)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}) per year.
                                         </p>
                                     )}
                                 </>

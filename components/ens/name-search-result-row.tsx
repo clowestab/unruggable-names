@@ -293,7 +293,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                                     </Select>
 
                                     {rentPrice && (
-                                        <span className = "text-xs">Ξ {ethers.utils.formatEther(rentPrice.base.toString())}</span>
+                                        <span className = "text-xs">Ξ {(+ethers.utils.formatEther(rentPrice.base.toString())).toFixed(4)}</span>
                                     )}
                                 </>
                             )}

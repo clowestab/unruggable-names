@@ -8996,7 +8996,7 @@
           ]
         },
         "FixedPriceRenewalController": {
-          "address": "0x0be43D448019F980c58d075dB43F7BD2C23E9155",
+          "address": "0x04A125543a3c773706d6AFD254DBCA421e0Db6C9",
           "abi": [
             {
               "inputs": [
@@ -9586,7 +9586,7 @@
           ]
         },
         "LengthBasedRenewalController": {
-          "address": "0x04e4013874F396695d4dFd6f26051c077FF18143",
+          "address": "0xc4D134dDa918987bC19D5AE5e0393F7E2D0d667B",
           "abi": [
             {
               "inputs": [
@@ -19095,7 +19095,7 @@
           ]
         },
         "FixedPriceRenewalController": {
-          "address": "0xc0Bb1650A8eA5dDF81998f17B5319afD656f4c11",
+          "address": "0x2538a10b7fFb1B78c890c870FC152b10be121f04",
           "abi": [
             {
               "inputs": [
@@ -19685,7 +19685,7 @@
           ]
         },
         "LengthBasedRenewalController": {
-          "address": "0x5322471a7E37Ac2B8902cFcba84d266b37D811A0",
+          "address": "0xB9d9e972100a1dD01cd441774b45b5821e136043",
           "abi": [
             {
               "inputs": [

@@ -481,7 +481,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
                                                     {renewalPrice && (
                                                         <p className = "text-xs mt-2">
-                                                            The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPrice)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
+                                                            The cost is <span className = "font-bold">Ξ{(+ethers.utils.formatEther(renewalPrice)).toFixed(4)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
                                                         </p>
                                                     )}
 
@@ -871,7 +871,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                     }}
                                                     disabled        = {isSavingRegistrationConfigurationData}>
                                                     <SelectTrigger className = "my-2">
-                                                        <SelectValue placeholder="Select a renewal controller">{renewalControllerInput != null ? (renewalControllerOptions.find((item) => item.value == renewalControllerInput)).label : "Select a renewal controller"}
+                                                        <SelectValue placeholder="Select a renewal controller">{renewalControllerInput != null ? (renewalControllerOptions.find((item) => item.value == renewalControllerInput))?.label : "Select a renewal controller"}
                                                         </SelectValue>
                                                     </SelectTrigger>
                                                     <SelectContent>

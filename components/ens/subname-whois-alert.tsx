@@ -273,7 +273,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
 
                                                                 {renewalPriceData && (
                                                                     <p className = "text-xs mt-2">
-                                                                        The cost is <span className = "font-bold">Ξ{ethers.utils.formatEther(renewalPriceWei)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}).
+                                                                        The cost is <span className = "font-bold">Ξ{(+ethers.utils.formatEther(renewalPriceWei)).toFixed(4)}</span> (${(renewalPriceUsd.toString()/1e18).toFixed(2)}).
                                                                     </p>
                                                                 )}
 

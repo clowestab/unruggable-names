@@ -6,6 +6,7 @@ import {
   useChainModal,
 } from '@rainbow-me/rainbowkit';
 
+import ConfettiExplosion from 'react-confetti-explosion';
 
 import { chains, provider as rkprovider } from '@/config/networks'
 
@@ -106,6 +107,26 @@ export default function RegistrationForm() {
     const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
     const [isSearching, setIsSearching]     = React.useState<boolean>(false);
 
+    const [isExploding, setIsExploding] = React.useState(false);
+
+
+    /**
+     * Effect to hide the loader when searching ends
+     */ 
+    React.useEffect(() => {
+        
+        if (isExploding) {
+
+            console.log("reset explosion");
+            
+            setTimeout(() => {
+                setIsExploding(false);
+            }, 2000);
+        }
+
+    }, [isExploding]);
+
+
     /**
      * Effect to hide the loader when searching ends
      */ 
@@ -141,7 +162,15 @@ export default function RegistrationForm() {
         console.log("search", searchTerm);
 
         var searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
-        searchTermToUse = ens_normalize(searchTermToUse);
+
+        try {
+            searchTermToUse = ens_normalize(searchTermToUse);
+        } catch (error) {
+
+            console.log("error", error);
+            console.log("error", error.message);
+            setSearchError(error.message); return;
+        }
 
         setSearchResults([]);
 
@@ -211,6 +240,8 @@ export default function RegistrationForm() {
 
     return (
         <div className = "mx-8 p-4 w-full">
+
+            {isExploding && <ConfettiExplosion />}
 
             <Alert className="border-red-800 bg-red-200 dark:bg-red-800 mb-8" variant="destructive">
                 {CommonIcons.alert}
@@ -306,6 +337,7 @@ export default function RegistrationForm() {
                                             setSearchResults([]);
                                             doSearch();
                                             clearCookies();
+                                            setIsExploding(true);
                                         }}
                                         doLookup = {(name: any) => {
 
@@ -330,6 +362,7 @@ export default function RegistrationForm() {
                                             setSearchResults([]);
                                             doSearch();
                                             clearCookies();
+                                            setIsExploding(true);
                                         }}
                                         cookiedCommitment = {result.name == committedName ? cookiedCommitment : null}
                                         clearCookies = {clearCookies} />
