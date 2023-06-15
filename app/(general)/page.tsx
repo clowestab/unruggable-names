@@ -118,7 +118,7 @@ export default function RegistrationForm() {
         if (isExploding) {
 
             console.log("reset explosion");
-            
+
             setTimeout(() => {
                 setIsExploding(false);
             }, 2000);
@@ -178,7 +178,7 @@ export default function RegistrationForm() {
         if (searchTermToUse == "") { setSearchError("Please enter an input"); return; }
 
         const nameParts       = searchTermToUse.split(".");
-        if (nameParts.length == 1) {
+        if (nameParts.length == 1 || nameParts[nameParts.length - 1] != "eth") {
             nameParts.push("eth");
             searchTermToUse = searchTermToUse + ".eth";
         }

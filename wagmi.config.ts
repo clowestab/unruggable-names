@@ -28,7 +28,8 @@ export default defineConfig({
         'IRenewalController.sol/**',
         'NameWrapper.sol/**',
         'ENSRegistry.sol/**',
-        'ETHRegistrarController.sol/**'
+        'ETHRegistrarController.sol/**',
+        'BaseRegistrarImplementation.sol/**'
       ],
       deployments: {
         LengthBasedRenewalController: {
@@ -58,6 +59,10 @@ export default defineConfig({
         ETHRegistrarController: {
           5:     goerliContracts["ETHRegistrarController"]?.address,
           31337: localhostContracts["ETHRegistrarController"]?.address,
+        },        
+        BaseRegistrarImplementation: {
+          5:     goerliContracts["BaseRegistrarImplementation"]?.address,
+          31337: localhostContracts["BaseRegistrarImplementation"]?.address,
         },
       },
     })

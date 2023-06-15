@@ -80,6 +80,7 @@ import {
     hexEncodeName 
 }                                         from '../../helpers/Helpers.jsx';
 import {
+    FUSES,
     ZERO_ADDRESS,
 }                                         from '../../helpers/constants'
 import { 
@@ -98,7 +99,8 @@ import {
     useLengthBasedRenewalController,
     useLengthBasedRenewalControllerRead,
     useIusdOracleRead,
-    useEthRegistrarControllerPrices 
+    useEthRegistrarControllerPrices,
+    useBaseRegistrarImplementationRead 
 }                                         from '../../lib/blockchain'
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
@@ -135,15 +137,17 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         setIsSavingRenewalConfigurationData
     ]                                     = React.useState<boolean>(false);
 
-    const nameParts                     = name.split(".");
+    const nameParts                       = name.split(".");
     const label                           = nameParts[0];
+    const labelhash: `0x${string}`        = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
     const namehash                        = ethers.utils.namehash(name);
     const namehashHex: `0x${string}`      = namehash as `0x${string}`;
 
     console.log("namehash", typeof namehash);
     console.log("namehashHex", namehashHex);
 
-    const tokenId                         = ethers.BigNumber.from(namehash);
+    const tokenId                         = ethers.BigNumber.from(labelhash);
+    const namehashInt                     = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
 
     //Holds the selected time in seconds for a renewal
@@ -174,13 +178,13 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //ETHRegistrarController instance
     const ethRegistrarController          = useEthRegistrarController({
-        chainId: chainId,
+        chainId:          chainId,
         signerOrProvider: signer ?? provider
     });
 
     //RenewalController instance
     const renewalController               = useLengthBasedRenewalController({
-        chainId: chainId,
+        chainId:          chainId,
         signerOrProvider: signer ?? provider
     });
 
@@ -190,9 +194,9 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         data: lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
     }                                     = useLengthBasedRenewalControllerRead({
-        chainId: chainId,
-        functionName:  'getLastCharIndex',
-        args:          [],
+        chainId:      chainId,
+        functionName: 'getLastCharIndex',
+        args:         [],
     });
 
 
@@ -251,15 +255,16 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //The renewal price for a second level name comes direct from the EthRegistrarController
     const  { data: renewalPrice }  = useEthRegistrarControllerRead({
-        chainId: chainId,
-        functionName:  'rentPrice',
-        args:          [name, renewForTimeInSeconds],
-        select: (data) => {
+        chainId:      chainId,
+        functionName: 'rentPrice',
+        args:         [label, renewForTimeInSeconds],
+        select:       (data) => {
+            console.log("renewalPricen parts", data);
             return data.base.add(data.premium)
         },
     });
 
-    console.log("renewalPrice", renewalPrice);
+    console.log("renewalPricen", renewalPrice);
 
     //SubnameWrapper instance
     const subnameWrapper = useSubnameWrapper({
@@ -283,6 +288,10 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const [
         isEditingSubnameRenewalConfig, 
         setIsEditingSubnameRenewalConfig
+    ]                                         = React.useState(false);
+    const [
+        isWrapping, 
+        setIsWrapping
     ]                                         = React.useState(false);
 
 
@@ -312,12 +321,22 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
-        chainId: chainId,
-        functionName: 'getData',
-        args:         [tokenId],
+        chainId:          chainId,
+        functionName:     'getData',
+        args:             [namehashInt],
         signerOrProvider: signer ?? provider
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
+
+
+    const  { data: registrarExpiry, refetch: refetchRegistrarExpiryData }  = useBaseRegistrarImplementationRead({
+        chainId:          chainId,
+        functionName:     'nameExpires',
+        args:             [tokenId],
+        signerOrProvider: signer ?? provider
+     });
+
+    console.log(name + " " + labelhash + " registrarExpiry " + tokenId, registrarExpiry);
 
     var renewalControllerToUse = null;
 
@@ -365,6 +384,8 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         args:         [namehashHex],
      });
 
+    const isWrapped = registryOwnerAddress == nameWrapperAddress[chainId]
+
     const ethPrice = 1600;
 
     //Triggers the transaction to approve the 
@@ -389,11 +410,18 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     }
 
 
+    const onClickWrap = () => {
+
+        console.log("wrap");
+        setIsWrapping(true);
+    }
+
+
     //Indicates if this name is owned by the connected user
     const isOwnedByUser = nameData?.owner == address;
 
     //@ts-ignore
-    const expiryDate    = new Date(parseInt(nameData?.expiry) * 1000);
+    const expiryDate    = new Date(parseInt(registrarExpiry) * 1000);
     const expiryString  = expiryDate.toLocaleString();
 
 
@@ -418,11 +446,16 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                     <Tabs defaultValue="item-profile">
                         <TabsList className="flex flex-wrap w-fit mx-auto">
                             <TabsTrigger value="item-profile">Profile</TabsTrigger>
-                            {isOwnedByUser && (
+                            {isOwnedByUser && isWrapped && (
                                 <TabsTrigger value="item-approvals">Approvals</TabsTrigger>
                             )}
-                            <TabsTrigger value="item-subname-registration-config">Subnames</TabsTrigger>
-                            <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
+
+                            {isWrapped && (
+                                <>
+                                    <TabsTrigger value="item-subname-registration-config">Subnames</TabsTrigger>
+                                    <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
+                                </>
+                            )}
                         </TabsList>
 
                         <TabsContent value="item-profile" asChild>
@@ -435,125 +468,194 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                         <TableRow>
                                             <TableCell className="font-medium">Expiry</TableCell>
                                             <TableCell>
-                                                <p>{expiryString}</p>
-                                                <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(nameData?.expiry)}</div>
-                                            
-                                                <div className = "mt-2">
 
-                                                    <div className = "flex mt-8">
-                                                        <Select 
-                                                            disabled        = {isRenewing}
-                                                            onValueChange   = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
-                                                            <SelectTrigger className = "w-[180px]">
-                                                                <SelectValue placeholder = {renewalLengthOptions[0].label} />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectGroup>
-                                                                    {renewalLengthOptions.map((option) => {
-                                                                        
-                                                                        return (
-                                                                            <SelectItem 
-                                                                                key   = {"renew-option-" + option.value}
-                                                                                value = {option.value.toString()}>
-                                                                                {option.label}
-                                                                            </SelectItem>
-                                                                        );
-                                                                    })}
-                                                                </SelectGroup>
-                                                            </SelectContent>
-                                                        </Select>
+                                                <>
+                                                    <p>{expiryString}</p>
+                                                    <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(registrarExpiry)}</div>
+                                                
+                                                    <div className = "mt-2">
 
-                                                        <div className="w-2" />
+                                                        <div className = "flex mt-8">
+                                                            <Select 
+                                                                disabled        = {isRenewing}
+                                                                onValueChange   = {(value) => setRenewForTimeInSeconds(ethers.BigNumber.from(value))}>
+                                                                <SelectTrigger className = "w-[180px]">
+                                                                    <SelectValue placeholder = {renewalLengthOptions[0].label} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        {renewalLengthOptions.map((option) => {
+                                                                            
+                                                                            return (
+                                                                                <SelectItem 
+                                                                                    key   = {"renew-option-" + option.value}
+                                                                                    value = {option.value.toString()}>
+                                                                                    {option.label}
+                                                                                </SelectItem>
+                                                                            );
+                                                                        })}
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
 
-                                                        <Button 
-                                                            type     = "submit" 
-                                                            disabled = {isRenewing} 
-                                                            onClick  = {onClickRenew}>
-                                                            {isRenewing ? CommonIcons.miniLoader : "Renew"}
-                                                        </Button>
+                                                            <div className="w-2" />
+
+                                                            <Button 
+                                                                type     = "submit" 
+                                                                disabled = {isRenewing} 
+                                                                onClick  = {onClickRenew}>
+                                                                {isRenewing ? CommonIcons.miniLoader : "Renew"}
+                                                            </Button>
+                                                        </div>
+
+
+                                                        {!isOwnedByUser && (
+                                                            <div className = "mt-2 text-xs text-red-800 dark:text-red-200">
+                                                                <span className = "font-bold">{name}</span> is <span className = "font-bold">not owned by you</span>. You can still renew it for the owner.</div>
+                                                        )}
+
+                                                        {renewalPrice && (
+                                                            <p className = "text-xs mt-2">
+                                                                The cost is <span className = "font-bold">Ξ{(+ethers.utils.formatEther(renewalPrice)).toFixed(4)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
+                                                            </p>
+                                                        )}
+
+                                                        {isRenewing && (
+                                                            <TransactionConfirmationState 
+                                                                key       = {"name-renewal-" + name}
+                                                                contract  = {ethRegistrarController}
+                                                                txArgs    = {{
+                                                                    args: [
+                                                                        label,
+                                                                        renewForTimeInSeconds
+                                                                    ],
+                                                                    overrides: {
+                                                                        gasLimit: ethers.BigNumber.from("5000000"),
+                                                                        value:    renewalPrice
+                                                                    }
+                                                                }}
+                                                                txFunction  = 'renew'
+                                                                onConfirmed = {() => {
+                                                                    console.log("2ld renewal confirmed");
+
+                                                                    toast({
+                                                                        duration: 5000,
+                                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                        description: (<p><span className = "font-bold">{name}</span> was successfully renewed.</p>),
+                                                                    });
+                                                                }}
+                                                                onAlways  = {() => {
+                                                                    console.log("2ld renewal onAlways");
+                                                                    setIsRenewing(false);
+                                                                    refetchRegistrarExpiryData();
+                                                                }}
+                                                                onError = {() => {
+
+                                                                    toast({
+                                                                        duration: 5000,
+                                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                        description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
+                                                                    });
+                                                                }}
+                                                                checkStatic = {true}>
+                                                                <div>
+                                                                    {/* Renewing interface handled manually*/}
+                                                                </div>
+                                                                <div>
+                                                                    {/* Success interface handled manually*/}
+                                                                </div>
+                                                            </ TransactionConfirmationState>
+                                                        )}
                                                     </div>
-
-
-                                                    {!isOwnedByUser && (
-                                                        <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                            <span className = "font-bold">{name}</span> is <span className = "font-bold">not owned by you</span>. You can still renew it for the owner.</div>
-                                                    )}
-
-                                                    {renewalPrice && (
-                                                        <p className = "text-xs mt-2">
-                                                            The cost is <span className = "font-bold">Ξ{(+ethers.utils.formatEther(renewalPrice)).toFixed(4)}</span> (~${(ethers.utils.formatEther(renewalPrice) * ethPrice).toFixed(2)}).
-                                                        </p>
-                                                    )}
-
-                                                    {isRenewing && (
-                                                        <TransactionConfirmationState 
-                                                            key       = {"name-renewal-" + name}
-                                                            contract  = {ethRegistrarController}
-                                                            txArgs    = {{
-                                                                args: [
-                                                                    label,
-                                                                    renewForTimeInSeconds
-                                                                ],
-                                                                overrides: {
-                                                                    gasLimit: ethers.BigNumber.from("5000000"),
-                                                                    value:    renewalPrice
-                                                                }
-                                                            }}
-                                                            txFunction  = 'renew'
-                                                            onConfirmed = {() => {
-                                                                console.log("2ld renewal confirmed");
-
-                                                                toast({
-                                                                    duration: 5000,
-                                                                    className: "bg-green-200 dark:bg-green-800 border-0",
-                                                                    description: (<p><span className = "font-bold">{name}</span> was successfully renewed.</p>),
-                                                                });
-                                                            }}
-                                                            onAlways  = {() => {
-                                                                console.log("2ld renewal onAlways");
-                                                                setIsRenewing(false);
-                                                                refetchData();
-                                                            }}
-                                                            onError = {() => {
-
-                                                                toast({
-                                                                    duration: 5000,
-                                                                    className: "bg-red-200 dark:bg-red-800 border-0",
-                                                                    description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
-                                                                });
-                                                            }}
-                                                            checkStatic = {true}>
-                                                            <div>
-                                                                {/* Renewing interface handled manually*/}
-                                                            </div>
-                                                            <div>
-                                                                {/* Success interface handled manually*/}
-                                                            </div>
-                                                        </ TransactionConfirmationState>
-                                                    )}
-                                                </div>
+                                                </>
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell className="font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {isOwnedByUser ? (
-                                                    <Tooltip delayDuration={0}>
-                                                        <TooltipTrigger asChild>
-                                                            <span>{nameWrapperOwnerAddress}</span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>This is you.</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                ) : (<span>{nameWrapperOwnerAddress}</span>)}
+                                                {isWrapped ? (
+                                                    <>
+                                                        {isOwnedByUser ? (
+                                                            <Tooltip delayDuration={0}>
+                                                                <TooltipTrigger asChild>
+                                                                    <span>{nameWrapperOwnerAddress}</span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>This is you.</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        ) : (<span>{nameWrapperOwnerAddress}</span>)}
+                                                    </>
+                                                ) : (
+
+                                                    <>
+                                                        <p>This name is not wrapped.</p>
+                                                        {isOwnedByUser && (
+                                                            <Button 
+                                                                type      = "submit" 
+                                                                disabled  = {isWrapping} 
+                                                                onClick   = {onClickWrap} 
+                                                                className = "mt-2">
+                                                                {isWrapping ? CommonIcons.miniLoader : ("Wrap " + name)}
+                                                            </Button>
+                                                        )}
+
+                                                        {isWrapping && (
+                                                            <TransactionConfirmationState 
+                                                                key       = {"name-wrapping-" + name}
+                                                                contract  = {nameWrapper}
+                                                                txArgs    = {{
+                                                                    args: [
+                                                                        label,
+                                                                        address,
+                                                                        (FUSES.CANNOT_UNWRAP),
+                                                                        ZERO_ADDRESS
+                                                                    ],
+                                                                    overrides: {
+                                                                        gasLimit: ethers.BigNumber.from("5000000"),
+                                                                    }
+                                                                }}
+                                                                txFunction  = 'wrapETH2LD'
+                                                                onConfirmed = {() => {
+                                                                    console.log("2ld WRAP confirmed");
+
+                                                                    toast({
+                                                                        duration: 5000,
+                                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                        description: (<p><span className = "font-bold">{name}</span> was successfully WRAPPED.</p>),
+                                                                    });
+                                                                }}
+                                                                onAlways  = {() => {
+                                                                    console.log("2ld renewal onAlways");
+                                                                    setIsWrapping(false);
+                                                                    refetchData();
+                                                                }}
+                                                                onError = {() => {
+
+                                                                    toast({
+                                                                        duration: 5000,
+                                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                        description: (<p>There was a problem wrapping <span className = "font-bold">{name}</span>.</p>),
+                                                                    });
+                                                                }}
+                                                                checkStatic = {true}>
+                                                                <div>
+                                                                    {/* Wrapping interface handled manually*/}
+                                                                </div>
+                                                                <div>
+                                                                    {/* Wrapping interface handled manually*/}
+                                                                </div>
+                                                            </ TransactionConfirmationState>
+                                                        )}
+                                                    </>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell className="font-medium">Registry owner</TableCell>
                                             <TableCell>
                                                 
-                                                {registryOwnerAddress == nameWrapperAddress[chainId] ? (
+                                                {isWrapped ? (
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{registryOwnerAddress}</span>
