@@ -80,10 +80,11 @@ import { TransactionConfirmationState } from '../shared/transaction-confirmation
 
 interface SubnameWhoisAlertProps {
     name: string,
+    onClickClose?: any
 }
 
 // @ts-ignore
-export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.ReactElement | null {
+export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps): React.ReactElement | null {
 
     const { address }                       = useAccount()
     const { chain }                         = useNetwork()
@@ -108,7 +109,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
         renewForTimeInSeconds, 
         setRenewForTimeInSeconds
     ]                                       = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
-    const refererAddress                    = "0x0000000000000000000000000000000000005627";
+    const referrerAddress                   = "0xFC04D70bea992Da2C67995BbddC3500767394513";
 
     //Owner of the subdoomain in the SubnameWrapper
     const  { data: ownerAddress }           = useSubnameWrapperRead({
@@ -293,7 +294,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                                                         txArgs   = {{
                                                                 args: [
                                                                     encodedNameToRenew,
-                                                                    refererAddress, //referer
+                                                                    referrerAddress, //referrer
                                                                     renewForTimeInSeconds
                                                                 ],
                                                                 overrides: {
@@ -373,7 +374,7 @@ export function SubnameWhoisAlert({ name }: SubnameWhoisAlertProps): React.React
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction>Close</AlertDialogAction>
+                <AlertDialogAction onClick = {onClickClose}>Close</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     )

@@ -1,25 +1,24 @@
 'use client'
 
 import {
-  useConnectModal,
-  useAccountModal,
   useChainModal,
-} from '@rainbow-me/rainbowkit';
+}                                       from '@rainbow-me/rainbowkit';
 
-import ConfettiExplosion from 'react-confetti-explosion';
-
-import { chains, provider as rkprovider } from '@/config/networks'
-
-console.log("RK PROVIDER", rkprovider)
-
-import { useNetwork, useProvider, useChainId }                   from 'wagmi'
+import ConfettiExplosion                from 'react-confetti-explosion';
 
 import { 
-    WalletAddress, 
-}                                       from '@turbo-eth/core-wagmi'
+    chains, 
+    provider as rkprovider 
+}                                       from '@/config/networks'
+
+import { 
+    useNetwork, 
+    useProvider, 
+    useChainId 
+}                                       from 'wagmi'
+
 import { motion }                       from 'framer-motion'
 
-import { BranchIsWalletConnected }      from '@/components/shared/branch-is-wallet-connected'
 import { WalletConnect }                from '@/components/blockchain/wallet-connect'
 
 import { FADE_DOWN_ANIMATION_VARIANTS } from '@/config/design'
@@ -34,15 +33,10 @@ import { Button }                       from "@/components/ui/button"
 import CommonIcons                      from '@/components/shared/common-icons';
 
 import React                            from 'react'
-import { 
-    useSubnameRegistrarRead, 
-    useSubnameRegistrarMinCommitmentAge 
-}                                       from '../../lib/blockchain'
 
 import { foundry, goerli }              from 'wagmi/chains'
 
 import { 
-    hexEncodeName,
     getCookie,
     setCookie,
     deleteCookie
@@ -50,8 +44,6 @@ import {
 
 import { SubnameSearchResultRow }       from '@/components/ens/subname-search-result-row'
 import { NameSearchResultRow }          from '@/components/ens/name-search-result-row'
-
-import { Toaster }                      from "@/components/ui/toaster"
 
 import {ens_normalize}                  from '@adraffy/ens-normalize'; // or require()
 
@@ -61,7 +53,7 @@ interface SearchResult {
     nonce: number
 }
 
-//setCookie("committedName", "thomas.eth", 7);
+//Get any stored cookies
 const committedName                     = getCookie("committedName");
 const committedAddressToRegisterTo      = getCookie("committedAddressToRegisterTo");
 const committedRegisterForTimeInSeconds = getCookie("committedRegisterForTimeInSeconds");
@@ -78,8 +70,7 @@ const allCookies = [
     committedCommitmentReadyTimestamp
 ].filter(Boolean);
 
-console.log("all cookies", allCookies);
-
+//We need all 6 cookies for it to be valid data
 const cookiedCommitment = allCookies.length == 6 ? {
     name:                     committedName,
     addressToRegisterTo:      committedAddressToRegisterTo,
@@ -89,9 +80,12 @@ const cookiedCommitment = allCookies.length == 6 ? {
     commitmentReadyTimestamp: committedCommitmentReadyTimestamp
 } : null;
 
-console.log("cookiedCommitment", cookiedCommitment);
+//Properties for opening a names profile by default
+interface RegistrationFormProps {
+    nameToOpen: string
+}
 
-export default function RegistrationForm() {
+export default function RegistrationForm({ nameToOpen } : RegistrationFormProps) {
 
     const { chain, chains }  = useNetwork();
     const  provider          = useProvider();
@@ -102,18 +96,22 @@ export default function RegistrationForm() {
     console.log("provider", provider);
     console.log("chainId", chainId);
 
-    const [searchTerm, setSearchTerm]       = React.useState<string>("");
-    const [searchError, setSearchError]     = React.useState<string | null>(null);
-    const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
-    const [isSearching, setIsSearching]     = React.useState<boolean>(false);
+    const [
+        currentlyOpenName, 
+        setCurrentlyOpenName
+    ]                                           = React.useState<string | null>(nameToOpen ? nameToOpen : null);
+    const [searchTerm, setSearchTerm]           = React.useState<string>(nameToOpen ?? "");
+    const [searchError, setSearchError]         = React.useState<string | null>(null);
+    const [searchResults, setSearchResults]     = React.useState<SearchResult[]>([]);
+    const [isSearching, setIsSearching]         = React.useState<boolean>(false);
 
-    const [isExploding, setIsExploding] = React.useState(false);
+    const [isExploding, setIsExploding]         = React.useState(false);
 
 
     /**
      * Effect to hide the loader when searching ends
      */ 
-    React.useEffect(() => {
+    /*React.useEffect(() => {
         
         if (isExploding) {
 
@@ -124,7 +122,7 @@ export default function RegistrationForm() {
             }, 2000);
         }
 
-    }, [isExploding]);
+    }, [isExploding]);*/
 
 
     /**
@@ -141,12 +139,18 @@ export default function RegistrationForm() {
         
         console.log("cookie effect", committedName);
 
-        if (committedName != null) {
-            setSearchTerm(committedName);
-            doSearch(committedName);
+        if (committedName != null || nameToOpen != null) {
+
+            const nameToSet = committedName ?? nameToOpen;
+
+            console.log("nameToSeti", nameToOpen);
+            console.log("nameToSet", nameToSet);
+
+            setSearchTerm(nameToSet);
+            doSearch(nameToSet);
         }
 
-    }, [committedName]);
+    }, [committedName, nameToOpen]);
 
 
     /**
@@ -154,14 +158,20 @@ export default function RegistrationForm() {
      */ 
     const doSearch = (manualSearchTerm?: any) => {
 
-        if (!manualSearchTerm) {
+        const hasManualSearchTerm = typeof manualSearchTerm === "string";
+
+        console.log("manualSearchTerm", manualSearchTerm);
+        console.log("manualSearchTerm " + manualSearchTerm, hasManualSearchTerm);
+
+        if (!hasManualSearchTerm) {
             clearCookies();
+            setCurrentlyOpenName(null);
         }
 
         console.log("search man", manualSearchTerm);
         console.log("search", searchTerm);
 
-        var searchTermToUse = typeof manualSearchTerm === "string" ? manualSearchTerm : searchTerm;
+        var searchTermToUse = hasManualSearchTerm ? manualSearchTerm : searchTerm;
 
         try {
             searchTermToUse = ens_normalize(searchTermToUse);
@@ -238,10 +248,31 @@ export default function RegistrationForm() {
         deleteCookie("committedCommitmentReadyTimestamp");
     }
 
+    const onRegisterComplete = (registeredName) => {
+
+        //Redo the search to update availability
+        setSearchResults([]);
+        doSearch();
+
+        //Clear any commitment cookies
+        clearCookies();
+
+        //Display confetti
+        setIsExploding(registeredName); 
+    }
+
+    const rowSeparator = (<div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>);
+
     return (
         <div className = "mx-8 p-4 w-full">
 
-            {isExploding && <ConfettiExplosion />}
+            {isExploding && <ConfettiExplosion onComplete = {() => { 
+                
+                setCurrentlyOpenName(isExploding);
+                window.history.pushState({page: "another"}, "another page", "/" + isExploding);
+                setIsExploding(false);
+
+            }} />}
 
             <Alert className="border-red-800 bg-red-200 dark:bg-red-800 mb-8" variant="destructive">
                 {CommonIcons.alert}
@@ -302,6 +333,14 @@ export default function RegistrationForm() {
                             onChange    = {(e) => {
                                 setSearchError(null);
                                 setSearchTerm(e.target.value.toLowerCase())
+                                if (true) {
+
+                                    const path = window.location.pathname;
+
+                                    console.log("changing", path);
+                                    window.history.pushState({page: "another"}, "another page", "/");
+
+                                }
                             }}
                             value       = {searchTerm} />
                         {searchError != null && (
@@ -329,45 +368,40 @@ export default function RegistrationForm() {
 
                         if (result.type == "subname") {
                             return (
-                                <div key = {"result-row-" + result.name + "-" + result.nonce}>
+                                <div key = {"result-row-" + result.name + "-" + result.nonce + (currentlyOpenName == result.name ? "-open" : "-closed")}>
                                     <SubnameSearchResultRow 
                                         {...result} 
                                         resultIndex     = {resultIndex} 
-                                        onRegister      = {() => {    
-                                            setSearchResults([]);
-                                            doSearch();
-                                            clearCookies();
-                                            setIsExploding(true);
-                                        }}
-                                        doLookup = {(name: any) => {
+                                        onRegister      = {() => onRegisterComplete(result.name)}
+                                        doLookup        = {(name: any) => {
 
+                                            //Clear any errors
                                             setSearchError(null);
+
                                             setSearchTerm(name);
                                             doSearch(name);
                                         }}
                                         cookiedCommitment = {result.name == committedName ? cookiedCommitment : null}
-                                        clearCookies = {clearCookies} />
+                                        clearCookies      = {clearCookies}
+                                        dialogStartsOpen  = {currentlyOpenName == result.name} />
 
-                                <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
+                                    {rowSeparator}
                                 </div>
                                     
                             );
                         } else if (result.type == "name") {
                             return (
-                                <div key = {"name-result-row-" + result.name + "-" + result.nonce}>
+                                <div key = {"name-result-row-" + result.name + "-" + result.nonce + (currentlyOpenName == result.name ? "-open" : "-closed")}>
                                     <NameSearchResultRow 
                                         {...result} 
-                                        resultIndex = {resultIndex} 
-                                        onRegister  = {() => {     
-                                            setSearchResults([]);
-                                            doSearch();
-                                            clearCookies();
-                                            setIsExploding(true);
-                                        }}
-                                        cookiedCommitment = {result.name == committedName ? cookiedCommitment : null}
-                                        clearCookies = {clearCookies} />
+                                        resultIndex         = {resultIndex} 
+                                        onRegister          = {() => onRegisterComplete(result.name)}
 
-                                    <div data-orientation = "horizontal" role = "none" className = "bg-slate-200 dark:bg-slate-700 h-[1px] w-full my-4"></div>
+                                        cookiedCommitment   = {result.name == committedName ? cookiedCommitment : null}
+                                        clearCookies        = {clearCookies}
+                                        dialogStartsOpen    = {currentlyOpenName == result.name} />
+
+                                    {rowSeparator}
                                 </div>  
                             );
                         }

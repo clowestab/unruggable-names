@@ -1,5 +1,5 @@
 import { 
-    lengthBasedRenewalControllerAddress,
+    pricePerCharRenewalControllerAddress,
     fixedPriceRenewalControllerAddress 
 }                                       from '@/lib/blockchain'
 
@@ -21,7 +21,7 @@ export const getRenewalControllerOptions = (chainId) => {
         },
         {
             label:              "Length Based Renewal Controller", 
-            value:              lengthBasedRenewalControllerAddress[chainId], 
+            value:              pricePerCharRenewalControllerAddress[chainId], 
             controlDescription: "set pricing on a per character basis.",
             showConfig:         true
         },

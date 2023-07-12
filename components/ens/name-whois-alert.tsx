@@ -73,16 +73,17 @@ import {
 import {
     renewalLengthOptions,
     getRenewalControllerOptions
-}                                         from '../../helpers/select-options';
+}                                         from '@/helpers/select-options';
 
 import { 
     formatExpiry, 
     hexEncodeName 
-}                                         from '../../helpers/Helpers.jsx';
+}                                         from '@/helpers/Helpers.jsx';
 import {
     FUSES,
     ZERO_ADDRESS,
-}                                         from '../../helpers/constants'
+    ONE_YEAR_IN_SECONDS
+}                                         from '@/helpers/constants'
 import { 
     useEnsRegistryRead, 
     useEthRegistrarController, 
@@ -96,21 +97,21 @@ import {
     nameWrapperAddress,
     subnameRegistrarAddress,
     subnameWrapperAddress,
-    useLengthBasedRenewalController,
-    useLengthBasedRenewalControllerRead,
+    usePricePerCharRenewalController,
+    usePricePerCharRenewalControllerRead,
     useIusdOracleRead,
-    useEthRegistrarControllerPrices,
-    useBaseRegistrarImplementationRead 
+    useBaseRegistrarImplementationRead,
 }                                         from '../../lib/blockchain'
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
 
 interface NameWhoisAlertProps {
     name:        string,
+    onClickClose?: any
 }
 
 // @ts-ignore
-export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElement | null {
+export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): React.ReactElement | null {
 
     //References for the Subname registration configuration inputs so we can get the values when saving
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
@@ -183,7 +184,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     });
 
     //RenewalController instance
-    const renewalController               = useLengthBasedRenewalController({
+    const renewalController               = usePricePerCharRenewalController({
         chainId:          chainId,
         signerOrProvider: signer ?? provider
     });
@@ -193,7 +194,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
     const  { 
         data: lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
-    }                                     = useLengthBasedRenewalControllerRead({
+    }                                     = usePricePerCharRenewalControllerRead({
         chainId:      chainId,
         functionName: 'getLastCharIndex',
         args:         [],
@@ -206,7 +207,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
 
         var secondsPricingData = [];
         var pricingData        = [];
-        const yearInSeconds    = ethers.BigNumber.from("31536000");
+        const yearInSeconds    = ethers.BigNumber.from(ONE_YEAR_IN_SECONDS);
 
         //console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
         console.log("lastRenewalPriceIndex do work1", renewalController);
@@ -306,6 +307,15 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
         offerSubnamesInput, 
         setOfferSubnamesInput
     ]                                     = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
+
+    //Gets Pricing Data from the subname registrar for a specific parent nam
+    const  { data: isOnAllowList, refetch: refetchIsOnAllowList }  = useSubnameRegistrarRead({
+        chainId:      chainId,
+        functionName: 'allowList',
+        args:         [namehashHex],
+     });
+
+    console.log("isOnAllowList", isOnAllowList);
 
     //SubnameRegistrar instance
     const subnameRegistrar = useSubnameRegistrar({
@@ -904,7 +914,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                 {isOwnedByUser && (
                                                     <div className = "text-center mt-4">
 
-                                                        {(!isApprovedForAllNameWrapper || !isApprovedForAllSubnameWrapper) ? (
+                                                        {(!isApprovedForAllNameWrapper || !isApprovedForAllSubnameWrapper || !isOnAllowList) ? (
                                                             <Tooltip delayDuration = {0}>
                                                                 <TooltipTrigger asChild>
                                                                     <Button 
@@ -915,7 +925,11 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                     </Button>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
-                                                                    <p>You must provide the appropriate contract approvals prior to offering subnames.</p>
+                                                                    {!isOnAllowList ? (
+                                                                        <p>Only second level names on the allow list can be setup for subname registrations at this time.</p>
+                                                                    ) : (
+                                                                        <p>You must provide the appropriate contract approvals prior to offering subnames.</p>
+                                                                    )}
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         ) : (
@@ -1231,7 +1245,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                         setIsSavingRenewalConfigurationData(true);
 
                                                                         console.log("tosend", renewalPriceInput.map((value) => {
-                                                                                    return Math.floor((value / 31536000) * 1e18);
+                                                                                    return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
                                                                                 }));
                                                                     }} 
                                                                     className = "mt-2"
@@ -1247,7 +1261,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                                                                     txArgs = {{
                                                                         args: [
                                                                             renewalPriceInput.map((value) => {
-                                                                                return Math.floor((value / 31536000) * 1e18);
+                                                                                return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
                                                                             })
                                                                         ],
                                                                         overrides: {
@@ -1329,7 +1343,7 @@ export function NameWhoisAlert({ name }: NameWhoisAlertProps): React.ReactElemen
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction className = "mt-8">Close</AlertDialogAction>
+                <AlertDialogAction className = "mt-8" onClick = {onClickClose}>Close</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     )

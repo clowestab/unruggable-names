@@ -61,14 +61,14 @@ import {
 }                                       from '../../helpers/select-options';
 
 interface SearchResultRowProps {
-    className?:  string,
-    name:        string,
-    resultIndex: number,
-    onRegister?: () => void,
-    doLookup?:   any
+    name:              string,      //The name
+    resultIndex:       number,      //Index of the result
+    onRegister?:       () => void,  //Callback for after the name is registered
+    doLookup?:         any,         //Allows us to lookup a name
+    dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
 }
 
-export function NameSearchResultRow({ className, name, resultIndex, onRegister, cookiedCommitment, clearCookies }: SearchResultRowProps) {
+export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedCommitment, clearCookies, dialogStartsOpen }: SearchResultRowProps) {
 
     console.log("received cookiedCommitment", cookiedCommitment);
 
@@ -79,14 +79,17 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
     const { chain }        = useNetwork()
     const { toast }        = useToast()
 
-    console.log("SIGNER", signer);
-
+    //EthRegistrarController instance
     const ethRegistrarController        = useEthRegistrarController({
         chainId:          chainId,
         signerOrProvider: signer
     });
 
-    console.log("ethRegistrarController", ethRegistrarController);
+    //If the profile dialog for this name is open
+    const [
+        isDialogOpen, 
+        setIsDialogOpen
+    ]                                   = React.useState(dialogStartsOpen ? true : false);
 
     //Boolean indiciating if the name is being registered
     const [
@@ -94,7 +97,7 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
         setIsRegistering
     ]                                   = React.useState(cookiedCommitment != null ? true : false);
 
-    //Holds the selected time in seconds for a renewal
+    //Holds the selected time in seconds for a registration
     const [
         registerForTimeInSeconds, 
         setRegisterForTimeInSeconds
@@ -118,6 +121,15 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
     const nameNamehash: `0x${string}`   = ethers.utils.namehash(name) as `0x${string}`;
 
     const  { 
+        data:      isValid, 
+        isLoading: isLoadingValid 
+    }                                   = useEthRegistrarControllerRead({
+        chainId:      chainId,
+        functionName: 'valid',
+        args:         [label],
+    });
+
+    const  { 
         data:      isAvailable, 
         isLoading: isLoadingAvailability 
     }                                   = useEthRegistrarControllerRead({
@@ -131,13 +143,11 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
         args:    [nameNamehash],
      });
 
-
     const addressToRegisterTo           = cookiedCommitment?.addressToRegisterTo ?? address;
     const addressToResolveTo            = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
-
     const  { data: rentPrice }          = useEthRegistrarControllerRead({
-        chainId: chainId,
+        chainId:      chainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
      });
@@ -154,14 +164,13 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
     console.log("salt", salt);
     console.log("addressToResolveTo", addressToResolveTo);
 
-
-    const { data: MIN_COMMITMENT_TIME_IN_SECONDS } = useEthRegistrarControllerMinCommitmentAge({
+    const { 
+        data: MIN_COMMITMENT_TIME_IN_SECONDS 
+    }                                   = useEthRegistrarControllerMinCommitmentAge({
         chainId: chainId
     });
 
-    console.log("MIN_COMMITMENT_TIME_IN_SECONDS", MIN_COMMITMENT_TIME_IN_SECONDS?.toString());
-
-    const { data: commitment } = useEthRegistrarControllerMakeCommitment({
+    const { data: commitment }          = useEthRegistrarControllerMakeCommitment({
         chainId: chainId,
         args: [
             label, 
@@ -180,11 +189,12 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
 
     console.log("COMMITMENT", commitment);
 
-
     /**
      * Triggered when register button clicked
      */ 
     const doRegister = () => {
+
+        //Setting this will update the UI
         setIsRegistering(true);
     }
 
@@ -231,10 +241,8 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
         setCommitmentCompleteTimestamp(currentTimestamp);
     }
 
-    const classes = classNames(className);
-
     return (
-        <div className = {classes}>
+        <div>
             <div className = {classNames("bg-slate-50 dark:bg-slate-800", "p-4", 'flex flex-wrap justify-between items-center align-center w-full')}>
                 <div className = "text-center m-2 grow basis-0 min-w-[200px]">{name}</div>
                 <div className = "m-2 grow basis-0 text-center min-w-[200px]">
@@ -248,14 +256,32 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                                 <>
                                     {CommonIcons.cross} 
                                     <div className = "ml-2">
-                                        <span>Registered</span>
-                                        <div className = "w-1" />
-                                        <AlertDialog key = {"whois-" + name} >
-                                            <AlertDialogTrigger asChild>
-                                                <span className = "cursor-pointer text-xs underline">more info</span>
-                                            </AlertDialogTrigger>
-                                            <NameWhoisAlert name = {name} />
-                                        </AlertDialog>
+                                        {isValid ? (
+                                            <>
+                                                <span>Registered</span>
+                                                <div className = "w-1" />
+                                                <AlertDialog 
+                                                    key          = {"whois-" + name} 
+                                                    open         = {isDialogOpen}
+                                                    onOpenChange = {setIsDialogOpen} >
+                                                    <AlertDialogTrigger asChild>
+                                                        <span 
+                                                            className   = "cursor-pointer text-xs underline" 
+                                                            onClick     = {() => { 
+                                                                window.history.pushState({page: "another"}, "another page", "/" + name) }
+                                                        }>more info</span>
+                                                    </AlertDialogTrigger>
+                                                    <NameWhoisAlert 
+                                                        name         = {name} 
+                                                        onClickClose = {(e) => {
+
+                                                            window.history.pushState({page: "another"}, "another page", "/");
+                                                            setIsDialogOpen(false);
+                                                        }} />
+                                                </AlertDialog>
+                                            </>) : (
+                                                <span>Invalid name</span>
+                                            )}
                                     </div>
                                 </>
                             )}
@@ -267,7 +293,6 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                     {isLoadingAvailability ? CommonIcons.miniLoader : (
 
                         <>
-
                             {isAvailable && (
                                 <>
                                     <Select 
@@ -301,13 +326,11 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                     )}
                 </div>
 
-
                 <div className = "m-2 grow basis-0 text-center min-w-[200px]">
 
                     {isLoadingAvailability ? CommonIcons.miniLoader : (
 
                         <>
-
                             {isAvailable && (
                                 <>
                                     {isRegistering ? (
@@ -343,8 +366,8 @@ export function NameSearchResultRow({ className, name, resultIndex, onRegister, 
                                                                         console.log("error", error.code);
 
                                                                         toast({
-                                                                            duration: 5000,
-                                                                            className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                            duration:    5000,
+                                                                            className:   "bg-red-200 dark:bg-red-800 border-0",
                                                                             description: (<p>{buildErrorMessage(error)}</p>),
                                                                         });
                                                                     }}

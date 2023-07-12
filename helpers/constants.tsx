@@ -22,3 +22,5 @@ export const USER_SETTABLE_FUSES       = 0xFFFDFFFF;
 //Useful constants
 export const DAY                       = 86400
 export const GRACE_PERIOD              = 90 * DAY
+
+export const ONE_YEAR_IN_SECONDS              = 31536000

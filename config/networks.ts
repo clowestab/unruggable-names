@@ -57,10 +57,10 @@ if (PROVIDERS.length === 0) {
 }
 
 PROVIDERS.push(jsonRpcProvider({
-      rpc: (chain) => ({
-        http: `http://127.0.0.1:8545`,
-      }),
-    }))
+  rpc: (chain) => ({
+    http: `http://127.0.0.1:8545`,
+  }),
+}))
 
 // @ts-ignore
 export const { chains, provider } = configureChains(CHAINS, [...PROVIDERS])
