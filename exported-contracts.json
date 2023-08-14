@@ -8150,7 +8150,7 @@
           ]
         },
         "StaticMetadataService": {
-          "address": "0x269eb6AeDeEa030B96354Bc73f0A09eae3546e23",
+          "address": "0xB700e66565dAE3422d1c2643f1125ed3bd7a57Bc",
           "abi": [
             {
               "inputs": [
@@ -8167,7 +8167,7 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "_tokenId",
                   "type": "uint256"
                 }
               ],
@@ -8996,7 +8996,7 @@
           ]
         },
         "FixedPriceRenewalController": {
-          "address": "0x4B5129b1FD1876624eb61EC7255EBb59f8593B56",
+          "address": "0x0758C2a97dFa765f157794D116e4C42f70fFB720",
           "abi": [
             {
               "inputs": [
@@ -9025,19 +9025,8 @@
               "type": "constructor"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "CannotEdit",
-              "type": "error"
-            },
-            {
               "inputs": [],
-              "name": "InsufficientValue_RC",
+              "name": "InsufficientValue",
               "type": "error"
             },
             {
@@ -9048,7 +9037,7 @@
                   "type": "bytes32"
                 }
               ],
-              "name": "UnauthorizedAddress_RC",
+              "name": "UnauthorizedAddress",
               "type": "error"
             },
             {
@@ -9076,19 +9065,25 @@
                 {
                   "indexed": true,
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
                   "indexed": true,
                   "internalType": "uint256",
-                  "name": "price",
+                  "name": "weiPrice",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "usdPrice",
                   "type": "uint256"
                 },
                 {
                   "indexed": true,
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -9200,38 +9195,6 @@
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "burnEditFuse",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "editFuses",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "cannotEditFuse",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
@@ -9269,25 +9232,6 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "pages",
-              "outputs": [
-                {
-                  "internalType": "string",
-                  "name": "page",
-                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -9575,29 +9519,11 @@
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                },
-                {
-                  "internalType": "string",
-                  "name": "_page",
-                  "type": "string"
-                }
-              ],
-              "name": "writePage",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
             }
           ]
         },
         "PricePerCharRenewalController": {
-          "address": "0x188c4FF1b895E8328dB683300A1604B37AfD0590",
+          "address": "0x5615317024A776805913f88942dA85Ca903adC6E",
           "abi": [
             {
               "inputs": [
@@ -9621,24 +9547,13 @@
               "type": "constructor"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "CannotEdit",
-              "type": "error"
-            },
-            {
               "inputs": [],
               "name": "CannotSetNewCharLengthAmount",
               "type": "error"
             },
             {
               "inputs": [],
-              "name": "InsufficientValue_RC",
+              "name": "InsufficientValue",
               "type": "error"
             },
             {
@@ -9649,7 +9564,7 @@
                   "type": "bytes32"
                 }
               ],
-              "name": "UnauthorizedAddress_RC",
+              "name": "UnauthorizedAddress",
               "type": "error"
             },
             {
@@ -9690,19 +9605,25 @@
                 {
                   "indexed": true,
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
                   "indexed": true,
                   "internalType": "uint256",
-                  "name": "price",
+                  "name": "weiPrice",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "usdPrice",
                   "type": "uint256"
                 },
                 {
                   "indexed": true,
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -9752,9 +9673,9 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "uint256",
+                  "internalType": "uint8",
                   "name": "index",
-                  "type": "uint256"
+                  "type": "uint8"
                 },
                 {
                   "indexed": true,
@@ -9846,19 +9767,6 @@
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "burnEditFuse",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
@@ -9876,32 +9784,13 @@
               "type": "function"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "editFuses",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "cannotEditFuse",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
               "inputs": [],
               "name": "getLastCharIndex",
               "outputs": [
                 {
-                  "internalType": "uint256",
+                  "internalType": "uint8",
                   "name": "",
-                  "type": "uint256"
+                  "type": "uint8"
                 }
               ],
               "stateMutability": "view",
@@ -9947,25 +9836,6 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                }
-              ],
-              "name": "pages",
-              "outputs": [
-                {
-                  "internalType": "string",
-                  "name": "page",
-                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -10211,9 +10081,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "uint16",
+                  "internalType": "uint8",
                   "name": "charLength",
-                  "type": "uint16"
+                  "type": "uint8"
                 },
                 {
                   "internalType": "uint256",
@@ -10245,29 +10115,46 @@
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
-            },
+            }
+          ]
+        },
+        "SWMetadataService": {
+          "address": "0x678893Cd21338b0B227aead14844563532468ad1",
+          "abi": [
             {
               "inputs": [
                 {
                   "internalType": "string",
-                  "name": "key",
-                  "type": "string"
-                },
-                {
-                  "internalType": "string",
-                  "name": "_page",
+                  "name": "_metaDataUri",
                   "type": "string"
                 }
               ],
-              "name": "writePage",
-              "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "_tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "uri",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             }
           ]
         },
         "SubnameRegistrar": {
-          "address": "0x63c88c11A1d4c75f2fFc9396aD625EE7F60b51BB",
+          "address": "0xCAa462CEB6046e6041c365216a593C2ab99936bd",
           "abi": [
             {
               "inputs": [
@@ -10362,11 +10249,11 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 }
               ],
-              "name": "NameNotAvailable",
+              "name": "SubnamesNotOffered",
               "type": "error"
             },
             {
@@ -10426,31 +10313,6 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "bytes",
-                  "name": "name",
-                  "type": "bytes"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "cost",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "expires",
-                  "type": "uint256"
-                }
-              ],
-              "name": "NameRenewed",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
                   "internalType": "uint256",
                   "name": "ownerCut",
                   "type": "uint256"
@@ -10497,7 +10359,7 @@
                 {
                   "indexed": false,
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -10515,13 +10377,19 @@
                 {
                   "indexed": false,
                   "internalType": "uint256",
-                  "name": "price",
+                  "name": "weiPrice",
                   "type": "uint256"
                 },
                 {
                   "indexed": false,
                   "internalType": "uint256",
-                  "name": "expires",
+                  "name": "usdPrice",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "expiryTimestamp",
                   "type": "uint256"
                 }
               ],
@@ -10595,12 +10463,12 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "_name",
+                  "name": "name",
                   "type": "bytes"
                 },
                 {
                   "internalType": "bool",
-                  "name": "_allow",
+                  "name": "allow",
                   "type": "bool"
                 }
               ],
@@ -10613,7 +10481,7 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 }
               ],
@@ -10746,7 +10614,7 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -10921,7 +10789,7 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -10971,7 +10839,7 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -11200,7 +11068,7 @@
           ]
         },
         "SubnameWrapper": {
-          "address": "0xd2A8364e84FCf10c6197C1F99cd981AEfB99efB7",
+          "address": "0xE7E58C61f154Da643f377b01F585E296AFC7a933",
           "abi": [
             {
               "inputs": [
@@ -11350,11 +11218,11 @@
                 {
                   "indexed": false,
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
-              "name": "ExtendExpiry",
+              "name": "ExpiryExtended",
               "type": "event"
             },
             {
@@ -11382,13 +11250,13 @@
                 {
                   "indexed": true,
                   "internalType": "bytes32",
-                  "name": "node",
+                  "name": "parentNode",
                   "type": "bytes32"
                 },
                 {
                   "indexed": false,
                   "internalType": "bytes",
-                  "name": "name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -11406,7 +11274,7 @@
                 {
                   "indexed": false,
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -11523,7 +11391,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "_expiry",
+                  "name": "_expiryTimestamp",
                   "type": "uint64"
                 },
                 {
@@ -11690,7 +11558,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -11929,7 +11797,7 @@
               "inputs": [
                 {
                   "internalType": "bytes",
-                  "name": "_name",
+                  "name": "subname",
                   "type": "bytes"
                 },
                 {
@@ -11949,7 +11817,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 },
                 {
@@ -12079,7 +11947,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -12249,7 +12117,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -12298,7 +12166,7 @@
                 },
                 {
                   "internalType": "uint64",
-                  "name": "expiry",
+                  "name": "expiryTimestamp",
                   "type": "uint64"
                 }
               ],
@@ -12335,7 +12203,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISubnameWrapperUpgrade",
-                  "name": "_upgradeAddress",
+                  "name": "upgradeAddress",
                   "type": "address"
                 }
               ],
@@ -12460,7 +12328,7 @@
           ]
         },
         "USDOracleMock": {
-          "address": "0xbe8ed236E245acD5B3CB2b689E71D1f4bEB6ca00",
+          "address": "0x2a54C289fF799139662066fab50fD4de3010ecB7",
           "abi": [
             {
               "inputs": [],
