@@ -1,7 +1,7 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Design
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-export const THEME_INITIAL_COLOR = 'system'
+export const THEME_INITIAL_COLOR = 'dark'
 export const THEME_CONFIG = {
   initialColorMode: THEME_INITIAL_COLOR,
 }
