@@ -17,10 +17,10 @@ import {
 }                                       from "@/components/ui/tooltip"
 
 import { 
-    useNameWrapper,
-    useSubnameWrapper,
-    useNameWrapperRead,
-    nameWrapperAddress
+    useEnsRegistryRead,
+    useL2NameWrapper,
+    useL2NameWrapperRead,
+    l2NameWrapperAddress
 }                                       from '../../lib/blockchain'
 
 import CommonIcons                      from '../shared/common-icons';
@@ -39,6 +39,9 @@ import { useToast }                     from '@/lib/hooks/use-toast'
 interface FuseListProps {
     name:        string,
 }
+
+const optimismChainId = 420;
+const ethereumChainId = 5;
 
 export function FuseList({ name }: FuseListProps) {
 
@@ -69,13 +72,8 @@ export function FuseList({ name }: FuseListProps) {
     const  chainId                          = useChainId();
 
     //NameWrapper instance
-    const nameWrapper                       = useNameWrapper({
-        signerOrProvider: signer
-    });
-
-    //SubnameWrapper instance
-    const subnameWrapper                    = useSubnameWrapper({
-        chainId: chainId,
+    const nameWrapper                    = useL2NameWrapper({
+        chainId: optimismChainId,
         signerOrProvider: signer
     });
 
@@ -84,34 +82,34 @@ export function FuseList({ name }: FuseListProps) {
     const  { 
         data: nameData, 
         refetch: refetchData 
-    }                                       = useNameWrapperRead({
-        chainId: chainId,
+    }                                       = useL2NameWrapperRead({
+        chainId: optimismChainId,
          functionName: 'getData',
          args:         [tokenId],
      });
     const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
-    const isAvailable = String(nameWrapperAddress[chainId]) == ZERO_ADDRESS;
+    const isAvailable = String(l2NameWrapperAddress[chainId]) == ZERO_ADDRESS;
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { 
         data: parentNameData, 
         refetch: refetchParentData 
-    }                                       = useNameWrapperRead({
-        chainId: chainId,
+    }                                       = useL2NameWrapperRead({
+        chainId: optimismChainId,
          functionName: 'getData',
          args:         [nameNodeTokenId],
     });
 
     const {owner: nameWrapperParentOwnerAddress, fuses: parentWrapperFuses} = parentNameData ?? {};
 
-    const  { 
-        data: isWrapped, 
-        refetch: refetchIsWrapped 
-    }                                       = useNameWrapperRead({
-        chainId: chainId,
-         functionName: 'isWrapped',
-         args:         [nameNodeNamehash, labelhash],
-    });
+    //Get the owner address as set in the ENS Registry
+    const  { data: registryOwnerAddress  }  = useEnsRegistryRead({
+        chainId:      optimismChainId,
+        functionName: 'owner',
+        args:         [namehash],
+     });
+
+    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[optimismChainId]
 
     const [
         fuseBeingBurned, 
@@ -312,21 +310,17 @@ export function FuseList({ name }: FuseListProps) {
 
             console.log("Burning fuse on second level .eth", fuseKey);
 
-            const contractToUse = is2ld ? nameWrapper : subnameWrapper;
-
 
             console.log("is2ld", is2ld);
             console.log("isDotEth", isDotEth);
             console.log("nameParts", nameParts.length);
-            console.log("contractToUse", contractToUse);
 
-            console.log("subnameWrapper",subnameWrapper);
-            await contractToUse
+            await nameWrapper
                 .callStatic
                 .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
                 .then(() => {
 
-                    return contractToUse  
+                    return nameWrapper  
                         .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
                 })
                 .then((fuseResponse) => {

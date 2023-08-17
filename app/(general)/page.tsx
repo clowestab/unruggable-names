@@ -34,7 +34,7 @@ import CommonIcons                      from '@/components/shared/common-icons';
 
 import React                            from 'react'
 
-import { foundry, goerli }              from 'wagmi/chains'
+import { foundry, goerli, optimismGoerli }              from 'wagmi/chains'
 
 import { 
     getCookie,
@@ -88,12 +88,15 @@ interface RegistrationFormProps {
 export default function RegistrationForm({ nameToOpen } : RegistrationFormProps) {
 
     const { chain, chains }  = useNetwork();
-    const  provider          = useProvider();
-    const  chainId           = useChainId();
+
+    const ethereumProvider   = useProvider({chainId: 5});
+    const optimismProvider   = useProvider({chainId: 420});
+    const chainId            = useChainId();
     const { openChainModal } = useChainModal();
 
     console.log("chain", chain);
-    console.log("provider", provider);
+    console.log("ethereumProvider", ethereumProvider);
+    console.log("optimismProvider", optimismProvider);
     console.log("chainId", chainId);
 
     const [
@@ -233,7 +236,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
         setSearchResults(newResults);
     }
 
-    const hasValidNetwork = [foundry.id, goerli.id].includes(chainId);
+    const hasValidNetwork = [foundry.id, goerli.id, optimismGoerli.id].includes(chainId);
 
 
     const clearCookies = () => {
@@ -367,6 +370,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                     {searchResults.map((result, resultIndex) => {
 
                         if (result.type == "subname") {
+                            
                             return (
                                 <div key = {"result-row-" + result.name + "-" + result.nonce + (currentlyOpenName == result.name ? "-open" : "-closed")}>
                                     <SubnameSearchResultRow 

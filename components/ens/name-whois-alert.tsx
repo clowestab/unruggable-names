@@ -86,19 +86,17 @@ import {
 }                                         from '@/helpers/constants'
 import { 
     useEnsRegistryRead, 
-    useEthRegistrarController, 
-    useEthRegistrarControllerRead, 
-    useNameWrapper, 
-    useNameWrapperRead, 
-    useSubnameRegistrar, 
-    useSubnameRegistrarRead, 
-    useSubnameWrapper, 
-    useSubnameWrapperRead,
-    nameWrapperAddress,
-    subnameRegistrarAddress,
-    subnameWrapperAddress,
-    usePricePerCharRenewalController,
-    usePricePerCharRenewalControllerRead,
+    useL2EthRegistrarController, 
+    useL2NameWrapper, 
+    useL2NameWrapperRead, 
+    useL2EthRegistrar,
+    useL2EthRegistrarRead,
+    useL2SubnameRegistrar, 
+    useL2SubnameRegistrarRead, 
+    l2NameWrapperAddress,
+    l2SubnameRegistrarAddress,
+    useL2PricePerCharRenewalController,
+    useL2PricePerCharRenewalControllerRead,
     useIusdOracleRead,
     useBaseRegistrarImplementationRead,
 }                                         from '../../lib/blockchain'
@@ -109,6 +107,10 @@ interface NameWhoisAlertProps {
     name:        string,
     onClickClose?: any
 }
+
+
+const optimismChainId = 420;
+const ethereumChainId = 5;
 
 // @ts-ignore
 export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): React.ReactElement | null {
@@ -150,6 +152,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     const tokenId                         = ethers.BigNumber.from(labelhash);
     const namehashInt                     = ethers.BigNumber.from(namehash);
     const encodedNameToRenew              = hexEncodeName(name);
+    const dnsEncodedName = ethers.utils.dnsEncode(name);
 
     //Holds the selected time in seconds for a renewal
     const [
@@ -164,38 +167,45 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     const  chainId   = useChainId();
 
-    const renewalControllerOptions        = getRenewalControllerOptions(chainId);
+    const renewalControllerOptions        = getRenewalControllerOptions(optimismChainId);
 
 
     const { 
         data: signer, 
     }                                     = useSigner()
-    const provider = useProvider()
 
+    const { data: optimismSigner } = useSigner({
+        chainId: optimismChainId,
+    })
+
+    const provider = useProvider()
+    const optimismProvider = useProvider({
+        chainId: optimismChainId,
+    })
 
     console.log("lastRenewalPriceIndex Signer", signer);
     console.log("lastRenewalPriceIndex Signerp", provider);
     console.log("lastRenewalPriceIndex Signerreal", typeof signer !== "undefined");
 
     //ETHRegistrarController instance
-    const ethRegistrarController          = useEthRegistrarController({
-        chainId:          chainId,
-        signerOrProvider: signer ?? provider
+    const l2EthRegistrar          = useL2EthRegistrar({
+        chainId:          optimismChainId,
+        signerOrProvider: optimismSigner ?? optimismProvider
     });
 
     //RenewalController instance
-    const renewalController               = usePricePerCharRenewalController({
-        chainId:          chainId,
-        signerOrProvider: signer ?? provider
+    const renewalController               = useL2PricePerCharRenewalController({
+        chainId:          optimismChainId,
+        signerOrProvider: optimismSigner ?? optimismProvider
     });
 
 
     //Gets the number of characters for which prices have been set from our basic renewal controller
     const  { 
-        data: lastRenewalPriceIndex, 
+        data:    lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
-    }                                     = usePricePerCharRenewalControllerRead({
-        chainId:      chainId,
+    }                                     = useL2PricePerCharRenewalControllerRead({
+        chainId:      optimismChainId,
         functionName: 'getLastCharIndex',
         args:         [],
     });
@@ -255,21 +265,21 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
 
     //The renewal price for a second level name comes direct from the EthRegistrarController
-    const  { data: renewalPrice }  = useEthRegistrarControllerRead({
-        chainId:      chainId,
+    const { data: renewalPrice }  = useL2EthRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'rentPrice',
-        args:         [label, renewForTimeInSeconds],
+        args:         [dnsEncodedName, renewForTimeInSeconds],
         select:       (data) => {
             console.log("renewalPricen parts", data);
-            return data.base.add(data.premium)
+            return data.weiPrice;
         },
     });
 
     console.log("renewalPricen", renewalPrice);
 
-    //SubnameWrapper instance
-    const subnameWrapper = useSubnameWrapper({
-        chainId: chainId,
+    //L2NameWrapper instance
+    const l2NameWrapper = useL2NameWrapper({
+        chainId:          optimismChainId,
         signerOrProvider: signer
     });
 
@@ -297,8 +307,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
-    const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useSubnameRegistrarRead({
-        chainId: chainId,
+    const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useL2SubnameRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'pricingData',
         args:         [namehashHex],
      });
@@ -309,8 +319,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     ]                                     = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
-    const  { data: isOnAllowList, refetch: refetchIsOnAllowList }  = useSubnameRegistrarRead({
-        chainId:      chainId,
+    const  { data: isOnAllowList, refetch: refetchIsOnAllowList }  = useL2SubnameRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'allowList',
         args:         [namehashHex],
      });
@@ -318,35 +328,21 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     console.log("isOnAllowList", isOnAllowList);
 
     //SubnameRegistrar instance
-    const subnameRegistrar = useSubnameRegistrar({
-        chainId: chainId,
-        signerOrProvider: signer ?? provider
-    });
-
-    //NameWrapper instance
-    const nameWrapper = useNameWrapper({
-        chainId: chainId,
+    const subnameRegistrar = useL2SubnameRegistrar({
+        chainId:          optimismChainId,
         signerOrProvider: signer ?? provider
     });
 
     //Gets owner/expiry/fuses from the namewrapper
-    const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
-        chainId:          chainId,
+    const  { data: nameData, refetch: refetchData }  = useL2NameWrapperRead({
+        chainId:          optimismChainId,
         functionName:     'getData',
         args:             [namehashInt],
         signerOrProvider: signer ?? provider
      });
-    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
+    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
 
-
-    const  { data: registrarExpiry, refetch: refetchRegistrarExpiryData }  = useBaseRegistrarImplementationRead({
-        chainId:          chainId,
-        functionName:     'nameExpires',
-        args:             [tokenId],
-        signerOrProvider: signer ?? provider
-     });
-
-    console.log(name + " " + labelhash + " registrarExpiry " + tokenId, registrarExpiry);
+    console.log("wrapperExpiry", wrapperExpiry);
 
     var renewalControllerToUse = null;
 
@@ -358,43 +354,35 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     //if (nameData === undefined) {
 
 
-        //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
-        const  { data: isApprovedForAllSubnameWrapper, refetch: refetchIsApprovedForAllSubnameWrapper  }  = useSubnameWrapperRead({
-            chainId: chainId,
+        //Check if the Subname Registrar has been approved for this names owner on the name Wrapper
+        const  { data: isSubnameRegistrarApprovedOnNameWrapper, refetch: refetchisSubnameRegistrarApprovedOnNameWrapper  }  = useL2NameWrapperRead({
+            chainId:      optimismChainId,
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, subnameRegistrarAddress[chainId]],
+            args:         [nameData?.owner, l2SubnameRegistrarAddress[optimismChainId]],
         });
 
-        console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
-        console.log("isApprovedForAllSubnameWrapper owner", nameData?.owner);
-        console.log("isApprovedForAllSubnameWrapper address", subnameRegistrarAddress[chainId]);
+        console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
+        console.log("isSubnameRegistrarApprovedOnNameWrapper owner", nameData?.owner);
+        console.log("isSubnameRegistrarApprovedOnNameWrapper address", l2SubnameRegistrarAddress[optimismChainId]);
 
-        //Check if the Subname Wrapper has been approved for this names owner on the Name Wrapper
-        const  { data: isApprovedForAllNameWrapper, refetch: refetchIsApprovedForAllNameWrapper }  = useNameWrapperRead({
-            chainId: chainId,
-            functionName: 'isApprovedForAll',
-            //@ts-ignore
-            args:         [nameData?.owner, subnameWrapperAddress[chainId]],
-         });
-
-        console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
-        console.log("isApprovedForAllNameWrapper owner", nameData?.owner);
-        console.log("isApprovedForAllNameWrapper address", subnameWrapperAddress[chainId]);
-
-
-        console.log("isApprovedForAllSubnameWrapper", isApprovedForAllSubnameWrapper);
-        console.log("isApprovedForAllNameWrapper", isApprovedForAllNameWrapper);
+        
+        console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
     //}
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-        chainId:      chainId,
+        chainId:      optimismChainId,
         functionName: 'owner',
         args:         [namehashHex],
      });
 
-    const isWrapped = registryOwnerAddress == nameWrapperAddress[chainId]
+    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[optimismChainId]
+
+    console.log("registry", isWrapped);
+    console.log("registry1", registryOwnerAddress);
+    console.log("registry2", l2NameWrapperAddress[optimismChainId]);
+
 
     const ethPrice = 1600;
 
@@ -431,7 +419,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     const isOwnedByUser = nameData?.owner == address;
 
     //@ts-ignore
-    const expiryDate    = new Date(parseInt(registrarExpiry) * 1000);
+    const expiryDate    = new Date(wrapperExpiry * 1000);
     const expiryString  = expiryDate.toLocaleString();
 
 
@@ -481,7 +469,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
                                                 <>
                                                     <p>{expiryString}</p>
-                                                    <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(registrarExpiry)}</div>
+                                                    <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(wrapperExpiry)}</div>
                                                 
                                                     <div className = "mt-2">
 
@@ -533,10 +521,11 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                         {isRenewing && (
                                                             <TransactionConfirmationState 
                                                                 key       = {"name-renewal-" + name}
-                                                                contract  = {ethRegistrarController}
+                                                                contract  = {l2EthRegistrar}
                                                                 txArgs    = {{
                                                                     args: [
                                                                         label,
+                                                                        "0x0000000000000000000000000000000000000000",
                                                                         renewForTimeInSeconds
                                                                     ],
                                                                     overrides: {
@@ -557,7 +546,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 onAlways  = {() => {
                                                                     console.log("2ld renewal onAlways");
                                                                     setIsRenewing(false);
-                                                                    refetchRegistrarExpiryData();
+                                                                    refetchData();
                                                                 }}
                                                                 onError = {() => {
 
@@ -567,7 +556,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                         description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
                                                                     });
                                                                 }}
-                                                                checkStatic = {true}>
+                                                                checkStatic = {false}>
                                                                 <div>
                                                                     {/* Renewing interface handled manually*/}
                                                                 </div>
@@ -696,88 +685,14 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                         <h3 className = "mt-4 text-base">Approvals</h3>
                                         <div className = "mt-2 text-xs">
                                             Before utilising the subname offering you must approve access to our smart contracts to manage your names.
-                                        </div>
-
-                                        <div className = "mt-4 text-xs">
-                                            1. Approve the <span className = "font-bold">Subname Wrapper</span> on the <span className = "font-bold">Name Wrapper</span>.
-                                        </div>
-
-                                        {/* The Subname wrapper needs to be approved on the Name Wrapper*/}
-                                        {!isApprovedForAllNameWrapper ? (
-                                            <>
-                                                <Button 
-                                                    type      = "submit" 
-                                                    disabled  = {isNameWrapperApprovalPending} 
-                                                    onClick   = {onClickApproveForAllNameWrapper} 
-                                                    className = "mt-2">
-                                                    {isNameWrapperApprovalPending ? CommonIcons.miniLoader : "Approve Subname Wrapper in Name Wrapper"}
-                                                </Button>
-
-                                                {isNameWrapperApprovalPending && (
-
-                                                    <TransactionConfirmationState 
-                                                        key       = {"approve-wrapper-" + name}
-                                                        contract    = {nameWrapper}
-                                                        txArgs      = {{
-                                                            args: [
-                                                                subnameWrapperAddress[chainId]
-                                                            ],
-                                                            overrides: {
-                                                                gasLimit: ethers.BigNumber.from("5000000"),
-                                                                //value: "10000000000000000000"
-                                                            }
-                                                        }}
-                                                        txFunction    = 'setApprovalForAll'
-                                                        onConfirmed   = {() => {
-                                                            console.log("setApprovalforall done");
-
-                                                            toast({
-                                                                duration: 5000,
-                                                                className: "bg-green-200 dark:bg-green-800 border-0",
-                                                                description: (
-                                                                    <p>
-                                                                        <span className = "font-bold">SubnameWrapper</span> successfiully approved on the <span className = "font-bold">NameWrapper</span>.
-                                                                    </p>
-                                                                ),
-                                                            });
-                                                        }}
-                                                        onAlways = {() => {
-                                                            setIsNameWrapperApprovalPending(false);
-                                                            refetchIsApprovedForAllNameWrapper?.();
-                                                        }}
-                                                        onError = {() => {
-                                                            toast({
-                                                                duration: 5000,
-                                                                className: "bg-red-200 dark:bg-red-800 border-0",
-                                                                description: (
-                                                                    <p>
-                                                                        There was a problem approving the <span className = "font-bold">SubnameWrapper</span> on the <span className = "font-bold">NameWrapper</span>.
-                                                                    </p>
-                                                                ),
-                                                            });
-                                                        }}
-                                                        checkStatic = {true}>
-                                                        <div>
-                                                            {/*Show nothing when approving - we do it on the button*/}
-                                                        </div>
-                                                        <div>
-                                                            {/*Show nothing when approved - we do it in the else*/}
-                                                        </div>
-                                                    </ TransactionConfirmationState>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className = "mt-2">
-                                                {CommonIcons.check} Approved
-                                            </div>
-                                        )}
+                                        </div>                                        
                                     </div>
 
                                     <div className = "mt-8 text-xs">
-                                        2. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Subname Wrapper</span>.
+                                        1. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Name Wrapper</span>.
                                     </div>
                                     
-                                    {!isApprovedForAllSubnameWrapper ? (
+                                    {!isSubnameRegistrarApprovedOnNameWrapper ? (
 
                                         <>
                                             <Button 
@@ -785,7 +700,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                 disabled  = {isSubnameRegistrarApprovalPending} 
                                                 onClick   = {onClickApproveSubnameRegistrar} 
                                                 className = "mt-2">
-                                                    {isSubnameRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subname Registrar in Subname Wrapper"}
+                                                    {isSubnameRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subname Registrar in Name Wrapper"}
                                             </Button>
                                     
                                             {/* The Subname registrar needs to be approved on the Subname Wrapper*/}
@@ -793,11 +708,11 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                             {isSubnameRegistrarApprovalPending && (
                                                 <TransactionConfirmationState 
                                                     key     = {"offer-subnames-" + name}
-                                                    contract  = {subnameWrapper}
+                                                    contract  = {l2NameWrapper}
                                                     txArgs    = {{
-                                                        address: subnameWrapperAddress[chainId],
+                                                        address: l2NameWrapperAddress[optimismChainId],
                                                         args: [
-                                                            subnameRegistrarAddress[chainId]
+                                                            l2SubnameRegistrarAddress[optimismChainId]
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("5000000"),
@@ -820,7 +735,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                     }}
                                                     onAlways = {() => {
                                                         setIsSubnameRegistrarApprovalPending(false);
-                                                        refetchIsApprovedForAllSubnameWrapper?.();
+                                                        refetchisSubnameRegistrarApprovedOnNameWrapper?.();
                                                     }}
                                                     onError = {() => {
                                                         toast({
@@ -882,7 +797,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 <TableCell>Renewal Controller</TableCell>
                                                                 <TableCell>
                                                                     <>
-                                                                        <a href = {"https://" + (chainId == 5 ? "goerli." : "") + "etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
+                                                                        <a href = {"https://goerli-optimism.etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
                                                                         {currentRenewalController && (
                                                                             <div className = "text-xs mt-2">
                                                                                 The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className="font-bold">{currentRenewalController?.controlDescription}</span>
@@ -914,7 +829,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                 {isOwnedByUser && (
                                                     <div className = "text-center mt-4">
 
-                                                        {(!isApprovedForAllNameWrapper || !isApprovedForAllSubnameWrapper || !isOnAllowList) ? (
+                                                        {(!isSubnameRegistrarApprovedOnNameWrapper || !isOnAllowList) ? (
                                                             <Tooltip delayDuration = {0}>
                                                                 <TooltipTrigger asChild>
                                                                     <Button 
@@ -1055,6 +970,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 offerSubnamesInput,
                                                                 renewalControllerInput ?? registerPricingData?.renewalController,
                                                                 minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
+                                                                ONE_YEAR_IN_SECONDS * 100,
                                                                 minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
                                                                 maxCharactersInputRef && maxCharactersInputRef.current?.value ? maxCharactersInputRef.current?.value : 0,
                                                             ],

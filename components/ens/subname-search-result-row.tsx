@@ -39,16 +39,16 @@ import {
     ONE_YEAR_IN_SECONDS
 }                                           from '../../helpers/constants'
 import { 
-    useNameWrapperRead,
-    useSubnameRegistrar, 
-    useSubnameRegistrarMakeCommitment, 
-    useSubnameRegistrarMinCommitmentAge, 
-    useSubnameRegistrarRead, 
+    useL2NameWrapperRead,
+    useL2SubnameRegistrar, 
+    useL2SubnameRegistrarMakeCommitment, 
+    useL2SubnameRegistrarMinCommitmentAge, 
+    useL2SubnameRegistrarRead, 
     useIRenewalControllerRead,
-    subnameRegistrarAddress,
-    useEthRegistrarControllerRead,
+    l2SubnameRegistrarAddress,
+    useL2EthRegistrarRead,
     useEnsRegistryRead,
-    useSubnameRegistrarPricingData 
+    useL2SubnameRegistrarPricingData 
 }                                           from '../../lib/blockchain'
 import { SubnameWhoisAlert }                from '../ens/subname-whois-alert'
 import CommonIcons                          from '../shared/common-icons';
@@ -64,6 +64,9 @@ interface SearchResultRowProps {
     dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
 }
 
+const optimismChainId = 420;
+const ethereumChainId = 5;
+
 export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup, cookiedCommitment, clearCookies, dialogStartsOpen }: SearchResultRowProps) {
 
     const provider         = useProvider();
@@ -74,7 +77,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const { toast }        = useToast()
 
     //SubnameRegistrar instance
-    const subnameRegistrar = useSubnameRegistrar({
+    const subnameRegistrar = useL2SubnameRegistrar({
+        chainId:          optimismChainId,
         signerOrProvider: signer
     });
 
@@ -121,7 +125,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:      registryOwner, 
         isLoading: isLoadingRegistryOwner 
     }                                           = useEnsRegistryRead({
-        chainId:      chainId,
+        chainId:      optimismChainId,
         functionName: 'owner',
         args:         [namehash],
     });
@@ -132,8 +136,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const  { 
         data:      isAvailable, 
         isLoading: isLoadingRegistrarAvailability 
-    }                                           = useSubnameRegistrarRead({
-        chainId:      chainId,
+    }                                           = useL2SubnameRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'available',
         args:         [encodedNameToRegister],
     });
@@ -144,8 +148,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const  { 
         data:      isParentAvailable, 
         isLoading: isLoadingParentAvailability 
-    }                                           = useEthRegistrarControllerRead({
-        chainId:      chainId,
+    }                                           = useL2EthRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'available',
         args:         [parentLabel],
     });
@@ -156,8 +160,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:      nameData, 
         isLoading: isLoadingNameData,
         refetch:   refetchData  
-    }                                       = useSubnameRegistrarPricingData({
-        chainId: chainId,
+    }                                       = useL2SubnameRegistrarPricingData({
+        chainId: optimismChainId,
         args:    [parentNamehash],
     });
 
@@ -171,8 +175,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const  { 
         data:    parentNameData, 
         refetch: refetchParentData 
-    }                                       = useNameWrapperRead({
-        chainId:      chainId,
+    }                                       = useL2NameWrapperRead({
+        chainId:      optimismChainId,
         functionName: 'getData',
         args:         [parentTokenId],
      });
@@ -191,8 +195,8 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const registerForTimeInSeconds = ethers.BigNumber.from(cookiedCommitment?.registerForTimeInSeconds ?? ONE_YEAR_IN_SECONDS);
     const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
-    const  { data: registerPriceData }  = useSubnameRegistrarRead({
-        chainId:      chainId,
+    const  { data: registerPriceData }  = useL2SubnameRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
     });
@@ -218,7 +222,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     //The renewal price as pulled from the subnames renewal controller
     const  { data: renewalPriceData }           = useIRenewalControllerRead({
         address:      renewalControllerToUse,
-        chainId:      chainId,
+        chainId:      optimismChainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
@@ -243,13 +247,13 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     //Get the minimum commitment time required for a valid commitment from the SubnameRegistrar
     const { 
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
-    }                               = useSubnameRegistrarMinCommitmentAge({
-        chainId: chainId,
+    }                               = useL2SubnameRegistrarMinCommitmentAge({
+        chainId: optimismChainId,
     });
 
     //Generate a commitment hash
-    const { data: commitment }      = useSubnameRegistrarMakeCommitment({
-        chainId: chainId,
+    const { data: commitment }      = useL2SubnameRegistrarMakeCommitment({
+        chainId: optimismChainId,
         args: [
             encodedNameToRegister, 
             addressToRegisterTo!, 
@@ -351,14 +355,14 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                         window.history.pushState({page: "another"}, "another page", "/" + name) }
                                                 }>more info</span>
                                             </AlertDialogTrigger>
-                                            <SubnameWhoisAlert 
+                                            {<SubnameWhoisAlert 
                                                 key          = {"alert-" + name} 
                                                 name         = {name} 
                                                 onClickClose = {(e) => {
 
                                                     window.history.pushState({page: "another"}, "another page", "/");
                                                     setIsDialogOpen(false);
-                                                }} />
+                                            }} />}
                                         </AlertDialog>
                                     </div>
                                 </>
@@ -424,7 +428,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                                     key      = {"commitment-" + resultIndex}
                                                                     contract = {subnameRegistrar}
                                                                     txArgs   = {{
-                                                                        address: subnameRegistrarAddress[chainId],
+                                                                        address: l2SubnameRegistrarAddress[optimismChainId],
                                                                         args: [
                                                                             commitment, //secret
                                                                         ],
@@ -467,7 +471,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                     key      = {"registration-" + resultIndex}
                                                     contract = {subnameRegistrar}
                                                     txArgs   = {{
-                                                        address: subnameRegistrarAddress[chainId],
+                                                        address: l2SubnameRegistrarAddress[optimismChainId],
                                                         args: [
                                                             encodedNameToRegister,
                                                             addressToRegisterTo, //owner
@@ -507,7 +511,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                             description: (<p>{buildErrorMessage(error)}</p>),
                                                         });
                                                     }}
-                                                    checkStatic = {false}>
+                                                    checkStatic = {true}>
                                                     <div>
                                                         {CommonIcons.miniLoader} Registering name..
                                                     </div>

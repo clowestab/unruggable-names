@@ -43,12 +43,13 @@ import {
     FUSES
 }                                       from '../../helpers/constants'
 import { 
-    useEthRegistrarController, 
-    useEthRegistrarControllerMakeCommitment, 
-    useEthRegistrarControllerMinCommitmentAge, 
-    useEthRegistrarControllerRead, 
-    useSubnameRegistrarPricingData,
-    ethRegistrarControllerAddress,
+    useL2EthRegistrar, 
+    useL2EthRegistrarMakeCommitment, 
+    useL2EthRegistrarMinCommitmentAge, 
+    useL2EthRegistrarRead, 
+    useL2SubnameRegistrarPricingData,
+    l2EthRegistrarAddress,
+    useEthRegistrarControllerRead
 }                                       from '../../lib/blockchain'
 import { NameWhoisAlert }               from '../ens/name-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
@@ -68,21 +69,26 @@ interface SearchResultRowProps {
     dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
 }
 
+const optimismChainId = 420;
+const ethereumChainId = 5;
+
 export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedCommitment, clearCookies, dialogStartsOpen }: SearchResultRowProps) {
 
     console.log("received cookiedCommitment", cookiedCommitment);
 
     const provider         = useProvider();
     const  chainId         = useChainId();
-    const { data: signer } = useSigner()
+    const { data: optimismSigner } = useSigner({
+        chainId: optimismChainId,
+    })
     const { address }      = useAccount()
     const { chain }        = useNetwork()
     const { toast }        = useToast()
 
     //EthRegistrarController instance
-    const ethRegistrarController        = useEthRegistrarController({
-        chainId:          chainId,
-        signerOrProvider: signer
+    const l2EthRegistrar        = useL2EthRegistrar({
+        chainId:          optimismChainId,
+        signerOrProvider: optimismSigner
     });
 
     //If the profile dialog for this name is open
@@ -119,39 +125,45 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
     const label                         = nameParts[0];
     const encodedNameToRegister         = hexEncodeName(name);
     const nameNamehash: `0x${string}`   = ethers.utils.namehash(name) as `0x${string}`;
+    const dnsEncodedName = ethers.utils.dnsEncode(name);
 
     const  { 
         data:      isValid, 
         isLoading: isLoadingValid 
     }                                   = useEthRegistrarControllerRead({
-        chainId:      chainId,
+        chainId:      ethereumChainId,
         functionName: 'valid',
         args:         [label],
     });
 
+    console.log("b4 isAval", isValid);
+
     const  { 
         data:      isAvailable, 
         isLoading: isLoadingAvailability 
-    }                                   = useEthRegistrarControllerRead({
-        chainId:      chainId,
+    }                                   = useL2EthRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'available',
-        args:         [label],
+        args:         [dnsEncodedName],
     });
 
-    const  { data: pricingData }        = useSubnameRegistrarPricingData({
-        chainId: chainId,
+    console.log("isAval", isAvailable);
+
+    const  { data: pricingData }        = useL2SubnameRegistrarPricingData({
+        chainId: optimismChainId,
         args:    [nameNamehash],
      });
 
     const addressToRegisterTo           = cookiedCommitment?.addressToRegisterTo ?? address;
     const addressToResolveTo            = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
-    const  { data: rentPrice }          = useEthRegistrarControllerRead({
-        chainId:      chainId,
+    const  { data: rentPrice }          = useL2EthRegistrarRead({
+        chainId:      optimismChainId,
         functionName: 'rentPrice',
-        args:         [encodedNameToRegister, registerForTimeInSeconds],
+        args:         [dnsEncodedName, registerForTimeInSeconds],
      });
 
+    console.log("rentPrice", rentPrice);
 
     //A salt for the registration commitment
     const [salt, setSalt]               = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
@@ -166,21 +178,16 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
 
     const { 
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
-    }                                   = useEthRegistrarControllerMinCommitmentAge({
-        chainId: chainId
+    }                                   = useL2EthRegistrarMinCommitmentAge({
+        chainId: optimismChainId
     });
 
-    const { data: commitment }          = useEthRegistrarControllerMakeCommitment({
-        chainId: chainId,
+    const { data: commitment }          = useL2EthRegistrarMakeCommitment({
+        chainId: optimismChainId,
         args: [
             label, 
             addressToRegisterTo!, 
-            registerForTimeInSeconds, 
-            salt, 
-            addressToResolveTo, 
-            [], 
-            false,
-            (FUSES.CANNOT_UNWRAP)
+            salt
         ],
         overrides: {
             gasLimit: ethers.BigNumber.from("200000")
@@ -279,9 +286,10 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                                             setIsDialogOpen(false);
                                                         }} />
                                                 </AlertDialog>
-                                            </>) : (
-                                                <span>Invalid name</span>
-                                            )}
+                                            </>
+                                        ) : (
+                                            <span>Invalid name</span>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -318,7 +326,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                     </Select>
 
                                     {rentPrice && (
-                                        <span className = "text-xs">Ξ {(+ethers.utils.formatEther(rentPrice.base.toString())).toFixed(4)}</span>
+                                        <span className = "text-xs">Ξ {(+ethers.utils.formatEther(rentPrice.weiPrice.toString())).toFixed(4)}</span>
                                     )}
                                 </>
                             )}
@@ -349,9 +357,9 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                                             {commitment != null && (
                                                                 <TransactionConfirmationState 
                                                                     key         = {"commitment-" + resultIndex}
-                                                                    contract    = {ethRegistrarController}
+                                                                    contract    = {l2EthRegistrar}
                                                                     txArgs      = {{
-                                                                        address: ethRegistrarControllerAddress[chainId],
+                                                                        address: l2EthRegistrarAddress[optimismChainId],
                                                                         args: [
                                                                             commitment, //secret
                                                                         ],
@@ -391,22 +399,21 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
 
                                                 <TransactionConfirmationState 
                                                     key         = {"name-registration-" + resultIndex}
-                                                    contract    = {ethRegistrarController}
+                                                    contract    = {l2EthRegistrar}
                                                     txArgs      = {{
-                                                        address: ethRegistrarControllerAddress[chainId],
+                                                        address: l2EthRegistrarAddress[optimismChainId],
                                                         args: [
                                                             label,
                                                             addressToRegisterTo, //owner
+                                                            addressToRegisterTo,
                                                             registerForTimeInSeconds,
                                                             salt, //secret
                                                             addressToResolveTo, //resolver
-                                                            [], //calldata
-                                                            false,
                                                             (FUSES.CANNOT_UNWRAP) //fuses
                                                         ],
                                                         overrides: {
                                                             gasLimit:   ethers.BigNumber.from("500000"),
-                                                            value:      rentPrice!.base.toString()
+                                                            value:      rentPrice!.weiPrice
                                                         }
                                                     }}
                                                     txFunction  = 'register'

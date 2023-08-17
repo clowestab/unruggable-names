@@ -1125,6 +1125,363 @@
             }
           ]
         },
+        "BulkRegisterAndRenew": {
+          "address": "0x14fB7368b017dB8aEF3c2e38C39d46B65D2568AD",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "_ens",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "ONE_YEAR",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "name": "allData",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isAvailable",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "rentPriceOneYearInWei",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "expirationDate",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "registrarOwnerAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "registryOwnerAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "nameWrapperOwnerAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "resolverAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "resolvesToAddress",
+                      "type": "address"
+                    }
+                  ],
+                  "internalType": "struct BulkRegisterAndRenew.DomainData",
+                  "name": "data",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lengthInSeconds",
+                  "type": "uint256"
+                }
+              ],
+              "name": "cartData",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isAvailable",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "rentPriceInWei",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "expirationDate",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct BulkRegisterAndRenew.CartData",
+                  "name": "data",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32[]",
+                  "name": "commitments",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "commitAll",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "name": "computeNamehash",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "namehash",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "ens",
+              "outputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getController",
+              "outputs": [
+                {
+                  "internalType": "contract IETHRegistrarController",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getEthRegistrar",
+              "outputs": [
+                {
+                  "internalType": "contract IBaseRegistrar",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getNameWrapper",
+              "outputs": [
+                {
+                  "internalType": "contract INameWrapper",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "resolverAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "getResolver",
+              "outputs": [
+                {
+                  "internalType": "contract IAddrResolver",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string[]",
+                      "name": "names",
+                      "type": "string[]"
+                    },
+                    {
+                      "internalType": "address[]",
+                      "name": "owners",
+                      "type": "address[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "durations",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "salt",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BulkRegisterAndRenew.BasicRegistrationData",
+                  "name": "basic",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address[]",
+                      "name": "resolvers",
+                      "type": "address[]"
+                    },
+                    {
+                      "internalType": "bytes[][]",
+                      "name": "datas",
+                      "type": "bytes[][]"
+                    },
+                    {
+                      "internalType": "uint16[]",
+                      "name": "ownerControlledFuses",
+                      "type": "uint16[]"
+                    }
+                  ],
+                  "internalType": "struct BulkRegisterAndRenew.AdvancedRegistrationData",
+                  "name": "advanced",
+                  "type": "tuple"
+                }
+              ],
+              "name": "registerAll",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string[]",
+                  "name": "names",
+                  "type": "string[]"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "durations",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "renewAll",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "duration",
+                  "type": "uint256"
+                }
+              ],
+              "name": "rentPrice",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "rentPrice",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string[]",
+                  "name": "names",
+                  "type": "string[]"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "durations",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "rentPrice",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "total",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
         "DNSRegistrar": {
           "address": "0x8edc487D26F6c8Fa76e032066A3D4F87E273515d",
           "abi": [
@@ -8184,6 +8541,165 @@
             }
           ]
         },
+        "SubnameBulkRegisterAndRenew": {
+          "address": "0xd00Fae3B0e350F4C1Ad983654E120567B97a4b74",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "_ens",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "ONE_YEAR",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "parentNode",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "string",
+                  "name": "label",
+                  "type": "string"
+                }
+              ],
+              "name": "allData",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isAvailable",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "rentPriceOneYearInWei",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "expirationDate",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "registryOwnerAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "nameWrapperOwnerAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "resolverAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "resolvesToAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint32",
+                      "name": "fuses",
+                      "type": "uint32"
+                    }
+                  ],
+                  "internalType": "struct SubnameBulkRegisterAndRenew.DomainData",
+                  "name": "data",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "name": "computeNamehash",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "namehash",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "ens",
+              "outputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getNameWrapper",
+              "outputs": [
+                {
+                  "internalType": "contract INameWrapper",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "resolverAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "getResolver",
+              "outputs": [
+                {
+                  "internalType": "contract IAddrResolver",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
         "TLDPublicSuffixList": {
           "address": "0xed2E4cDc0280743B42F4415E3e8F7425a2d6b059",
           "abi": [
@@ -12351,6 +12867,393 @@
                   "internalType": "int256",
                   "name": "",
                   "type": "int256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "420": [
+    {
+      "name": "optimism-goerli",
+      "chainId": "420",
+      "contracts": {
+        "ENSRegistry": {
+          "address": "0xffED83BDBd2F9906Ac12467288946cf7d8F6f599",
+          "abi": [
+            {
+              "inputs": [],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "approved",
+                  "type": "bool"
+                }
+              ],
+              "name": "ApprovalForAll",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "NewOwner",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                }
+              ],
+              "name": "NewResolver",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "NewTTL",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "Transfer",
+              "type": "event"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                }
+              ],
+              "name": "isApprovedForAll",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "recordExists",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "resolver",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "approved",
+                  "type": "bool"
+                }
+              ],
+              "name": "setApprovalForAll",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "setOwner",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setRecord",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                }
+              ],
+              "name": "setResolver",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "setSubnodeOwner",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setSubnodeRecord",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setTTL",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "ttl",
+              "outputs": [
+                {
+                  "internalType": "uint64",
+                  "name": "",
+                  "type": "uint64"
                 }
               ],
               "stateMutability": "view",

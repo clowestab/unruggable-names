@@ -67,13 +67,11 @@ import {
 
 import { 
     useEnsRegistryRead, 
-    useNameWrapperRead, 
-    useIRenewalController, 
-    useSubnameWrapperRead,
+    useL2NameWrapperRead, 
+    useIRenewalController,
     useIRenewalControllerRead,
-    subnameRegistrarAddress,
-    subnameWrapperAddress,
-    nameWrapperAddress 
+    l2SubnameRegistrarAddress,
+    l2NameWrapperAddress 
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
@@ -83,6 +81,9 @@ interface SubnameWhoisAlertProps {
     onClickClose?: any
 }
 
+const optimismChainId = 420;
+const ethereumChainId = 5;
+
 // @ts-ignore
 export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps): React.ReactElement | null {
 
@@ -90,7 +91,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const { chain }                         = useNetwork()
     const  chainId                          = useChainId();
 
-    const renewalControllerOptions          = getRenewalControllerOptions(chainId);
+    const renewalControllerOptions          = getRenewalControllerOptions(optimismChainId);
 
     const { 
         data: signer, 
@@ -111,34 +112,32 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     ]                                       = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
     const referrerAddress                   = "0xFC04D70bea992Da2C67995BbddC3500767394513";
 
-    //Owner of the subdoomain in the SubnameWrapper
-    const  { data: ownerAddress }           = useSubnameWrapperRead({
-        chainId:      chainId,
-        functionName: 'ownerOf',
-        args:         [tokenId],
-    });
-
     const  { 
         data:    nameData, 
         refetch: refetchData  
-    }                                       = useSubnameWrapperRead({
-        chainId:      chainId,
+    }                                       = useL2NameWrapperRead({
+        chainId:      optimismChainId,
         functionName: 'getData',
         args:         [tokenId],
     });
 
-    var renewalControllerToUse = null;
-
-    if (nameData && nameData.renewalController != ZERO_ADDRESS) { 
-        renewalControllerToUse = nameData.renewalController; 
-    } 
+    const  { 
+        data:    renewalControllerAddress, 
+        refetch: refetchRenewalControllerAddress  
+    }                                       = useL2NameWrapperRead({
+        chainId:      optimismChainId,
+        functionName: 'getApproved',
+        args:         [tokenId],
+     });
 
     const  { data: renewalPriceData }        = useIRenewalControllerRead({
-        address:      renewalControllerToUse,
-        chainId:      chainId,
+        address:      renewalControllerAddress,
+        chainId:      optimismChainId,
         functionName: 'rentPrice',
         args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
+
+    console.log("renewalControllerAddress", renewalControllerAddress);
 
     const { 
         weiPrice: renewalPriceWei, 
@@ -148,29 +147,29 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     console.log("renewalPriceUsd", renewalPriceUsd);
 
     const renewalControllerToUseInstance     = useIRenewalController({
-        address:          renewalControllerToUse,
-        chainId:          chainId,
+        address:          renewalControllerAddress,
+        chainId:          optimismChainId,
         signerOrProvider: signer
     });
 
-    const  { data: canRegistrarModifyName }  = useSubnameWrapperRead({
-        chainId:      chainId,
+    const  { data: canRegistrarModifyName }  = useL2NameWrapperRead({
+        chainId:      optimismChainId,
         functionName: 'canModifyName',
-        args:         [namehash, subnameRegistrarAddress[chainId]],
+        args:         [namehash, l2SubnameRegistrarAddress[optimismChainId]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);
 
     const  { 
         data: nameWrapperOwnerAddress 
-    }                                        = useNameWrapperRead({
-        chainId:      chainId,
+    }                                        = useL2NameWrapperRead({
+        chainId:      optimismChainId,
         functionName: 'ownerOf',
         args:         [tokenId],
     });
 
     const  { data: registryOwnerAddress }    = useEnsRegistryRead({
-        chainId:      chainId,
+        chainId:      optimismChainId,
         functionName: 'owner',
         args:         [namehash],
     });
@@ -181,7 +180,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const expiryDate                        = new Date(parseInt(nameData?.expiry) * 1000);
     const expiryString                      = expiryDate.toLocaleString();
 
-    const currentRenewalControllerData      = renewalControllerOptions.find((option) => option.value == renewalControllerToUse);
+    const currentRenewalControllerData      = renewalControllerOptions.find((option) => option.value == renewalControllerAddress);
 
     //Handler for when the 'Renew' button is clicked
     const onClickRenew = () => {
@@ -209,23 +208,6 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                 <Table>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell className = "font-medium">
-                                                SubnameWrapper Owner
-                                            </TableCell>
-                                            <TableCell>
-                                                {address == ownerAddress ? (
-                                                    <Tooltip delayDuration = {0}>
-                                                        <TooltipTrigger asChild>
-                                                            <span>{ownerAddress}</span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>This is you.</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                ) : (<span>{ownerAddress}</span>)}
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
                                             <TableCell className = "font-medium">Expiry</TableCell>
                                             <TableCell>
                                                 
@@ -237,7 +219,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                 {!isRenewing ? (  
 
                                                     <>
-                                                         {renewalControllerToUse != null ? (
+                                                         {renewalControllerAddress != null ? (
                                                             <>
                                                                 <div className = "flex mt-8">
 
@@ -279,7 +261,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://" + (chainId == 5 ? "goerli." : "") + "etherscan.io/address/" + renewalControllerToUse} target="_blank" rel="noreferrer" className = "underline">{renewalControllerToUse}</a>).
+                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://goerli-optimism.etherscan.io/address/" + renewalControllerAddress} target="_blank" rel="noreferrer" className = "underline">{renewalControllerAddress}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
@@ -325,7 +307,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                         <TableRow>
                                             <TableCell className = "font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {subnameWrapperAddress[chainId] == nameWrapperOwnerAddress ? (
+                                                {l2NameWrapperAddress[optimismChainId] == nameWrapperOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{nameWrapperOwnerAddress}</span>
@@ -340,7 +322,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                         <TableRow>
                                             <TableCell className = "font-medium">Registry Owner</TableCell>
                                             <TableCell>
-                                                {nameWrapperAddress[chainId] == registryOwnerAddress ? (
+                                                {l2NameWrapperAddress[optimismChainId] == registryOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{registryOwnerAddress}</span>
