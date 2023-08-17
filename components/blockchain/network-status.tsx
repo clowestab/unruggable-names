@@ -10,6 +10,8 @@ import { LinkComponent } from '../shared/link-component'
 const chainNames = {
   1:     "Mainnet",
   5:     "Goerli",
+  10:    "Optimism",
+  420:   "Optimism Goerli",
   31337: "Foundry"
 }
 

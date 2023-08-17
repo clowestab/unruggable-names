@@ -10,7 +10,7 @@ import CommonIcons                      from '@/components/shared/common-icons';
 import { ethers }                       from "ethers";
 
 import { 
-		useSubnameRegistrar, 
+		useL2SubnameRegistrar, 
 }                                       from '@/lib/blockchain'
 
 import { 
@@ -27,19 +27,25 @@ import {
 
 import { useToast }                       from '@/lib/hooks/use-toast'
 
+import {
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
+}                                       from '@/helpers/constants'
+
+
 export default function AllowList() {
 
 	const { 
-			data: signer, 
-	}                             = useSigner()
-	const provider                = useProvider()
+			data: optimismSigner, 
+	}                             = useSigner({ chainId: OPTIMISM_CHAIN_ID })
+	const optimismProvider        = useProvider({ chainId: OPTIMISM_CHAIN_ID })
 
 	const  chainId                = useChainId();
 
-	//SubnameRegistrar instance
-	const subnameRegistrar        = useSubnameRegistrar({
-			chainId: chainId,
-			signerOrProvider: signer ?? provider
+	//Eth registrar instance
+	const ethRegistrar        = useL2SubnameRegistrar({
+			chainId:          OPTIMISM_CHAIN_ID,
+			signerOrProvider: optimismSigner ?? optimismProvider
 	});
 
 	const nameInputRef            = React.useRef<HTMLInputElement>(null);
@@ -74,7 +80,7 @@ export default function AllowList() {
 			{isAdding && (
 				<TransactionConfirmationState 
 						key       = {"allow-list-add"}
-						contract  = {subnameRegistrar}
+						contract  = {ethRegistrar}
 						txArgs    = {{
 								args: [
 									hexEncodeName(nameInputRef.current.value),
@@ -100,9 +106,9 @@ export default function AllowList() {
 						onError = {() => {
 
 							toast({
-									duration: 5000,
-									className: "bg-red-200 dark:bg-red-800 border-0",
-									description: (<p>Failed to add name to allow list.</p>),
+								duration: 5000,
+								className: "bg-red-200 dark:bg-red-800 border-0",
+								description: (<p>Failed to add name to allow list.</p>),
 							});
 						}}
 						checkStatic = {true}>

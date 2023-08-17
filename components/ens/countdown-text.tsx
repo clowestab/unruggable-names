@@ -1,5 +1,5 @@
 import React           from 'react'
-import { useInterval } from '../../helpers/Helpers.jsx';
+import { useInterval } from '@/helpers/Helpers.jsx';
 
 interface CountdownTextProps {
     timestamp:   number,

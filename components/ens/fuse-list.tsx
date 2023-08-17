@@ -21,7 +21,7 @@ import {
     useL2NameWrapper,
     useL2NameWrapperRead,
     l2NameWrapperAddress
-}                                       from '../../lib/blockchain'
+}                                       from '@/lib/blockchain'
 
 import CommonIcons                      from '../shared/common-icons';
 
@@ -31,17 +31,16 @@ import {
     PARENT_CONTROLLED_FUSES,
     USER_SETTABLE_FUSES,
     DAY,
-    GRACE_PERIOD
-}                                           from '../../helpers/constants'
+    GRACE_PERIOD,
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
+}                                       from '@/helpers/constants'
 
 import { useToast }                     from '@/lib/hooks/use-toast'
 
 interface FuseListProps {
     name:        string,
 }
-
-const optimismChainId = 420;
-const ethereumChainId = 5;
 
 export function FuseList({ name }: FuseListProps) {
 
@@ -73,7 +72,7 @@ export function FuseList({ name }: FuseListProps) {
 
     //NameWrapper instance
     const nameWrapper                    = useL2NameWrapper({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
         signerOrProvider: signer
     });
 
@@ -83,7 +82,7 @@ export function FuseList({ name }: FuseListProps) {
         data: nameData, 
         refetch: refetchData 
     }                                       = useL2NameWrapperRead({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
          functionName: 'getData',
          args:         [tokenId],
      });
@@ -95,7 +94,7 @@ export function FuseList({ name }: FuseListProps) {
         data: parentNameData, 
         refetch: refetchParentData 
     }                                       = useL2NameWrapperRead({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
          functionName: 'getData',
          args:         [nameNodeTokenId],
     });
@@ -104,12 +103,12 @@ export function FuseList({ name }: FuseListProps) {
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress  }  = useEnsRegistryRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
         args:         [namehash],
      });
 
-    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[optimismChainId]
+    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[OPTIMISM_CHAIN_ID]
 
     const [
         fuseBeingBurned, 

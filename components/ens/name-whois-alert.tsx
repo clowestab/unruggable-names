@@ -82,7 +82,9 @@ import {
 import {
     FUSES,
     ZERO_ADDRESS,
-    ONE_YEAR_IN_SECONDS
+    ONE_YEAR_IN_SECONDS,
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
 }                                         from '@/helpers/constants'
 import { 
     useEnsRegistryRead, 
@@ -108,9 +110,6 @@ interface NameWhoisAlertProps {
     onClickClose?: any
 }
 
-
-const optimismChainId = 420;
-const ethereumChainId = 5;
 
 // @ts-ignore
 export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): React.ReactElement | null {
@@ -167,7 +166,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     const  chainId   = useChainId();
 
-    const renewalControllerOptions        = getRenewalControllerOptions(optimismChainId);
+    const renewalControllerOptions        = getRenewalControllerOptions(OPTIMISM_CHAIN_ID);
 
 
     const { 
@@ -175,12 +174,12 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     }                                     = useSigner()
 
     const { data: optimismSigner } = useSigner({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
     })
 
     const provider = useProvider()
     const optimismProvider = useProvider({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
     })
 
     console.log("lastRenewalPriceIndex Signer", signer);
@@ -189,13 +188,13 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //ETHRegistrarController instance
     const l2EthRegistrar          = useL2EthRegistrar({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner ?? optimismProvider
     });
 
     //RenewalController instance
     const renewalController               = useL2PricePerCharRenewalController({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner ?? optimismProvider
     });
 
@@ -205,7 +204,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         data:    lastRenewalPriceIndex, 
         refetch: refetchLastRenewalPriceIndex 
     }                                     = useL2PricePerCharRenewalControllerRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getLastCharIndex',
         args:         [],
     });
@@ -266,7 +265,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //The renewal price for a second level name comes direct from the EthRegistrarController
     const { data: renewalPrice }  = useL2EthRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
         args:         [dnsEncodedName, renewForTimeInSeconds],
         select:       (data) => {
@@ -279,7 +278,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //L2NameWrapper instance
     const l2NameWrapper = useL2NameWrapper({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: signer
     });
 
@@ -308,7 +307,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
     const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useL2SubnameRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'pricingData',
         args:         [namehashHex],
      });
@@ -320,7 +319,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //Gets Pricing Data from the subname registrar for a specific parent nam
     const  { data: isOnAllowList, refetch: refetchIsOnAllowList }  = useL2SubnameRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'allowList',
         args:         [namehashHex],
      });
@@ -329,13 +328,13 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //SubnameRegistrar instance
     const subnameRegistrar = useL2SubnameRegistrar({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: signer ?? provider
     });
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { data: nameData, refetch: refetchData }  = useL2NameWrapperRead({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         functionName:     'getData',
         args:             [namehashInt],
         signerOrProvider: signer ?? provider
@@ -356,15 +355,15 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
         //Check if the Subname Registrar has been approved for this names owner on the name Wrapper
         const  { data: isSubnameRegistrarApprovedOnNameWrapper, refetch: refetchisSubnameRegistrarApprovedOnNameWrapper  }  = useL2NameWrapperRead({
-            chainId:      optimismChainId,
+            chainId:      OPTIMISM_CHAIN_ID,
             functionName: 'isApprovedForAll',
             //@ts-ignore
-            args:         [nameData?.owner, l2SubnameRegistrarAddress[optimismChainId]],
+            args:         [nameData?.owner, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
         });
 
         console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
         console.log("isSubnameRegistrarApprovedOnNameWrapper owner", nameData?.owner);
-        console.log("isSubnameRegistrarApprovedOnNameWrapper address", l2SubnameRegistrarAddress[optimismChainId]);
+        console.log("isSubnameRegistrarApprovedOnNameWrapper address", l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]);
 
         
         console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
@@ -372,16 +371,16 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
         args:         [namehashHex],
      });
 
-    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[optimismChainId]
+    const isWrapped = (registryOwnerAddress == l2NameWrapperAddress[OPTIMISM_CHAIN_ID])
 
     console.log("registry", isWrapped);
     console.log("registry1", registryOwnerAddress);
-    console.log("registry2", l2NameWrapperAddress[optimismChainId]);
+    console.log("registry2", l2NameWrapperAddress[OPTIMISM_CHAIN_ID]);
 
 
     const ethPrice = 1600;
@@ -710,9 +709,9 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                     key     = {"offer-subnames-" + name}
                                                     contract  = {l2NameWrapper}
                                                     txArgs    = {{
-                                                        address: l2NameWrapperAddress[optimismChainId],
+                                                        address: l2NameWrapperAddress[OPTIMISM_CHAIN_ID],
                                                         args: [
-                                                            l2SubnameRegistrarAddress[optimismChainId]
+                                                            l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("5000000"),
@@ -858,7 +857,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                             </Button>
                                                         )}
 
-                                                        <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                        <div className = "mt-2 text-xs text-red-800 dark:text-red-200">
                                                             You have this option because you own <span className = "font-bold">{name}</span>.
                                                         </div>
                                                     </div>

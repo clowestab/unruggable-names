@@ -65,7 +65,11 @@ export function Header(props: Props) {
               <Image alt="Logo" src="/logo-dark.png" width={32} height={32} />
               <Image alt="Logo" src="/logo-white.png" width={32} height={32} />
             </BranchColorMode>
-            <h1 className="text-gradient-sand ml-2 text-2xl font-bold">{siteConfig.name}</h1>
+            <div className = "ml-2">
+              <h1 className="text-gradient-sand ml-2 text-2xl font-bold">{siteConfig.name}</h1>
+              <img src = "/icons/Optimism-Red-48.svg" className = "mt-2" />
+            </div>
+
           </LinkComponent>
           {/*<div className="flex flex-1 justify-center lg:px-10">
             <NavigationMenuGeneral />

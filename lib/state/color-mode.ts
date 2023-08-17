@@ -2,9 +2,9 @@ import { WritableAtom, atom, useAtom } from 'jotai'
 
 let strAtom: WritableAtom<string, string>
 if (typeof window !== 'undefined') {
-  strAtom = atom(window?.localStorage.getItem('theme') || 'system')
+  strAtom = atom(window?.localStorage.getItem('theme') || 'dark')
 } else {
-  strAtom = atom('system')
+  strAtom = atom('dark')
 }
 
 export const colorMode = atom(

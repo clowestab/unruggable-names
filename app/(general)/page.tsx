@@ -40,7 +40,7 @@ import {
     getCookie,
     setCookie,
     deleteCookie
-}                                       from '../../helpers/Helpers.jsx';
+}                                       from '@/helpers/Helpers.jsx';
 
 import { SubnameSearchResultRow }       from '@/components/ens/subname-search-result-row'
 import { NameSearchResultRow }          from '@/components/ens/name-search-result-row'
@@ -277,22 +277,18 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
 
             }} />}
 
+
             <Alert className="border-red-800 bg-red-200 dark:bg-red-800 mb-8" variant="destructive">
                 {CommonIcons.alert}
-                <AlertTitle>Testnet</AlertTitle>
+                <AlertTitle>Optimism L2 Demo</AlertTitle>
                 <AlertDescription>
-                    <p>Unruggable Names currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                    <p className = "mt-2">This version of Unruggable Names runs using custom smart contract deployments on the <a href = "https://www.optimism.io/" target = "_blank" className = "underline">Optimism</a> L2 <span className = "font-bold">Goerli</span> test network.</p>
+
+                    <p className = "mt-2">These smart contract are open source and accessible on <a href = "https://github.com/unruggable-labs/L2-ens" target = "_blank" className = "underline">Github</a>. We welcome contributions.</p>
+
+                    <p className = "mt-2">Please help us develop and improve the product by completing our <a href = "https://forms.gle/6oFshRMvXxJBcG6B6" target = "_blank" className = "underline">Feedback Form</a>.</p>
                 </AlertDescription>
             </Alert>
-
-            <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
-                {CommonIcons.alert}
-                <AlertTitle>Feedback</AlertTitle>
-                <AlertDescription>
-                    <p>Please help us develop and improve the product by completing our <a href = "https://forms.gle/6oFshRMvXxJBcG6B6" target = "_blank" className = "underline">Feedback Form</a>.</p>
-                </AlertDescription>
-            </Alert>
-
 
             {!hasValidNetwork && (
                 <Alert className="border-red-800 bg-red-200 dark:bg-red-800 my-8" variant="destructive">
@@ -370,7 +366,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                     {searchResults.map((result, resultIndex) => {
 
                         if (result.type == "subname") {
-                            
+
                             return (
                                 <div key = {"result-row-" + result.name + "-" + result.nonce + (currentlyOpenName == result.name ? "-open" : "-closed")}>
                                     <SubnameSearchResultRow 

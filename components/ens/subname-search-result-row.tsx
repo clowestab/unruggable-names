@@ -36,7 +36,9 @@ import {
 }                                           from '../../helpers/Helpers.jsx';
 import {
     ZERO_ADDRESS,
-    ONE_YEAR_IN_SECONDS
+    ONE_YEAR_IN_SECONDS,
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
 }                                           from '../../helpers/constants'
 import { 
     useL2NameWrapperRead,
@@ -64,8 +66,6 @@ interface SearchResultRowProps {
     dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
 }
 
-const optimismChainId = 420;
-const ethereumChainId = 5;
 
 export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup, cookiedCommitment, clearCookies, dialogStartsOpen }: SearchResultRowProps) {
 
@@ -78,7 +78,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
 
     //SubnameRegistrar instance
     const subnameRegistrar = useL2SubnameRegistrar({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: signer
     });
 
@@ -125,7 +125,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:      registryOwner, 
         isLoading: isLoadingRegistryOwner 
     }                                           = useEnsRegistryRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
         args:         [namehash],
     });
@@ -137,7 +137,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:      isAvailable, 
         isLoading: isLoadingRegistrarAvailability 
     }                                           = useL2SubnameRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'available',
         args:         [encodedNameToRegister],
     });
@@ -149,7 +149,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:      isParentAvailable, 
         isLoading: isLoadingParentAvailability 
     }                                           = useL2EthRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'available',
         args:         [parentLabel],
     });
@@ -161,7 +161,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         isLoading: isLoadingNameData,
         refetch:   refetchData  
     }                                       = useL2SubnameRegistrarPricingData({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
         args:    [parentNamehash],
     });
 
@@ -176,7 +176,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         data:    parentNameData, 
         refetch: refetchParentData 
     }                                       = useL2NameWrapperRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getData',
         args:         [parentTokenId],
      });
@@ -196,7 +196,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const addressToResolveTo       = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
     const  { data: registerPriceData }  = useL2SubnameRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
         args:         [encodedNameToRegister, registerForTimeInSeconds],
     });
@@ -204,7 +204,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const { 
         weiPrice: registerPriceWei, 
         usdPrice: registerPriceUsd 
-    }                               = registerPriceData ?? { weiPrice: 0, usdPrice: 0 };
+    }                               = registerPriceData ?? { weiPrice: ethers.BigNumber.from("0"), usdPrice: ethers.BigNumber.from("0") };
 
     console.log("registerPriceData", registerPriceData);
     console.log("registerPriceWei", registerPriceWei);
@@ -222,7 +222,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     //The renewal price as pulled from the subnames renewal controller
     const  { data: renewalPriceData }           = useIRenewalControllerRead({
         address:      renewalControllerToUse,
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
         args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
@@ -248,12 +248,12 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const { 
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
     }                               = useL2SubnameRegistrarMinCommitmentAge({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
     });
 
     //Generate a commitment hash
     const { data: commitment }      = useL2SubnameRegistrarMakeCommitment({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
         args: [
             encodedNameToRegister, 
             addressToRegisterTo!, 
@@ -428,7 +428,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                                     key      = {"commitment-" + resultIndex}
                                                                     contract = {subnameRegistrar}
                                                                     txArgs   = {{
-                                                                        address: l2SubnameRegistrarAddress[optimismChainId],
+                                                                        address: l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                                         args: [
                                                                             commitment, //secret
                                                                         ],
@@ -471,7 +471,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                     key      = {"registration-" + resultIndex}
                                                     contract = {subnameRegistrar}
                                                     txArgs   = {{
-                                                        address: l2SubnameRegistrarAddress[optimismChainId],
+                                                        address: l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                         args: [
                                                             encodedNameToRegister,
                                                             addressToRegisterTo, //owner

@@ -63,6 +63,8 @@ import {
 
 import {
     ZERO_ADDRESS,
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
 }                                       from '../../helpers/constants'
 
 import { 
@@ -81,8 +83,6 @@ interface SubnameWhoisAlertProps {
     onClickClose?: any
 }
 
-const optimismChainId = 420;
-const ethereumChainId = 5;
 
 // @ts-ignore
 export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps): React.ReactElement | null {
@@ -91,7 +91,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const { chain }                         = useNetwork()
     const  chainId                          = useChainId();
 
-    const renewalControllerOptions          = getRenewalControllerOptions(optimismChainId);
+    const renewalControllerOptions          = getRenewalControllerOptions(OPTIMISM_CHAIN_ID);
 
     const { 
         data: signer, 
@@ -116,7 +116,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
         data:    nameData, 
         refetch: refetchData  
     }                                       = useL2NameWrapperRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getData',
         args:         [tokenId],
     });
@@ -125,14 +125,14 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
         data:    renewalControllerAddress, 
         refetch: refetchRenewalControllerAddress  
     }                                       = useL2NameWrapperRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getApproved',
         args:         [tokenId],
      });
 
     const  { data: renewalPriceData }        = useIRenewalControllerRead({
         address:      renewalControllerAddress,
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
         args:         [encodedNameToRenew, renewForTimeInSeconds]
     });
@@ -148,14 +148,14 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
 
     const renewalControllerToUseInstance     = useIRenewalController({
         address:          renewalControllerAddress,
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: signer
     });
 
     const  { data: canRegistrarModifyName }  = useL2NameWrapperRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'canModifyName',
-        args:         [namehash, l2SubnameRegistrarAddress[optimismChainId]],
+        args:         [namehash, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);
@@ -163,13 +163,13 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const  { 
         data: nameWrapperOwnerAddress 
     }                                        = useL2NameWrapperRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'ownerOf',
         args:         [tokenId],
     });
 
     const  { data: registryOwnerAddress }    = useEnsRegistryRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
         args:         [namehash],
     });
@@ -307,7 +307,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                         <TableRow>
                                             <TableCell className = "font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
-                                                {l2NameWrapperAddress[optimismChainId] == nameWrapperOwnerAddress ? (
+                                                {l2NameWrapperAddress[OPTIMISM_CHAIN_ID] == nameWrapperOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{nameWrapperOwnerAddress}</span>
@@ -322,7 +322,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                         <TableRow>
                                             <TableCell className = "font-medium">Registry Owner</TableCell>
                                             <TableCell>
-                                                {l2NameWrapperAddress[optimismChainId] == registryOwnerAddress ? (
+                                                {l2NameWrapperAddress[OPTIMISM_CHAIN_ID] == registryOwnerAddress ? (
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{registryOwnerAddress}</span>

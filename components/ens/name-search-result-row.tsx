@@ -40,7 +40,9 @@ import {
 }                                       from '../../helpers/Helpers.jsx';
 import {
     ZERO_ADDRESS,
-    FUSES
+    FUSES,
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
 }                                       from '../../helpers/constants'
 import { 
     useL2EthRegistrar, 
@@ -69,8 +71,6 @@ interface SearchResultRowProps {
     dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
 }
 
-const optimismChainId = 420;
-const ethereumChainId = 5;
 
 export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedCommitment, clearCookies, dialogStartsOpen }: SearchResultRowProps) {
 
@@ -79,7 +79,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
     const provider         = useProvider();
     const  chainId         = useChainId();
     const { data: optimismSigner } = useSigner({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
     })
     const { address }      = useAccount()
     const { chain }        = useNetwork()
@@ -87,7 +87,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
 
     //EthRegistrarController instance
     const l2EthRegistrar        = useL2EthRegistrar({
-        chainId:          optimismChainId,
+        chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner
     });
 
@@ -131,7 +131,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
         data:      isValid, 
         isLoading: isLoadingValid 
     }                                   = useEthRegistrarControllerRead({
-        chainId:      ethereumChainId,
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'valid',
         args:         [label],
     });
@@ -142,7 +142,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
         data:      isAvailable, 
         isLoading: isLoadingAvailability 
     }                                   = useL2EthRegistrarRead({
-        chainId:      optimismChainId,
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'available',
         args:         [dnsEncodedName],
     });
@@ -150,20 +150,25 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
     console.log("isAval", isAvailable);
 
     const  { data: pricingData }        = useL2SubnameRegistrarPricingData({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
         args:    [nameNamehash],
      });
 
     const addressToRegisterTo           = cookiedCommitment?.addressToRegisterTo ?? address;
     const addressToResolveTo            = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
 
-    const  { data: rentPrice }          = useL2EthRegistrarRead({
-        chainId:      optimismChainId,
+    const  { data: registerPriceData }          = useL2EthRegistrarRead({
+        chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
         args:         [dnsEncodedName, registerForTimeInSeconds],
      });
 
-    console.log("rentPrice", rentPrice);
+    const { 
+        weiPrice: registerPriceWei, 
+        usdPrice: registerPriceUsd 
+    }                               = registerPriceData ?? { weiPrice: ethers.BigNumber.from("0"), usdPrice: ethers.BigNumber.from("0") };
+
+console.log("registerPriceWei", registerPriceWei);
 
     //A salt for the registration commitment
     const [salt, setSalt]               = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
@@ -179,11 +184,11 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
     const { 
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
     }                                   = useL2EthRegistrarMinCommitmentAge({
-        chainId: optimismChainId
+        chainId: OPTIMISM_CHAIN_ID
     });
 
     const { data: commitment }          = useL2EthRegistrarMakeCommitment({
-        chainId: optimismChainId,
+        chainId: OPTIMISM_CHAIN_ID,
         args: [
             label, 
             addressToRegisterTo!, 
@@ -325,8 +330,18 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                         </SelectContent>
                                     </Select>
 
-                                    {rentPrice && (
-                                        <span className = "text-xs">Ξ {(+ethers.utils.formatEther(rentPrice.weiPrice.toString())).toFixed(4)}</span>
+                                    {registerPriceWei && (
+
+                                        <>
+                                            {registerPriceWei > 0 ? (
+                                                <>
+                                                    <span>Ξ {ethers.utils.formatEther(registerPriceWei)}</span>
+                                                    <div className = "text-xs text-center text-green-800 mt-2">${registerPriceUsd.toString()}</div>
+                                                </>
+                                            ) : (
+                                                <span>FREE</span>
+                                            )}
+                                        </>
                                     )}
                                 </>
                             )}
@@ -359,7 +374,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                                                     key         = {"commitment-" + resultIndex}
                                                                     contract    = {l2EthRegistrar}
                                                                     txArgs      = {{
-                                                                        address: l2EthRegistrarAddress[optimismChainId],
+                                                                        address: l2EthRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                                         args: [
                                                                             commitment, //secret
                                                                         ],
@@ -401,7 +416,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                                     key         = {"name-registration-" + resultIndex}
                                                     contract    = {l2EthRegistrar}
                                                     txArgs      = {{
-                                                        address: l2EthRegistrarAddress[optimismChainId],
+                                                        address: l2EthRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                         args: [
                                                             label,
                                                             addressToRegisterTo, //owner
@@ -413,7 +428,7 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
                                                         ],
                                                         overrides: {
                                                             gasLimit:   ethers.BigNumber.from("500000"),
-                                                            value:      rentPrice!.weiPrice
+                                                            value:      registerPriceWei
                                                         }
                                                     }}
                                                     txFunction  = 'register'
