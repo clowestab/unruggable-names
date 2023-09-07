@@ -36,7 +36,9 @@ import {
     generateSalt, 
     hexEncodeName,
     setCookie,
-    buildErrorMessage 
+    buildErrorMessage,
+    parseName,
+    getUnruggableName  
 }                                       from '../../helpers/Helpers.jsx';
 import {
     ZERO_ADDRESS,
@@ -51,7 +53,11 @@ import {
     useL2EthRegistrarRead, 
     useL2SubnameRegistrarPricingData,
     l2EthRegistrarAddress,
-    useEthRegistrarControllerRead
+    ethRegistrarControllerAddress,
+    useEthRegistrarController,
+    useEthRegistrarControllerRead,
+    useEthRegistrarControllerMinCommitmentAge,
+    useEthRegistrarControllerMakeCommitment
 }                                       from '../../lib/blockchain'
 import { NameWhoisAlert }               from '../ens/name-whois-alert'
 import CommonIcons                      from '../shared/common-icons';
@@ -76,17 +82,25 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
 
     console.log("received cookiedCommitment", cookiedCommitment);
 
-    const provider         = useProvider();
-    const  chainId         = useChainId();
-    const { data: optimismSigner } = useSigner({
+    const provider                      = useProvider();
+    const chainId                       = useChainId();
+    const { data: ethereumSigner }      = useSigner({
+        chainId: ETHEREUM_CHAIN_ID,
+    })
+    const { data: optimismSigner }      = useSigner({
         chainId: OPTIMISM_CHAIN_ID,
     })
-    const { address }      = useAccount()
-    const { chain }        = useNetwork()
-    const { toast }        = useToast()
+    const { address }                   = useAccount()
+    const { chain }                     = useNetwork()
+    const { toast }                     = useToast()
 
     //EthRegistrarController instance
-    const l2EthRegistrar        = useL2EthRegistrar({
+    const ethRegistrarController        = useEthRegistrarController({
+        chainId: ETHEREUM_CHAIN_ID,
+        signerOrProvider: ethereumSigner
+    });
+
+    const l2EthRegistrar                = useL2EthRegistrar({
         chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner
     });
@@ -121,11 +135,11 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
         setCommitmentCompleteTimestamp
     ]                                   = React.useState<number | null>(null);
 
-    const nameParts                     = name.split(".");
-    const label                         = nameParts[0];
-    const encodedNameToRegister         = hexEncodeName(name);
-    const nameNamehash: `0x${string}`   = ethers.utils.namehash(name) as `0x${string}`;
-    const dnsEncodedName = ethers.utils.dnsEncode(name);
+    const { 
+        label,
+        namehash, 
+        dnsEncodedName 
+    }                                     = parseName(name);
 
     const  { 
         data:      isValid, 
@@ -141,21 +155,29 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
     const  { 
         data:      isAvailable, 
         isLoading: isLoadingAvailability 
-    }                                   = useL2EthRegistrarRead({
-        chainId:      OPTIMISM_CHAIN_ID,
+    }                                   = useEthRegistrarControllerRead({
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'available',
-        args:         [dnsEncodedName],
+        args:         [label],
     });
 
     console.log("isAval", isAvailable);
 
     const  { data: pricingData }        = useL2SubnameRegistrarPricingData({
         chainId: OPTIMISM_CHAIN_ID,
-        args:    [nameNamehash],
+        args:    [namehash],
      });
 
     const addressToRegisterTo           = cookiedCommitment?.addressToRegisterTo ?? address;
     const addressToResolveTo            = cookiedCommitment?.addressToResolveTo ?? ZERO_ADDRESS;
+
+    const  { data: rentPrice }          = useEthRegistrarControllerRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'rentPrice',
+        args:         [label, registerForTimeInSeconds],
+     });
+
+    console.log("rentPrice", rentPrice);
 
     const  { data: registerPriceData }          = useL2EthRegistrarRead({
         chainId:      OPTIMISM_CHAIN_ID,
@@ -163,19 +185,11 @@ export function NameSearchResultRow({ name, resultIndex, onRegister, cookiedComm
         args:         [dnsEncodedName, registerForTimeInSeconds],
      });
 
-    const { 
-        weiPrice: registerPriceWei, 
-        usdPrice: registerPriceUsd 
-    }                               = registerPriceData ?? { weiPrice: ethers.BigNumber.from("0"), usdPrice: ethers.BigNumber.from("0") };
-
-console.log("registerPriceWei", registerPriceWei);
-
     //A salt for the registration commitment
     const [salt, setSalt]               = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
 
     console.log("salt", salt);
 
-    console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);
     console.log("registerForTimeInSeconds", registerForTimeInSeconds);
     console.log("salt", salt);
@@ -183,16 +197,22 @@ console.log("registerPriceWei", registerPriceWei);
 
     const { 
         data: MIN_COMMITMENT_TIME_IN_SECONDS 
-    }                                   = useL2EthRegistrarMinCommitmentAge({
-        chainId: OPTIMISM_CHAIN_ID
+    }                                   = useEthRegistrarControllerMinCommitmentAge({
+        chainId: ETHEREUM_CHAIN_ID
     });
 
-    const { data: commitment }          = useL2EthRegistrarMakeCommitment({
-        chainId: OPTIMISM_CHAIN_ID,
+
+    const { data: commitment }          = useEthRegistrarControllerMakeCommitment({
+        chainId: ETHEREUM_CHAIN_ID,
         args: [
             label, 
             addressToRegisterTo!, 
-            salt
+            registerForTimeInSeconds, 
+            salt, 
+            addressToResolveTo, 
+            [], 
+            false,
+            (FUSES.CANNOT_UNWRAP)
         ],
         overrides: {
             gasLimit: ethers.BigNumber.from("200000")
@@ -330,18 +350,8 @@ console.log("registerPriceWei", registerPriceWei);
                                         </SelectContent>
                                     </Select>
 
-                                    {registerPriceWei && (
-
-                                        <>
-                                            {registerPriceWei > 0 ? (
-                                                <>
-                                                    <span>Ξ {ethers.utils.formatEther(registerPriceWei)}</span>
-                                                    <div className = "text-xs text-center text-green-800 mt-2">${registerPriceUsd.toString()}</div>
-                                                </>
-                                            ) : (
-                                                <span>FREE</span>
-                                            )}
-                                        </>
+                                    {rentPrice && (
+                                        <span className = "text-xs">Ξ {(+ethers.utils.formatEther(rentPrice.base.toString())).toFixed(4)}</span>
                                     )}
                                 </>
                             )}
@@ -371,10 +381,11 @@ console.log("registerPriceWei", registerPriceWei);
 
                                                             {commitment != null && (
                                                                 <TransactionConfirmationState 
-                                                                    key         = {"commitment-" + resultIndex}
-                                                                    contract    = {l2EthRegistrar}
-                                                                    txArgs      = {{
-                                                                        address: l2EthRegistrarAddress[OPTIMISM_CHAIN_ID],
+                                                                    key      = {"commitment-" + resultIndex}
+                                                                    contract = {ethRegistrarController}
+                                                                    chainId  = {ETHEREUM_CHAIN_ID}
+                                                                    txArgs   = {{
+                                                                        address: ethRegistrarControllerAddress[ETHEREUM_CHAIN_ID],
                                                                         args: [
                                                                             commitment, //secret
                                                                         ],
@@ -413,22 +424,24 @@ console.log("registerPriceWei", registerPriceWei);
                                             ) : (
 
                                                 <TransactionConfirmationState 
-                                                    key         = {"name-registration-" + resultIndex}
-                                                    contract    = {l2EthRegistrar}
-                                                    txArgs      = {{
-                                                        address: l2EthRegistrarAddress[OPTIMISM_CHAIN_ID],
+                                                    key      = {"name-registration-" + resultIndex}
+                                                    contract = {ethRegistrarController}
+                                                    chainId  = {ETHEREUM_CHAIN_ID}
+                                                    txArgs   = {{
+                                                        address: ethRegistrarControllerAddress[ETHEREUM_CHAIN_ID],
                                                         args: [
                                                             label,
                                                             addressToRegisterTo, //owner
-                                                            addressToRegisterTo,
                                                             registerForTimeInSeconds,
                                                             salt, //secret
                                                             addressToResolveTo, //resolver
+                                                            [], //calldata
+                                                            false,
                                                             (FUSES.CANNOT_UNWRAP) //fuses
                                                         ],
                                                         overrides: {
                                                             gasLimit:   ethers.BigNumber.from("500000"),
-                                                            value:      registerPriceWei
+                                                            value:      rentPrice!.base.toString()
                                                         }
                                                     }}
                                                     txFunction  = 'register'

@@ -25,7 +25,7 @@ interface TransactionConfirmationStateProps {
 
 //
 // @ts-ignore
-export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError, checkStatic }: TransactionConfirmationStateProps): React.ReactElement | null {
+export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError, checkStatic, chainId: expectedChainId = 420 }: TransactionConfirmationStateProps): React.ReactElement | null {
 
     const  chainId         = useChainId();
 
@@ -55,11 +55,20 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
         console.log("chain id", chainId);
 
-        if (chainId != 420) {
+        if (chainId != expectedChainId) {
 
             console.log("switch network");
-            await switchNetwork({chainId: 420});
+            await switchNetwork({chainId: expectedChainId});
+
+            //03/09/23 This return is important
+            //Previously the switch network metamask dialog would appear we'd approve it then we'd instantly get
+            //Error: underlying network changed and the appropriate UI error messages as well as the actual transaction being submitted again when the rerender of this component is triggered
+            //This component is a bit shit, but no time..
+            return;
         }
+
+        //This is important for stopping transactions being sent multiple times
+        setHasStarted(true);
 
         console.log("Lets write..");
         
@@ -116,18 +125,14 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
             })
             .then(() => {
                 //refreshBalance();
-                setHasStarted(true);
                 onAlways?.();
             });
     }
 
     React.useEffect(() => {
 
-            console.log("dowork 1");
-
         if (!hasStarted && signer !== undefined) {
 
-            console.log("dowork");
             doWork();
         }
 

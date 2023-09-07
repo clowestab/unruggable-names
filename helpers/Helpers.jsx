@@ -1,5 +1,7 @@
-import React from 'react'
+import React      from 'react'
+import { ethers } from "ethers";
 const packet = require('dns-packet')
+
 
 export function useInterval(callback, delay) {
 	const intervalRef = React.useRef(null);
@@ -172,4 +174,59 @@ export function buildErrorMessage(error) {
 	}
 
 	return "There was a problem";
+}
+
+
+export function parseName(name) {
+
+	const namehash                          = ethers.utils.namehash(name);
+
+	//Split the name at each dot
+	const nameParts                         = name.split(".");
+
+	//Get the first part and remove it from the array
+	const label		                    	= nameParts.shift();
+	const labelhash          				= ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label));
+	const labelhashAsInt                    = ethers.BigNumber.from(labelhash);
+
+	//Join the remainder of the name to get the parent name
+	const parentName                    	= nameParts.join(".");
+
+	const isDotEth                          = parentName == "eth";
+	const isEth2ld                          = isDotEth && nameParts.length == 1;
+	
+	//For the NameWrapper this is the token ID.
+	const namehashAsInt                     = ethers.BigNumber.from(namehash);
+
+	const dnsEncodedName 					= hexEncodeName(name);
+
+
+	return {
+		name:                    name,
+		namehash:                namehash,
+		namehashAsInt:           namehashAsInt,
+		label:                   label,
+		labelhash:               labelhash,
+		labelhashAsInt:          labelhashAsInt,
+		parentName:              parentName,
+		isDotEth:                isDotEth,
+		isEth2ld:                isEth2ld,
+		dnsEncodedName:          dnsEncodedName
+	};
+}
+
+export function getUnruggableName(name) {
+
+	//Split the name at each dot
+	const nameParts                 = name.split(".");
+	nameParts[nameParts.length - 1] = "unruggable";
+	const unruggableName            = nameParts.join(".");
+
+	console.log("parsedData", unruggableName);
+
+	const parsedData 		 		= parseName(unruggableName);
+
+	console.log("parsedData", parsedData);
+
+	return parsedData;
 }

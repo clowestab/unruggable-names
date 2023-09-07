@@ -32,7 +32,9 @@ import {
     hexEncodeName,
     getCookie,
     setCookie,
-    buildErrorMessage 
+    buildErrorMessage,
+    parseName,
+    getUnruggableName  
 }                                           from '../../helpers/Helpers.jsx';
 import {
     ZERO_ADDRESS,
@@ -48,7 +50,7 @@ import {
     useL2SubnameRegistrarRead, 
     useIRenewalControllerRead,
     l2SubnameRegistrarAddress,
-    useL2EthRegistrarRead,
+    useBaseRegistrarImplementationRead,
     useEnsRegistryRead,
     useL2SubnameRegistrarPricingData 
 }                                           from '../../lib/blockchain'
@@ -77,7 +79,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const { toast }        = useToast()
 
     //SubnameRegistrar instance
-    const subnameRegistrar = useL2SubnameRegistrar({
+    const l2SubnameRegistrar = useL2SubnameRegistrar({
         chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: signer
     });
@@ -107,19 +109,42 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         setCommitmentCompleteTimestamp
     ]                                   = React.useState<number | null>(null);
 
-    console.log("hexencode", hexEncodeName("sfsdfds.eth"));
+    const { 
+        label,
+        labelhash, 
+        labelhashAsInt,
+        namehash, 
+        isDotEth, 
+        parentName, 
+        namehashAsInt, 
+        isEth2ld,
+        dnsEncodedName 
+    }                                     = parseName(name);
 
-    const namehash: `0x${string}`               = ethers.utils.namehash(name)  as `0x${string}`;
-    const tokenId                               = ethers.BigNumber.from(namehash);
+    const { 
+        //labelhash, 
+        labelhashAsInt: parentLabelhashAsInt,
+        //namehash, 
+        //isDotEth, 
+        //parentName, 
+        namehashAsInt: parentNameNamehashAsInt, 
+        //isEth2ld,
+        //dnsEncodedName 
+    }                                     = parseName(parentName);
 
-    const nameParts                             = name.split(".");
-    nameParts.shift();
-    const parentLabel                           = nameParts[0];
-    const parentName                            = nameParts.join(".");
-    const parentNamehash: `0x${string}`         = ethers.utils.namehash(parentName)  as `0x${string}`;
-    const encodedNameToRegister: `0x${string}`  = hexEncodeName(name) as `0x${string}`;
+    const { 
+        name:                    unruggableName,
+        namehash:                unruggableNamehash,
+        namehashAsInt:           unruggableNamehashAsInt,
+        dnsEncodedName:          unruggableDnsEncodedName 
+    }                                     = getUnruggableName(name);
 
-    const parentTokenId                         = ethers.BigNumber.from(parentNamehash);
+    const { 
+        //name:                    unruggableName,
+        namehash:                unruggableParentNameNamehash,
+        //namehashAsInt:           unruggableNamehashAsInt,
+        //dnsEncodedName:          unruggableDnsEncodedName 
+    }                                     = getUnruggableName(parentName);
 
     const  { 
         data:      registryOwner, 
@@ -127,8 +152,10 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     }                                           = useEnsRegistryRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
-        args:         [namehash],
+        args:         [unruggableNamehash],
     });
+
+    console.log("registryOwner", registryOwner);
 
     const isAvailableRegistry = registryOwner == ZERO_ADDRESS;
 
@@ -139,19 +166,17 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     }                                           = useL2SubnameRegistrarRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'available',
-        args:         [encodedNameToRegister],
+        args:         [unruggableDnsEncodedName],
     });
-
-    console.log("isAvailable", parentLabel);
 
     //If the parent second level name is available
     const  { 
         data:      isParentAvailable, 
         isLoading: isLoadingParentAvailability 
-    }                                           = useL2EthRegistrarRead({
-        chainId:      OPTIMISM_CHAIN_ID,
+    }                                           = useBaseRegistrarImplementationRead({
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'available',
-        args:         [parentLabel],
+        args:         [parentLabelhashAsInt],
     });
 
 
@@ -162,7 +187,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         refetch:   refetchData  
     }                                       = useL2SubnameRegistrarPricingData({
         chainId: OPTIMISM_CHAIN_ID,
-        args:    [parentNamehash],
+        args:    [unruggableParentNameNamehash],
     });
 
 
@@ -178,7 +203,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     }                                       = useL2NameWrapperRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getData',
-        args:         [parentTokenId],
+        args:         [parentNameNamehashAsInt],
      });
     const {
         owner:  nameWrapperParentOwnerAddress, 
@@ -198,7 +223,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const  { data: registerPriceData }  = useL2SubnameRegistrarRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
-        args:         [encodedNameToRegister, registerForTimeInSeconds],
+        args:         [unruggableDnsEncodedName, registerForTimeInSeconds],
     });
 
     const { 
@@ -217,14 +242,13 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     } 
 
     const renewForTimeInSeconds = ONE_YEAR_IN_SECONDS;
-    const encodedNameToRenew    = encodedNameToRegister;
 
     //The renewal price as pulled from the subnames renewal controller
     const  { data: renewalPriceData }           = useIRenewalControllerRead({
         address:      renewalControllerToUse,
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
-        args:         [encodedNameToRenew, renewForTimeInSeconds]
+        args:         [unruggableDnsEncodedName, renewForTimeInSeconds]
     });
 
     const { 
@@ -237,7 +261,6 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     //A salt for the registration commitment
     const [salt, setSalt] = React.useState<`0x${string}`>(cookiedCommitment?.salt ?? "0x" + generateSalt() as `0x${string}`);
 
-    console.log("encodedNameToRegister", encodedNameToRegister);
     console.log("addressToRegisterTo", addressToRegisterTo);
     console.log("registerForTimeInSeconds", registerForTimeInSeconds);
     console.log("salt", salt);
@@ -255,7 +278,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
     const { data: commitment }      = useL2SubnameRegistrarMakeCommitment({
         chainId: OPTIMISM_CHAIN_ID,
         args: [
-            encodedNameToRegister, 
+            unruggableDnsEncodedName, 
             addressToRegisterTo!, 
             salt
         ],
@@ -426,7 +449,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                             {commitment != null && (
                                                                 <TransactionConfirmationState 
                                                                     key      = {"commitment-" + resultIndex}
-                                                                    contract = {subnameRegistrar}
+                                                                    contract = {l2SubnameRegistrar}
                                                                     txArgs   = {{
                                                                         address: l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                                         args: [
@@ -469,11 +492,11 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
 
                                                 <TransactionConfirmationState 
                                                     key      = {"registration-" + resultIndex}
-                                                    contract = {subnameRegistrar}
+                                                    contract = {l2SubnameRegistrar}
                                                     txArgs   = {{
                                                         address: l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID],
                                                         args: [
-                                                            encodedNameToRegister,
+                                                            unruggableDnsEncodedName,
                                                             addressToRegisterTo, //owner
                                                             '0xAC50cE326de14dDF9b7e9611Cd2F33a1Af8aC039', //referer
                                                             registerForTimeInSeconds,
@@ -511,7 +534,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                             description: (<p>{buildErrorMessage(error)}</p>),
                                                         });
                                                     }}
-                                                    checkStatic = {true}>
+                                                    checkStatic = {false}>
                                                     <div>
                                                         {CommonIcons.miniLoader} Registering name..
                                                     </div>

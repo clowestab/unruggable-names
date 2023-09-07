@@ -4,8 +4,387 @@
       "name": "optimism-goerli",
       "chainId": "420",
       "contracts": {
+        "ENSRegistry": {
+          "address": "0xffED83BDBd2F9906Ac12467288946cf7d8F6f599",
+          "abi": [
+            {
+              "inputs": [],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "approved",
+                  "type": "bool"
+                }
+              ],
+              "name": "ApprovalForAll",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "NewOwner",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                }
+              ],
+              "name": "NewResolver",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "NewTTL",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "Transfer",
+              "type": "event"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                }
+              ],
+              "name": "isApprovedForAll",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "recordExists",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "resolver",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "approved",
+                  "type": "bool"
+                }
+              ],
+              "name": "setApprovalForAll",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "setOwner",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setRecord",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                }
+              ],
+              "name": "setResolver",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "setSubnodeOwner",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setSubnodeRecord",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "ttl",
+                  "type": "uint64"
+                }
+              ],
+              "name": "setTTL",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "node",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "ttl",
+              "outputs": [
+                {
+                  "internalType": "uint64",
+                  "name": "",
+                  "type": "uint64"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
         "L2EthRegistrar": {
-          "address": "0xe36F6A181dc39055AE9F21D094d2A9815B0C4418",
+          "address": "0x08450e7ab581Ead94a20a2BEf934cE019C1CbE63",
           "abi": [
             {
               "inputs": [
@@ -861,7 +1240,7 @@
           ]
         },
         "L2FixedPriceRenewalController": {
-          "address": "0x4d9E82ddde61D405b9A999dcDBD255a07a3398F0",
+          "address": "0x41dd9F003A211B5045D317505edD06c7191F6b54",
           "abi": [
             {
               "inputs": [
@@ -1375,7 +1754,7 @@
           ]
         },
         "L2NameWrapper": {
-          "address": "0x650E2705c595Ddb5f8e0B76fC3295F252f8aabB8",
+          "address": "0x690c1680b0843Ea9Bdb04cA5f9239A92d9dEb493",
           "abi": [
             {
               "inputs": [
@@ -1396,17 +1775,6 @@
             {
               "inputs": [],
               "name": "CannotUpgrade",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "IncorrectTargetOwner",
               "type": "error"
             },
             {
@@ -1454,7 +1822,7 @@
                   "type": "address"
                 }
               ],
-              "name": "Unauthorised",
+              "name": "Unauthorized",
               "type": "error"
             },
             {
@@ -1836,30 +2204,6 @@
                   "internalType": "uint256[]",
                   "name": "",
                   "type": "uint256[]"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "node",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "address",
-                  "name": "addr",
-                  "type": "address"
-                }
-              ],
-              "name": "canExtendSubnames",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -2607,11 +2951,45 @@
               ],
               "stateMutability": "view",
               "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes",
+                  "name": "name",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "address",
+                  "name": "wrappedOwner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "fuses",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "expiry",
+                  "type": "uint64"
+                }
+              ],
+              "name": "wrapTLD",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
             }
           ]
         },
         "L2PricePerCharRenewalController": {
-          "address": "0x767713a239c44Ad022A6721FD8018103AD580190",
+          "address": "0x46Abb10E2A30F16DFFB7702b99F6BDd42fE6f471",
           "abi": [
             {
               "inputs": [
@@ -3121,6 +3499,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "contract IAggregatorInterface",
+                  "name": "_usdOracle",
+                  "type": "address"
+                }
+              ],
+              "name": "updateOracle",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint16",
                   "name": "charLength",
                   "type": "uint16"
@@ -3159,7 +3550,7 @@
           ]
         },
         "L2SubnameRegistrar": {
-          "address": "0xa393f704Abc042764b604e239Ab787aB7c599a8e",
+          "address": "0x6032c7154efaFD2D5AC858Df5FE53E11987765F9",
           "abi": [
             {
               "inputs": [
@@ -3265,6 +3656,11 @@
                 }
               ],
               "name": "NameNotAvailable",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "RandomNameNotFound",
               "type": "error"
             },
             {
@@ -3424,6 +3820,19 @@
                 }
               ],
               "name": "SubnameRegistered",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "name": "UnruggableRegistered",
               "type": "event"
             },
             {
@@ -3864,6 +4273,64 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxLoops",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "numChars",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "salt",
+                  "type": "uint256"
+                }
+              ],
+              "name": "registerRandomUnruggable",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "label",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "registerUnruggable",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "renounceOwnership",
               "outputs": [],
@@ -3933,9 +4400,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "bytes32",
-                  "name": "parentNode",
-                  "type": "bytes32"
+                  "internalType": "bytes",
+                  "name": "name",
+                  "type": "bytes"
                 },
                 {
                   "internalType": "bool",
@@ -4088,6 +4555,238 @@
             {
               "inputs": [],
               "name": "withdraw",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ]
+        },
+        "Root": {
+          "address": "0xF5791261fc5C8a72a8BF33237e0E213148ACB073",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "_ens",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "controller",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "enabled",
+                  "type": "bool"
+                }
+              ],
+              "name": "ControllerChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "TLDLocked",
+              "type": "event"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "controllers",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "ens",
+              "outputs": [
+                {
+                  "internalType": "contract ENS",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "lock",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "locked",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "renounceOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "controller",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "enabled",
+                  "type": "bool"
+                }
+              ],
+              "name": "setController",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "resolver",
+                  "type": "address"
+                }
+              ],
+              "name": "setResolver",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "label",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "setSubnodeOwner",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "interfaceID",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"

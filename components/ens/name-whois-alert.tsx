@@ -10,11 +10,14 @@ import {
     useSigner, 
     useNetwork,
     useChainId,
-    useWaitForTransaction 
 }                                         from 'wagmi'
-import { foundry }                        from 'wagmi/chains'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+    Tabs, 
+    TabsContent, 
+    TabsList, 
+    TabsTrigger 
+}                                         from "@/components/ui/tabs"
 
 import {
     Accordion,
@@ -25,19 +28,16 @@ import {
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 }                                         from "@/components/ui/alert-dialog"
 
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -49,19 +49,17 @@ import { FuseList }                       from '@/components/ens/fuse-list';
 import { Button }                         from "@/components/ui/button"
 import { Checkbox }                       from "@/components/ui/checkbox"
 import { Input }                          from "@/components/ui/input"
-import { ScrollArea }                     from "@/components/ui/scroll-area"
+import { Label }                          from "@/components/ui/label"
 
 import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 }                                         from "@/components/ui/select"
 
-import { Label }                          from "@/components/ui/label"
 import { useToast }                       from '@/lib/hooks/use-toast'
 
 import {
@@ -77,8 +75,12 @@ import {
 
 import { 
     formatExpiry, 
-    hexEncodeName 
+    hexEncodeName,
+    generateSalt,
+    parseName,
+    getUnruggableName 
 }                                         from '@/helpers/Helpers.jsx';
+
 import {
     FUSES,
     ZERO_ADDRESS,
@@ -86,36 +88,55 @@ import {
     ETHEREUM_CHAIN_ID,
     OPTIMISM_CHAIN_ID
 }                                         from '@/helpers/constants'
+
 import { 
     useEnsRegistryRead, 
-    useL2EthRegistrarController, 
-    useL2NameWrapper, 
-    useL2NameWrapperRead, 
-    useL2EthRegistrar,
-    useL2EthRegistrarRead,
-    useL2SubnameRegistrar, 
-    useL2SubnameRegistrarRead, 
-    l2NameWrapperAddress,
-    l2SubnameRegistrarAddress,
+    useEthRegistrarController, 
+    useEthRegistrarControllerRead, 
+    useNameWrapper, 
+    useNameWrapperRead, 
+    useSubnameRegistrar, 
+    useSubnameWrapper, 
+    nameWrapperAddress,
     useL2PricePerCharRenewalController,
     useL2PricePerCharRenewalControllerRead,
-    useIusdOracleRead,
     useBaseRegistrarImplementationRead,
+    useL2SubnameRegistrar,
+    useL2SubnameRegistrarRead,
+    useL2NameWrapper,
+    useL2NameWrapperRead,
+    l2NameWrapperAddress,
+    l2SubnameRegistrarAddress,
+    useUnruggableErc3668ResolverRead,
+    unruggableErc3668ResolverAddress
 }                                         from '../../lib/blockchain'
+
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
 
+const UNRUGGABLE_RESOLVER_ADDRESS = unruggableErc3668ResolverAddress[ETHEREUM_CHAIN_ID];
+
 interface NameWhoisAlertProps {
-    name:        string,
+    name:          string,
     onClickClose?: any
 }
-
 
 // @ts-ignore
 export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): React.ReactElement | null {
 
+    const [
+        unruggableSalt, 
+        setUnruggableSalt
+    ]                                     = React.useState<`0x${string}`>("0x" + generateSalt() as `0x${string}`);
+
+    const [
+        isSettingUnruggableResolver, 
+        setIsSettingUnruggableResolver
+    ]                                     = React.useState<boolean>(false);
+
     //References for the Subname registration configuration inputs so we can get the values when saving
     const minRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
+    const maxRegistrationDurationInputRef = React.useRef<HTMLInputElement>(null);
     const minCharactersInputRef           = React.useRef<HTMLInputElement>(null);
     const maxCharactersInputRef           = React.useRef<HTMLInputElement>(null);
 
@@ -139,19 +160,26 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         setIsSavingRenewalConfigurationData
     ]                                     = React.useState<boolean>(false);
 
-    const nameParts                       = name.split(".");
-    const label                           = nameParts[0];
-    const labelhash: `0x${string}`        = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
-    const namehash                        = ethers.utils.namehash(name);
-    const namehashHex: `0x${string}`      = namehash as `0x${string}`;
+    const { 
+        label,
+        labelhash, 
+        labelhashAsInt,
+        namehash, 
+        isDotEth, 
+        parentName, 
+        namehashAsInt, 
+        isEth2ld,
+        dnsEncodedName 
+    }                                     = parseName(name);
 
-    console.log("namehash", typeof namehash);
-    console.log("namehashHex", namehashHex);
+    const { 
+        name:                    unruggableName,
+        namehash:                unruggableNamehash,
+        namehashAsInt:           unruggableNamehashAsInt,
+        dnsEncodedName:          unruggableDnsEncodedName 
+    }                                     = getUnruggableName(name);
 
     const tokenId                         = ethers.BigNumber.from(labelhash);
-    const namehashInt                     = ethers.BigNumber.from(namehash);
-    const encodedNameToRenew              = hexEncodeName(name);
-    const dnsEncodedName = ethers.utils.dnsEncode(name);
 
     //Holds the selected time in seconds for a renewal
     const [
@@ -164,32 +192,38 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     const { address }                     = useAccount()
     const { chain }                       = useNetwork()
 
-    const  chainId   = useChainId();
+    const  chainId                        = useChainId();
 
     const renewalControllerOptions        = getRenewalControllerOptions(OPTIMISM_CHAIN_ID);
 
-
     const { 
-        data: signer, 
-    }                                     = useSigner()
+        data: ethereumSigner, 
+    }                                     = useSigner({
+        chainId: ETHEREUM_CHAIN_ID
+    })
 
-    const { data: optimismSigner } = useSigner({
+    const ethereumProvider                = useProvider({
+        chainId: ETHEREUM_CHAIN_ID
+    })
+
+    const { data: optimismSigner }        = useSigner({
         chainId: OPTIMISM_CHAIN_ID,
     })
 
-    const provider = useProvider()
-    const optimismProvider = useProvider({
+    const { data: optimismProvider }      = useProvider({
         chainId: OPTIMISM_CHAIN_ID,
     })
 
-    console.log("lastRenewalPriceIndex Signer", signer);
-    console.log("lastRenewalPriceIndex Signerp", provider);
-    console.log("lastRenewalPriceIndex Signerreal", typeof signer !== "undefined");
-
-    //ETHRegistrarController instance
-    const l2EthRegistrar          = useL2EthRegistrar({
+    //L2SubnameRegistrar instance
+    const l2SubnameRegistrar              = useL2SubnameRegistrar({
         chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner ?? optimismProvider
+    });
+
+    //ETHRegistrarController instance
+    const ethRegistrarController          = useEthRegistrarController({
+        chainId:          ETHEREUM_CHAIN_ID,
+        signerOrProvider: ethereumSigner ?? ethereumProvider
     });
 
     //RenewalController instance
@@ -197,7 +231,6 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         chainId:          OPTIMISM_CHAIN_ID,
         signerOrProvider: optimismSigner ?? optimismProvider
     });
-
 
     //Gets the number of characters for which prices have been set from our basic renewal controller
     const  { 
@@ -209,6 +242,23 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         args:         [],
     });
 
+    //Get the verifier data for the subname
+    const  { 
+        data:    verifierData, 
+        error:   verifierDataError,
+        refetch: refetchVerifierData 
+    }                                     = useUnruggableErc3668ResolverRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'getVerifierOfDomain',
+        args:         [dnsEncodedName],
+    });
+
+    console.log("verifierData1", dnsEncodedName);
+    console.log("verifierData2a", unruggableName);
+    console.log("verifierData2", unruggableNamehash);
+
+    console.log("verifierData", verifierData);
+    console.log("verifierDataError", verifierDataError);
 
     const refetchRenewalConfiguration = async () => {
 
@@ -221,7 +271,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         //console.log("lastRenewalPriceIndex do work", parseInt(lastRenewalPriceIndex.toString()));
         console.log("lastRenewalPriceIndex do work1", renewalController);
 
-        
+        console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
+
         for (var i = 0; i <= lastRenewalPriceIndex; i++) {
 
             const price = await renewalController.charAmounts(i);
@@ -251,137 +302,152 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     React.useEffect(() => {
         
         console.log("lastRenewalPriceIndex changed", lastRenewalPriceIndex);
-        console.log("lastRenewalPriceIndex changedb", signer);
+        console.log("lastRenewalPriceIndex changedb", ethereumSigner);
         console.log("lastRenewalPriceIndex changedc", renewalController);
 
         console.log("lastRenewalPriceIndex WUT", renewalController);
-        if (provider) {
+        if (ethereumProvider) {
             console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
-            refetchRenewalConfiguration();
+            //refetchRenewalConfiguration();
         }
 
-    }, [provider, lastRenewalPriceIndex]);
+    }, [ethereumProvider, lastRenewalPriceIndex]);
 
 
     //The renewal price for a second level name comes direct from the EthRegistrarController
-    const { data: renewalPrice }  = useL2EthRegistrarRead({
-        chainId:      OPTIMISM_CHAIN_ID,
+    const  { data: renewalPrice }  = useEthRegistrarControllerRead({
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'rentPrice',
-        args:         [dnsEncodedName, renewForTimeInSeconds],
+        args:         [label, renewForTimeInSeconds],
         select:       (data) => {
             console.log("renewalPricen parts", data);
-            return data.weiPrice;
+            return data.base.add(data.premium)
         },
     });
 
     console.log("renewalPricen", renewalPrice);
 
-    //L2NameWrapper instance
+    //SubnameWrapper instance
+    const subnameWrapper = useSubnameWrapper({
+        chainId:          ETHEREUM_CHAIN_ID,
+        signerOrProvider: ethereumSigner
+    });
+
+    //L2 NameWrapper instance
     const l2NameWrapper = useL2NameWrapper({
         chainId:          OPTIMISM_CHAIN_ID,
-        signerOrProvider: signer
+        signerOrProvider: optimismSigner
     });
 
     const [isRenewing, setIsRenewing]         = React.useState(false);
+
     const [
         isSubnameRegistrarApprovalPending, 
         setIsSubnameRegistrarApprovalPending
     ]                                         = React.useState(false);
-    const [
-        isNameWrapperApprovalPending, 
-        setIsNameWrapperApprovalPending
-    ]                                         = React.useState(false);
+
     const [
         isEditingSubnameRegistrationConfig, 
         setIsEditingSubnameRegistrationConfig
     ]                                         = React.useState(false);
+
     const [
         isEditingSubnameRenewalConfig, 
         setIsEditingSubnameRenewalConfig
     ]                                         = React.useState(false);
+
     const [
         isWrapping, 
         setIsWrapping
     ]                                         = React.useState(false);
 
-
     //Gets Pricing Data from the subname registrar for a specific parent nam
-    const  { data: registerPricingData, refetch: refetchRegisterPricingData }  = useL2SubnameRegistrarRead({
+    const  { 
+        data:    registerPricingData, 
+        refetch: refetchRegisterPricingData 
+    }                                         = useL2SubnameRegistrarRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'pricingData',
-        args:         [namehashHex],
+        args:         [unruggableNamehash],
      });
 
     const [
         offerSubnamesInput, 
         setOfferSubnamesInput
-    ]                                     = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
+    ]                                         = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
 
-    //Gets Pricing Data from the subname registrar for a specific parent nam
-    const  { data: isOnAllowList, refetch: refetchIsOnAllowList }  = useL2SubnameRegistrarRead({
-        chainId:      OPTIMISM_CHAIN_ID,
-        functionName: 'allowList',
-        args:         [namehashHex],
-     });
-
-    console.log("isOnAllowList", isOnAllowList);
 
     //SubnameRegistrar instance
-    const subnameRegistrar = useL2SubnameRegistrar({
-        chainId:          OPTIMISM_CHAIN_ID,
-        signerOrProvider: signer ?? provider
+    const subnameRegistrar = useSubnameRegistrar({
+        chainId: chainId,
+        signerOrProvider: ethereumSigner ?? ethereumProvider
+    });
+
+    //NameWrapper instance
+    const nameWrapper = useNameWrapper({
+        chainId: ETHEREUM_CHAIN_ID,
+        signerOrProvider: ethereumSigner ?? ethereumProvider
     });
 
     //Gets owner/expiry/fuses from the namewrapper
-    const  { data: nameData, refetch: refetchData }  = useL2NameWrapperRead({
-        chainId:          OPTIMISM_CHAIN_ID,
+    const  { data: nameData, refetch: refetchData }  = useNameWrapperRead({
+        chainId:          ETHEREUM_CHAIN_ID,
         functionName:     'getData',
-        args:             [namehashInt],
-        signerOrProvider: signer ?? provider
+        args:             [namehashAsInt],
+        signerOrProvider: ethereumSigner ?? ethereumProvider
      });
-    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
+    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
 
-    console.log("wrapperExpiry", wrapperExpiry);
+
+    const  { data: registrarExpiry, refetch: refetchRegistrarExpiryData }  = useBaseRegistrarImplementationRead({
+        chainId:          ETHEREUM_CHAIN_ID,
+        functionName:     'nameExpires',
+        args:             [labelhashAsInt],
+        signerOrProvider: ethereumSigner ?? ethereumProvider
+     });
+
+    console.log(name + " " + labelhash + " registrarExpiry " + labelhashAsInt, registrarExpiry);
 
     var renewalControllerToUse = null;
 
     //if (canRenewThroughSubnameRegistrar) { renewalControllerToUse = subnameRegistrar; } 
-    if (nameData && nameData.renewalController != ZERO_ADDRESS) { renewalControllerToUse = nameData.renewalController; } 
+    if (nameData && nameData.renewalController != ZERO_ADDRESS) { 
+        renewalControllerToUse = nameData.renewalController; 
+    } 
 
     console.log("renewalControllerToUse", renewalControllerToUse);
 
-    //if (nameData === undefined) {
+    //Check if the Subname Registrar has been approved for this names owner on the Subname Wrapper
+    const  { 
+        data:    isApprovedForAllL2NameWrapper, 
+        refetch: refetchIsApprovedForAllL2NameWrapper  
+    }  = useL2NameWrapperRead({
+        chainId:      OPTIMISM_CHAIN_ID,
+        functionName: 'isApprovedForAll',
+        //@ts-ignore
+        args:         [nameWrapperOwnerAddress, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
+    });
 
+    console.log("isApprovedForAllL2NameWrapper", isApprovedForAllL2NameWrapper);
+    console.log("isApprovedForAllL2NameWrapper owner", nameWrapperOwnerAddress);
+    console.log("isApprovedForAllL2NameWrapper address", l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]);
 
-        //Check if the Subname Registrar has been approved for this names owner on the name Wrapper
-        const  { data: isSubnameRegistrarApprovedOnNameWrapper, refetch: refetchisSubnameRegistrarApprovedOnNameWrapper  }  = useL2NameWrapperRead({
-            chainId:      OPTIMISM_CHAIN_ID,
-            functionName: 'isApprovedForAll',
-            //@ts-ignore
-            args:         [nameData?.owner, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
-        });
-
-        console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
-        console.log("isSubnameRegistrarApprovedOnNameWrapper owner", nameData?.owner);
-        console.log("isSubnameRegistrarApprovedOnNameWrapper address", l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]);
-
-        
-        console.log("isSubnameRegistrarApprovedOnNameWrapper", isSubnameRegistrarApprovedOnNameWrapper);
-    //}
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress }  = useEnsRegistryRead({
-        chainId:      OPTIMISM_CHAIN_ID,
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'owner',
-        args:         [namehashHex],
+        args:         [namehash],
      });
 
-    const isWrapped = (registryOwnerAddress == l2NameWrapperAddress[OPTIMISM_CHAIN_ID])
+    //Get the owner address as set in the ENS Registry
+    const  { data: registryResolver, refetch: refetchRegistryResolver }  = useEnsRegistryRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'resolver',
+        args:         [namehash],
+     });
 
-    console.log("registry", isWrapped);
-    console.log("registry1", registryOwnerAddress);
-    console.log("registry2", l2NameWrapperAddress[OPTIMISM_CHAIN_ID]);
-
+    const isWrapped = registryOwnerAddress == nameWrapperAddress[ETHEREUM_CHAIN_ID]
 
     const ethPrice = 1600;
 
@@ -389,20 +455,16 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     const onClickApproveSubnameRegistrar = () => {
 
         console.log("onClickApproveSubnameRegistrar");
+
+        //Setting this will show the relevant TransactionConfirmationState component
         setIsSubnameRegistrarApprovalPending(true);
     }
-
-    //Triggers the transaction to approve the 
-    const onClickApproveForAllNameWrapper = () => {
-
-        console.log("onClickApproveForAllNameWrapper");
-        setIsNameWrapperApprovalPending(true);
-    }
-
 
     const onClickRenew = () => {
 
         console.log("renew");
+
+        //Setting this will show the relevant TransactionConfirmationState component
         setIsRenewing(true);
     }
 
@@ -410,20 +472,17 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     const onClickWrap = () => {
 
         console.log("wrap");
+
+        //Setting this will show the relevant TransactionConfirmationState component
         setIsWrapping(true);
     }
 
-
     //Indicates if this name is owned by the connected user
-    const isOwnedByUser = nameData?.owner == address;
+    const isOwnedByUser = nameWrapperOwnerAddress == address;
 
     //@ts-ignore
-    const expiryDate    = new Date(wrapperExpiry * 1000);
+    const expiryDate    = new Date(parseInt(registrarExpiry) * 1000);
     const expiryString  = expiryDate.toLocaleString();
-
-
-    console.log("CURRENT RC OPTIONS", renewalControllerOptions);
-    console.log("CURRENT RC", registerPricingData?.renewalController);
 
     const currentRenewalController = (renewalControllerOptions.find((option) => option.value == registerPricingData?.renewalController));
 
@@ -432,30 +491,32 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         setRenewalControllerInput
     ]                                     = React.useState<string | null>(currentRenewalController?.value ?? null);
 
-    console.log("nameData", nameData);
-
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{name}</AlertDialogTitle>
                 <AlertDialogDescription asChild>
 
-                    <Tabs defaultValue="item-profile">
-                        <TabsList className="flex flex-wrap w-fit mx-auto">
-                            <TabsTrigger value="item-profile">Profile</TabsTrigger>
+                    <Tabs defaultValue = "item-profile">
+                        <TabsList className = "flex flex-wrap w-fit mx-auto">
+                            <TabsTrigger value = "item-profile">Profile</TabsTrigger>
                             {isOwnedByUser && isWrapped && (
-                                <TabsTrigger value="item-approvals">Approvals</TabsTrigger>
+                                <TabsTrigger value = "item-approvals">Approvals</TabsTrigger>
                             )}
 
                             {isWrapped && (
                                 <>
-                                    <TabsTrigger value="item-subname-registration-config">Subnames</TabsTrigger>
-                                    <TabsTrigger value="item-fuses">Fuses</TabsTrigger>
+                                    <TabsTrigger value = "item-subname-registration-config">
+                                        Subnames
+                                    </TabsTrigger>
+                                    <TabsTrigger value = "item-fuses">
+                                        Fuses
+                                    </TabsTrigger>
                                 </>
                             )}
                         </TabsList>
 
-                        <TabsContent value="item-profile" asChild>
+                        <TabsContent value = "item-profile" asChild>
 
                             <>
                                 <h1 className = "my-4 text-lg">Profile</h1>
@@ -463,12 +524,14 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                 <Table>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell className="font-medium">Expiry</TableCell>
+                                            <TableCell className = "font-medium">Expiry</TableCell>
                                             <TableCell>
 
                                                 <>
                                                     <p>{expiryString}</p>
-                                                    <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">{formatExpiry(wrapperExpiry)}</div>
+                                                    <div className = "mt-1 text-xs text-blue-800 dark:text-blue-200">
+                                                        {formatExpiry(registrarExpiry)}
+                                                    </div>
                                                 
                                                     <div className = "mt-2">
 
@@ -495,7 +558,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 </SelectContent>
                                                             </Select>
 
-                                                            <div className="w-2" />
+                                                            <div className = "w-2" />
 
                                                             <Button 
                                                                 type     = "submit" 
@@ -504,7 +567,6 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 {isRenewing ? CommonIcons.miniLoader : "Renew"}
                                                             </Button>
                                                         </div>
-
 
                                                         {!isOwnedByUser && (
                                                             <div className = "mt-2 text-xs text-red-800 dark:text-red-200">
@@ -520,11 +582,10 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                         {isRenewing && (
                                                             <TransactionConfirmationState 
                                                                 key       = {"name-renewal-" + name}
-                                                                contract  = {l2EthRegistrar}
+                                                                contract  = {ethRegistrarController}
                                                                 txArgs    = {{
                                                                     args: [
                                                                         label,
-                                                                        "0x0000000000000000000000000000000000000000",
                                                                         renewForTimeInSeconds
                                                                     ],
                                                                     overrides: {
@@ -537,25 +598,25 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                     console.log("2ld renewal confirmed");
 
                                                                     toast({
-                                                                        duration: 5000,
-                                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                        duration:    5000,
+                                                                        className:   "bg-green-200 dark:bg-green-800 border-0",
                                                                         description: (<p><span className = "font-bold">{name}</span> was successfully renewed.</p>),
                                                                     });
                                                                 }}
                                                                 onAlways  = {() => {
                                                                     console.log("2ld renewal onAlways");
                                                                     setIsRenewing(false);
-                                                                    refetchData();
+                                                                    refetchRegistrarExpiryData();
                                                                 }}
                                                                 onError = {() => {
 
                                                                     toast({
-                                                                        duration: 5000,
-                                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                        duration:    5000,
+                                                                        className:   "bg-red-200 dark:bg-red-800 border-0",
                                                                         description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
                                                                     });
                                                                 }}
-                                                                checkStatic = {false}>
+                                                                checkStatic = {true}>
                                                                 <div>
                                                                     {/* Renewing interface handled manually*/}
                                                                 </div>
@@ -569,7 +630,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell className="font-medium">NameWrapper Owner</TableCell>
+                                            <TableCell className = "font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {isWrapped ? (
                                                     <>
@@ -618,8 +679,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                     console.log("2ld WRAP confirmed");
 
                                                                     toast({
-                                                                        duration: 5000,
-                                                                        className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                        duration:    5000,
+                                                                        className:   "bg-green-200 dark:bg-green-800 border-0",
                                                                         description: (<p><span className = "font-bold">{name}</span> was successfully WRAPPED.</p>),
                                                                     });
                                                                 }}
@@ -631,8 +692,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 onError = {() => {
 
                                                                     toast({
-                                                                        duration: 5000,
-                                                                        className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                        duration:    5000,
+                                                                        className:   "bg-red-200 dark:bg-red-800 border-0",
                                                                         description: (<p>There was a problem wrapping <span className = "font-bold">{name}</span>.</p>),
                                                                     });
                                                                 }}
@@ -650,7 +711,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell className="font-medium">Registry owner</TableCell>
+                                            <TableCell className = "font-medium">Registry owner</TableCell>
                                             <TableCell>
                                                 
                                                 {isWrapped ? (
@@ -672,7 +733,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
                         {/*Subname controls - displayed to owner*/}
                         {isOwnedByUser && (
-                            <TabsContent value="item-approvals" asChild>
+                            <TabsContent value = "item-approvals" asChild>
                                 <>
                                     <h1 className = "my-4 text-lg">Approvals</h1>
 
@@ -684,14 +745,16 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                         <h3 className = "mt-4 text-base">Approvals</h3>
                                         <div className = "mt-2 text-xs">
                                             Before utilising the subname offering you must approve access to our smart contracts to manage your names.
-                                        </div>                                        
+                                        </div>
+
+                                        
                                     </div>
 
                                     <div className = "mt-8 text-xs">
-                                        1. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Name Wrapper</span>.
+                                        1. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Subname Wrapper</span>.
                                     </div>
                                     
-                                    {!isSubnameRegistrarApprovedOnNameWrapper ? (
+                                    {!isApprovedForAllL2NameWrapper ? (
 
                                         <>
                                             <Button 
@@ -699,16 +762,16 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                 disabled  = {isSubnameRegistrarApprovalPending} 
                                                 onClick   = {onClickApproveSubnameRegistrar} 
                                                 className = "mt-2">
-                                                    {isSubnameRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subname Registrar in Name Wrapper"}
+                                                    {isSubnameRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subname Registrar in Subname Wrapper"}
                                             </Button>
                                     
                                             {/* The Subname registrar needs to be approved on the Subname Wrapper*/}
 
                                             {isSubnameRegistrarApprovalPending && (
                                                 <TransactionConfirmationState 
-                                                    key     = {"offer-subnames-" + name}
-                                                    contract  = {l2NameWrapper}
-                                                    txArgs    = {{
+                                                    key      = {"offer-subnames-" + name}
+                                                    contract = {l2NameWrapper}
+                                                    txArgs   = {{
                                                         address: l2NameWrapperAddress[OPTIMISM_CHAIN_ID],
                                                         args: [
                                                             l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]
@@ -723,8 +786,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                         console.log("setApprovalforall done");
 
                                                         toast({
-                                                            duration: 5000,
-                                                            className: "bg-green-200 dark:bg-green-800 border-0",
+                                                            duration:    5000,
+                                                            className:   "bg-green-200 dark:bg-green-800 border-0",
                                                             description: (
                                                                 <p>
                                                                     <span className = "font-bold">Subname Registrar</span> successfully approved on the <span className = "font-bold">NameWrapper</span>.
@@ -734,12 +797,12 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                     }}
                                                     onAlways = {() => {
                                                         setIsSubnameRegistrarApprovalPending(false);
-                                                        refetchisSubnameRegistrarApprovedOnNameWrapper?.();
+                                                        refetchIsApprovedForAllL2NameWrapper?.();
                                                     }}
                                                     onError = {() => {
                                                         toast({
-                                                            duration: 5000,
-                                                            className: "bg-red-200 dark:bg-red-800 border-0",
+                                                            duration:    5000,
+                                                            className:   "bg-red-200 dark:bg-red-800 border-0",
                                                             description: (
                                                                 <p>
                                                                     There was a problem approving the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">NameWrapper</span>.
@@ -766,460 +829,84 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                             </TabsContent>
                         )}
 
-
-    
-                        <TabsContent value="item-subname-registration-config" asChild>
-
+                        <TabsContent value = "item-subname-registration-config" asChild>
                             <>
-                            <h1 className = "my-4 text-lg">Subnames</h1>
+                                <h1 className = "my-4 text-lg">Subnames</h1>
 
-                            <Accordion type="single" collapsible className="w-full">
-                                
-                                <AccordionItem value="item-registration-config">
-                                    <AccordionTrigger>Registration Configuration</AccordionTrigger>
-                                    <AccordionContent>
+                                <Accordion type="single" collapsible className = "w-full">
+                                    
+                                    <AccordionItem value = "item-registration-config">
+                                        <AccordionTrigger>Registration Configuration</AccordionTrigger>
+                                        <AccordionContent>
 
-                                        <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                            This section details configuration options for registration of subnames under <span className = "font-bold">{name}</span>.
-                                        </div>
-
-                                        {!isEditingSubnameRegistrationConfig ? (
-                                            <>
-                                                {registerPricingData ? (
-                                                    <Table>
-                                                        <TableBody>
-                                                            <TableRow>
-                                                                <TableCell className="font-medium">Offers subnames</TableCell>
-                                                                <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
-                                                            </TableRow>
-                                                            <TableRow>
-                                                                <TableCell>Renewal Controller</TableCell>
-                                                                <TableCell>
-                                                                    <>
-                                                                        <a href = {"https://goerli-optimism.etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
-                                                                        {currentRenewalController && (
-                                                                            <div className = "text-xs mt-2">
-                                                                                The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className="font-bold">{currentRenewalController?.controlDescription}</span>
-                                                                            </div> 
-                                                                        )}
-                                                                    </>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                            {/*
-                                                            <TableRow>
-                                                                <TableCell className="font-medium">Min Duration</TableCell>
-                                                                <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
-                                                            </TableRow>
-                                                            <TableRow>
-                                                                <TableCell className="font-medium">Min Characters</TableCell>
-                                                                <TableCell>{registerPricingData?.minChars}</TableCell>
-                                                            </TableRow>
-                                                            <TableRow>
-                                                                <TableCell className="font-medium">Max Characters</TableCell>
-                                                                <TableCell>{registerPricingData?.maxChars}</TableCell>
-                                                            </TableRow>
-                                                            */}
-                                                        </TableBody>
-                                                    </Table>  
-                                                ) : (
-                                                    <div>No pricing data</div>
-                                                )}
-
-                                                {isOwnedByUser && (
-                                                    <div className = "text-center mt-4">
-
-                                                        {(!isSubnameRegistrarApprovedOnNameWrapper || !isOnAllowList) ? (
-                                                            <Tooltip delayDuration = {0}>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button 
-                                                                        type      = "submit" 
-                                                                        disabled  = {true}
-                                                                        className = "mt-4">
-                                                                        Edit Configuration
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    {!isOnAllowList ? (
-                                                                        <p>Only second level names on the allow list can be setup for subname registrations at this time.</p>
-                                                                    ) : (
-                                                                        <p>You must provide the appropriate contract approvals prior to offering subnames.</p>
-                                                                    )}
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        ) : (
-                                                            <Button 
-                                                                type    ="submit" 
-                                                                onClick   = {(e) => {
-                                                                    setIsEditingSubnameRegistrationConfig(true);
-                                                                }} 
-                                                                className = "mt-4">
-                                                                Edit Configuration
-                                                            </Button>
-                                                        )}
-
-                                                        <div className = "mt-2 text-xs text-red-800 dark:text-red-200">
-                                                            You have this option because you own <span className = "font-bold">{name}</span>.
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-
-                                                <div className = "my-2">
-                                                    <Checkbox 
-                                                        id              = "offerSubnames"
-                                                        defaultChecked  = {registerPricingData?.offerSubnames}
-                                                        disabled        = {isSavingRegistrationConfigurationData}
-                                                        onCheckedChange = {(isChecked) => {
-
-                                                            console.log("newvalue", "value");
-
-                                                            const newValue = offerSubnamesInput != null ? !offerSubnamesInput : !registerPricingData?.offerSubnames
-
-                                                            console.log("newvalue", newValue);
-
-                                                            setOfferSubnamesInput(newValue);
-                                                        }} />
-                                                    <label
-                                                        htmlFor="offerSubnames"
-                                                        className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                    >
-                                                        Offer subnames
-                                                    </label>
-                                                </div>
-
-                                                <Label htmlFor = "renewalController">
-                                                    Renewal Controller
-                                                </Label>
-
-                                                <Select 
-                                                    value           = {renewalControllerInput}
-                                                    onValueChange   = {(value) => {
-                                                        console.log(value);
-                                                        setRenewalControllerInput(value)
-                                                    }}
-                                                    disabled        = {isSavingRegistrationConfigurationData}>
-                                                    <SelectTrigger className = "my-2">
-                                                        <SelectValue placeholder="Select a renewal controller">{renewalControllerInput != null ? (renewalControllerOptions.find((item) => item.value == renewalControllerInput))?.label : "Select a renewal controller"}
-                                                        </SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup>
-                                                            {renewalControllerOptions.map((option) => {
-                                                                
-                                                                return (
-                                                                    <SelectItem 
-                                                                        key   = {"renewal-controller-option-" + option.value}
-                                                                        value = {option.value}>
-                                                                        {option.label}
-                                                                    </SelectItem>
-                                                                );
-                                                            })}
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {/*
-                                                <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
-                                                <Input 
-                                                    type         = "text" 
-                                                    id           = "minRegistrationDuration" 
-                                                    ref          = {minRegistrationDurationInputRef} 
-                                                    defaultValue = {registerPricingData?.minRegistrationDuration} 
-                                                    className    = "my-2"
-                                                    disabled     = {isSavingRegistrationConfigurationData} />
-
-                                                <Label htmlFor="minChars">Minimum Characters</Label>
-                                                <Input 
-                                                    type         = "text" 
-                                                    id           = "minChars" 
-                                                    ref          = {minCharactersInputRef} 
-                                                    defaultValue = {registerPricingData?.minChars} 
-                                                    className    = "my-2"
-                                                    disabled     = {isSavingRegistrationConfigurationData} />
-
-                                                <Label htmlFor="maxChars">Maximum Characters</Label>
-                                                <Input 
-                                                    type         = "text" 
-                                                    id           = "maxChars" 
-                                                    ref          = {maxCharactersInputRef} 
-                                                    defaultValue = {registerPricingData?.maxChars} 
-                                                    className    = "my-2"
-                                                    disabled     = {isSavingRegistrationConfigurationData} />
-                                                */}
-
-                                                <Button 
-                                                    type        = "submit" 
-                                                    onClick     = {(e) => {
-                                                        setIsSavingRegistrationConfigurationData(true);
-                                                    }} 
-                                                    disabled    = {isSavingRegistrationConfigurationData}
-                                                    className   = "mt-2">
-                                                    {isSavingRegistrationConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
-                                                </Button>
-
-                                                {isSavingRegistrationConfigurationData && (
-                                                    <TransactionConfirmationState 
-                                                        key = {"save-subname-registration-config-" + name}
-                                                        contract = {subnameRegistrar}
-                                                        txArgs = {{
-                                                            args: [
-                                                                namehashHex,
-                                                                offerSubnamesInput,
-                                                                renewalControllerInput ?? registerPricingData?.renewalController,
-                                                                minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
-                                                                ONE_YEAR_IN_SECONDS * 100,
-                                                                minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
-                                                                maxCharactersInputRef && maxCharactersInputRef.current?.value ? maxCharactersInputRef.current?.value : 0,
-                                                            ],
-                                                            overrides: {
-                                                                gasLimit: ethers.BigNumber.from("5000000"),
-                                                                //value: "10000000000000000000"
-                                                            }
-                                                        }}
-                                                        txFunction = 'setParams'
-                                                        onConfirmed = {() => {
-                                                            console.log("setParams done");
-
-                                                            toast({
-                                                                duration: 5000,
-                                                                className: "bg-green-200 dark:bg-green-800 border-0",
-                                                                description: (
-                                                                    <p>
-                                                                        Subname registration configuration changes saved on chain.
-                                                                    </p>
-                                                                ),
-                                                            });
-                                                        }}
-                                                        onAlways = {() => {
-                                                            setIsSavingRegistrationConfigurationData(false);
-                                                            setIsEditingSubnameRegistrationConfig(false);
-                                                            refetchRegisterPricingData();
-                                                        }}
-                                                        onError = {() => {
-                                                            toast({
-                                                                duration: 5000,
-                                                                className: "bg-red-200 dark:bg-red-800 border-0",
-                                                                description: (
-                                                                    <p>
-                                                                        There was a problem saving your subname registration configuration changes.
-                                                                    </p>
-                                                                ),
-                                                            });
-                                                        }}
-                                                        checkStatic = {true}>
-                                                        <div>
-                                                            {/*Handled manually*/}
-                                                        </div>
-                                                        <div>
-                                                            {/*Handled manually*/}
-                                                        </div>
-                                                    </ TransactionConfirmationState>
-                                                )}
-                                            </> 
-                                        )}
-
-                                    </AccordionContent>
-                                </AccordionItem>
-                                <AccordionItem value="item-renewal-config">
-                                    <AccordionTrigger>Renewal Configuration</AccordionTrigger>
-                                    <AccordionContent>
-                                        <>
                                             <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                                This section details configuration options for renewal of subnames under <span className = "font-bold">{name}</span>.
+                                                This section details configuration options for registration of subnames under <span className = "font-bold">{name}</span>.
                                             </div>
 
-
-                                        
-                                            {registerPricingData?.renewalController == ZERO_ADDRESS ? (
-
-                                                <p className = "text-xs text-red-800 dark:text-red-200">This name <span className = "font-bold">does not</span> have a renewal controller set.</p>
-                                            ) : (
-
+                                            {!isEditingSubnameRegistrationConfig ? (
                                                 <>
-                                                    <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
-                                                        The <span className="font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className="font-bold">{currentRenewalController?.controlDescription}</span> 
-                                                    </div>
-
-
-                                                    {currentRenewalController?.showConfig && (
-
+                                                    {registryResolver != UNRUGGABLE_RESOLVER_ADDRESS ?  (
                                                         <>
+                                                            <p>To register subnames of <span className = "font-bold">{name}</span> on Layer 2 (Optimism) you must use our <a className = "underline" href = "https://docs.ens.domains/ens-improvement-proposals/ensip-10-wildcard-resolution" target="_blank">ENSIP10</a>/<a className = "underline" href = "https://eips.ethereum.org/EIPS/eip-3668" target="_blank">EIP3668</a> compliant resolver on Layer 1.</p>
 
-                                                    {!isEditingSubnameRenewalConfig ? (
-                                                        <>
-                                                            {renewalPricingData ? (
-                                                                <Table>
-                                                                    <TableHeader>
-                                                                        <TableRow>
-                                                                            <TableHead className="font-medium">Characters</TableHead>
-                                                                            <TableHead>Price (USD)</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {renewalPricingData.map((value, index) => {
+                                                            <p className = "mt-4">The resolver is currently set to <span className = "font-bold">{registryResolver}</span>.</p>
 
-                                                                            return (
-                                                                                <TableRow
-                                                                                    key = {"renewal-price-" + index}>
-                                                                                    <TableCell className="font-medium">
-                                                                                        {lastRenewalPriceIndex && (index == 0) ? "Default" : (index)}
-                                                                                    </TableCell>
-                                                                                    <TableCell>${value}</TableCell>
-                                                                                </TableRow>
-                                                                            );
+                                                            <Button 
+                                                                type      = "submit" 
+                                                                disabled  = {isSettingUnruggableResolver}
+                                                                className = "mt-4"
+                                                                onClick = {(e) => setIsSettingUnruggableResolver(true)}>
+                                                                {isSettingUnruggableResolver ? CommonIcons.miniLoader : "Set Unruggable Resolver"}
+                                                                
+                                                            </Button>
 
-                                                                        })}      
-                                                                    </TableBody>
-                                                                </Table>  
-                                                            ) : (
-                                                                <div>No renewal configuration data is available.</div>
-                                                            )}
 
-                                                            {isOwnedByUser && false && (
-                                                                <div className = "text-center mt-4">
-                                                                    <Button 
-                                                                        type    ="submit" 
-                                                                        onClick   = {(e) => {
-                                                                            setIsEditingSubnameRenewalConfig(true);
-                                                                        }} 
-                                                                        className = "mt-4">
-                                                                        {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Edit Configuration"}
-                                                                    </Button>
+                                                            {isSettingUnruggableResolver && (
 
-                                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
-                                                                        You have this option because you own <span className = "font-bold">{name}</span>.
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <>
-
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow>
-                                                                        <TableHead className="font-medium">Characters</TableHead>
-                                                                        <TableHead>Price (USD)</TableHead>
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {renewalPriceInput.map((value, index) => {
-
-                                                                        return (
-                                                                            <TableRow
-                                                                                key = {"renewal-price-" + index}>
-                                                                                <TableCell className="font-medium">
-                                                                                    {index == 0 ? "Default" : (index)}
-                                                                                </TableCell>
-                                                                                <TableCell>
-                                                                                    <Input 
-                                                                                        type         = "text" 
-                                                                                        value = {value} 
-                                                                                        disabled     = {isSavingRenewalConfigurationData}
-                                                                                        onChange = {(e) => {
-
-                                                                                            const newInput = [...renewalPriceInput];
-                                                                                            newInput[index] = e.target.value;
-
-                                                                                            console.log("renewalPriceInput", newInput);
-
-                                                                                            setRenewalPriceInput(newInput)
-                                                                                        }} 
-                                                                                        />
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        );
-
-                                                                    })}      
-                                                                </TableBody>
-                                                            </Table>  
-
-                                                            <div className = "flex">
-                                                                <Button 
-                                                                    type="submit" 
-                                                                    onClick = {(e) => {
-                                                                        const newInput = [...renewalPriceInput];
-                                                                        newInput.push(0);
-                                                                        setRenewalPriceInput(newInput)
-
-                                                                        console.log("NEWWW", newInput);
-
-                                                                    }} 
-                                                                    className = "mt-2"
-                                                                    disabled     = {isSavingRenewalConfigurationData}>
-                                                                    Add Another
-                                                                </Button>
-
-                                                                <div className = "w-1"></div>
-
-                                                                <Button 
-                                                                    type="submit" 
-                                                                    onClick = {(e) => {
-                                                                        setIsSavingRenewalConfigurationData(true);
-
-                                                                        console.log("tosend", renewalPriceInput.map((value) => {
-                                                                                    return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
-                                                                                }));
-                                                                    }} 
-                                                                    className = "mt-2"
-                                                                    disabled     = {isSavingRenewalConfigurationData}>
-                                                                    {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
-                                                                </Button>
-                                                            </div>
-
-                                                            {isSavingRenewalConfigurationData && (
                                                                 <TransactionConfirmationState 
-                                                                    key = {"save-subname-renewal-config-" + name}
-                                                                    contract = {renewalController}
-                                                                    txArgs = {{
+                                                                    key      = {"set-unruggable-resolver-" + name}
+                                                                    contract = {nameWrapper}
+                                                                    chainId  = {5}
+                                                                    txArgs   = {{
                                                                         args: [
-                                                                            renewalPriceInput.map((value) => {
-                                                                                return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
-                                                                            })
+                                                                            namehash,
+                                                                            UNRUGGABLE_RESOLVER_ADDRESS //UnruggableERC3668Resolver
                                                                         ],
                                                                         overrides: {
                                                                             gasLimit: ethers.BigNumber.from("5000000"),
                                                                             //value: "10000000000000000000"
                                                                         }
                                                                     }}
-                                                                    txFunction = 'setPricingForAllLengths'
+                                                                    txFunction  = 'setResolver'
                                                                     onConfirmed = {() => {
-                                                                        console.log("setPricingForAllLengths done");
+                                                                        console.log("set unruggable resolver done");
 
                                                                         toast({
-                                                                            duration: 5000,
-                                                                            className: "bg-green-200 dark:bg-green-800 border-0",
+                                                                            duration:    5000,
+                                                                            className:   "bg-green-200 dark:bg-green-800 border-0",
                                                                             description: (
                                                                                 <p>
-                                                                                    Subname renewal configuration saved on chain.
+                                                                                    Unruggable resolver set
                                                                                 </p>
                                                                             ),
                                                                         });
                                                                     }}
                                                                     onAlways = {() => {
-                                                                        setIsSavingRenewalConfigurationData(false);
-                                                                        setIsEditingSubnameRenewalConfig(false);
-
-                                                                        if (renewalPriceInput.length != renewalPricingData.length) {
-                                                                            refetchLastRenewalPriceIndex();
-                                                                        } else {
-                                                                            refetchRenewalConfiguration();
-                                                                        }
+                                                                        setIsSettingUnruggableResolver(false);
+                                                                        refetchRegistryResolver();
                                                                     }}
                                                                     onError = {() => {
                                                                         toast({
-                                                                            duration: 5000,
-                                                                            className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                            duration:    5000,
+                                                                            className:   "bg-red-200 dark:bg-red-800 border-0",
                                                                             description: (
                                                                                 <p>
-                                                                                    There was a problem updating your subname renewal configuration.
+                                                                                    There was a problem setting the unruggable resolver.
                                                                                 </p>
                                                                             ),
                                                                         });
                                                                     }}
-                                                                    checkStatic = {true}>
+                                                                    checkStatic = {false}>
                                                                     <div>
                                                                         {/*Handled manually*/}
                                                                     </div>
@@ -1228,21 +915,509 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                     </div>
                                                                 </ TransactionConfirmationState>
                                                             )}
-                                                        </> 
-                                                    )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {registerPricingData ? (
+                                                                <Table>
+                                                                    <TableBody>
 
-                                                    </>
+                                                                        <TableRow>
+                                                                            <TableCell className = "font-medium">Offers subnames</TableCell>
+                                                                            <TableCell>{registerPricingData?.offerSubnames ? CommonIcons.check : CommonIcons.cross}</TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell>Renewal Controller</TableCell>
+                                                                            <TableCell>
+                                                                                <>
+                                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
+                                                                                    {currentRenewalController && (
+                                                                                        <div className = "text-xs mt-2">
+                                                                                            The <span className = "font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className = "font-bold">{currentRenewalController?.controlDescription}</span>
+                                                                                        </div> 
+                                                                                    )}
+                                                                                </>
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell className = "font-medium">
+                                                                                Resolver
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                <>
+                                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + registryResolver} target="_blank" rel="noreferrer" className = "underline">{registryResolver}</a>
+                                                                                    <div className = "text-xs mt-2">
+                                                                                        This is the Unruggable Resolver - subnames will be resolved from Layer 2 (Optimism).
+                                                                                    </div> 
+                                                                                </>
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                        {verifierData && (
+                                                                            <>
+                                                                                <TableRow>
+                                                                                    <TableCell className = "font-medium">
+                                                                                        Verifier
+                                                                                    </TableCell>
+                                                                                    <TableCell>
+                                                                                        <>
+                                                                                            <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + verifierData[0].verifierAddress} target="_blank" rel="noreferrer" className = "underline">{verifierData[0].verifierAddress}</a>
+                                                                                        </>
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                                {verifierData[0].gatewayUrls && (
+                                                                                    <>
+                                                                                        <TableRow>
+                                                                                            <TableCell className = "font-medium">
+                                                                                                Gateway URL(s)
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+
+                                                                                                <ul>
+                                                                                                    {verifierData[0].gatewayUrls.map((gatewayUrl, index) => {
+
+                                                                                                        return (<li key = {"gateway-" + index}>{gatewayUrl}</li>);
+                                                                                                    })}
+                                                                                                </ul>
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    </>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                        {/*
+                                                                        <TableRow>
+                                                                            <TableCell className = "font-medium">Min Duration</TableCell>
+                                                                            <TableCell>{registerPricingData?.minRegistrationDuration}</TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell className = "font-medium">Min Characters</TableCell>
+                                                                            <TableCell>{registerPricingData?.minChars}</TableCell>
+                                                                        </TableRow>
+                                                                        <TableRow>
+                                                                            <TableCell className = "font-medium">Max Characters</TableCell>
+                                                                            <TableCell>{registerPricingData?.maxChars}</TableCell>
+                                                                        </TableRow>
+                                                                        */}
+                                                                    </TableBody>
+                                                                </Table>  
+                                                            ) : (
+                                                                <div>No pricing data</div>
+                                                            )}
+
+                                                            {isOwnedByUser && (
+                                                                <div className = "text-center mt-4">
+
+                                                                    {(!isApprovedForAllL2NameWrapper) ? (
+                                                                        <Tooltip delayDuration = {0}>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Button 
+                                                                                    type      = "submit" 
+                                                                                    disabled  = {true}
+                                                                                    className = "mt-4">
+                                                                                    Edit Configuration
+                                                                                </Button>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>
+                                                                                <p>You must provide the appropriate contract approvals prior to offering subnames.</p>
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    ) : (
+                                                                        <Button 
+                                                                            type    = "submit" 
+                                                                            onClick = {(e) => {
+                                                                                setIsEditingSubnameRegistrationConfig(true);
+                                                                            }} 
+                                                                            className = "mt-4">
+                                                                            Edit Configuration
+                                                                        </Button>
+                                                                    )}
+
+                                                                    <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                                        You have this option because you own <span className = "font-bold">{name}</span>.
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </>
+                                            ) : (
+                                                <>
+
+                                                    <div className = "my-2">
+                                                        <Checkbox 
+                                                            id              = "offerSubnames"
+                                                            defaultChecked  = {registerPricingData?.offerSubnames}
+                                                            disabled        = {isSavingRegistrationConfigurationData}
+                                                            onCheckedChange = {(isChecked) => {
+
+                                                                console.log("newvalue", "value");
+
+                                                                const newValue = offerSubnamesInput != null ? !offerSubnamesInput : !registerPricingData?.offerSubnames
+
+                                                                console.log("newvalue", newValue);
+
+                                                                setOfferSubnamesInput(newValue);
+                                                            }} />
+                                                        <label
+                                                            htmlFor="offerSubnames"
+                                                            className = "ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                        >
+                                                            Offer subnames
+                                                        </label>
+                                                    </div>
+
+                                                    <Label htmlFor = "renewalController">
+                                                        Renewal Controller
+                                                    </Label>
+
+                                                    <Select 
+                                                        value           = {renewalControllerInput}
+                                                        onValueChange   = {(value) => {
+                                                            console.log(value);
+                                                            setRenewalControllerInput(value)
+                                                        }}
+                                                        disabled        = {isSavingRegistrationConfigurationData}>
+                                                        <SelectTrigger className = "my-2">
+                                                            <SelectValue placeholder="Select a renewal controller">{renewalControllerInput != null ? (renewalControllerOptions.find((item) => item.value == renewalControllerInput))?.label : "Select a renewal controller"}
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                {renewalControllerOptions.map((option) => {
+                                                                    
+                                                                    return (
+                                                                        <SelectItem 
+                                                                            key   = {"renewal-controller-option-" + option.value}
+                                                                            value = {option.value}>
+                                                                            {option.label}
+                                                                        </SelectItem>
+                                                                    );
+                                                                })}
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+
+                                                    {/*
+                                                    <Label htmlFor="minRegistrationDuration">Minimum Registration Duration</Label>
+                                                    <Input 
+                                                        type         = "text" 
+                                                        id           = "minRegistrationDuration" 
+                                                        ref          = {minRegistrationDurationInputRef} 
+                                                        defaultValue = {registerPricingData?.minRegistrationDuration} 
+                                                        className    = "my-2"
+                                                        disabled     = {isSavingRegistrationConfigurationData} />
+
+                                                    <Label htmlFor="minChars">Minimum Characters</Label>
+                                                    <Input 
+                                                        type         = "text" 
+                                                        id           = "minChars" 
+                                                        ref          = {minCharactersInputRef} 
+                                                        defaultValue = {registerPricingData?.minChars} 
+                                                        className    = "my-2"
+                                                        disabled     = {isSavingRegistrationConfigurationData} />
+
+                                                    <Label htmlFor="maxChars">Maximum Characters</Label>
+                                                    <Input 
+                                                        type         = "text" 
+                                                        id           = "maxChars" 
+                                                        ref          = {maxCharactersInputRef} 
+                                                        defaultValue = {registerPricingData?.maxChars} 
+                                                        className    = "my-2"
+                                                        disabled     = {isSavingRegistrationConfigurationData} />
+                                                    */}
+
+                                                    <Button 
+                                                        type        = "submit" 
+                                                        onClick     = {(e) => {
+                                                            setIsSavingRegistrationConfigurationData(true);
+                                                        }} 
+                                                        disabled    = {isSavingRegistrationConfigurationData}
+                                                        className   = "mt-2">
+                                                        {isSavingRegistrationConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
+                                                    </Button>
+
+                                                    {isSavingRegistrationConfigurationData && (
+                                                        <TransactionConfirmationState 
+                                                            key      = {"save-subname-registration-config-" + name}
+                                                            chainId  = {OPTIMISM_CHAIN_ID}
+                                                            contract = {l2SubnameRegistrar}
+                                                            txArgs   = {{
+                                                                args: [
+                                                                    unruggableDnsEncodedName,
+                                                                    offerSubnamesInput,
+                                                                    renewalControllerInput ?? registerPricingData?.renewalController,
+                                                                    minRegistrationDurationInputRef && minRegistrationDurationInputRef.current?.value ? minRegistrationDurationInputRef.current?.value : 0,
+                                                                    maxRegistrationDurationInputRef && maxRegistrationDurationInputRef.current?.value ? maxRegistrationDurationInputRef.current?.value : 3153600000, //100years
+                                                                    minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
+                                                                    maxCharactersInputRef && maxCharactersInputRef.current?.value ? maxCharactersInputRef.current?.value : 0,
+                                                                ],
+                                                                overrides: {
+                                                                    gasLimit: ethers.BigNumber.from("5000000"),
+                                                                    //value: ethers.BigNumber.from("10000000000000000000")
+                                                                }
+                                                            }}
+                                                            txFunction  = 'setParams'
+                                                            onConfirmed = {() => {
+                                                                console.log("setParams done");
+
+                                                                toast({
+                                                                    duration:    5000,
+                                                                    className:   "bg-green-200 dark:bg-green-800 border-0",
+                                                                    description: (
+                                                                        <p>
+                                                                            Subname registration configuration changes saved on chain.
+                                                                        </p>
+                                                                    ),
+                                                                });
+                                                            }}
+                                                            onAlways = {() => {
+                                                                setIsSavingRegistrationConfigurationData(false);
+                                                                setIsEditingSubnameRegistrationConfig(false);
+                                                                refetchRegisterPricingData();
+                                                            }}
+                                                            onError = {() => {
+                                                                toast({
+                                                                    duration:    5000,
+                                                                    className:   "bg-red-200 dark:bg-red-800 border-0",
+                                                                    description: (
+                                                                        <p>
+                                                                            There was a problem saving your subname registration configuration changes.
+                                                                        </p>
+                                                                    ),
+                                                                });
+                                                            }}
+                                                            checkStatic = {true}>
+                                                            <div>
+                                                                {/*Handled manually*/}
+                                                            </div>
+                                                            <div>
+                                                                {/*Handled manually*/}
+                                                            </div>
+                                                        </ TransactionConfirmationState>
+                                                    )}
+                                                </> 
                                             )}
-                                        </>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            </Accordion>
+
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                    <AccordionItem value = "item-renewal-config">
+                                        <AccordionTrigger>Renewal Configuration</AccordionTrigger>
+                                        <AccordionContent>
+                                            <>
+                                                <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                                    This section details configuration options for renewal of subnames under <span className = "font-bold">{name}</span>.
+                                                </div>
+
+                                                {registerPricingData?.renewalController == ZERO_ADDRESS ? (
+
+                                                    <p className = "text-xs text-red-800 dark:text-red-200">This name <span className = "font-bold">does not</span> have a renewal controller set.</p>
+                                                ) : (
+
+                                                    <>
+                                                        <div className = "text-xs text-red-800 dark:text-red-200 mb-4">
+                                                            The <span className = "font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className = "font-bold">{currentRenewalController?.controlDescription}</span> 
+                                                        </div>
+
+
+                                                        {currentRenewalController?.showConfig && (
+
+                                                            <>
+
+                                                        {!isEditingSubnameRenewalConfig ? (
+                                                            <>
+                                                                {renewalPricingData ? (
+                                                                    <Table>
+                                                                        <TableHeader>
+                                                                            <TableRow>
+                                                                                <TableHead className = "font-medium">Characters</TableHead>
+                                                                                <TableHead>Price (USD)</TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {renewalPricingData.map((value, index) => {
+
+                                                                                return (
+                                                                                    <TableRow
+                                                                                        key = {"renewal-price-" + index}>
+                                                                                        <TableCell className = "font-medium">
+                                                                                            {lastRenewalPriceIndex && (index == 0) ? "Default" : (index)}
+                                                                                        </TableCell>
+                                                                                        <TableCell>${value}</TableCell>
+                                                                                    </TableRow>
+                                                                                );
+
+                                                                            })}      
+                                                                        </TableBody>
+                                                                    </Table>  
+                                                                ) : (
+                                                                    <div>No renewal configuration data is available.</div>
+                                                                )}
+
+                                                                {isOwnedByUser && false && (
+                                                                    <div className = "text-center mt-4">
+                                                                        <Button 
+                                                                            type    = "submit" 
+                                                                            onClick = {(e) => {
+                                                                                setIsEditingSubnameRenewalConfig(true);
+                                                                            }} 
+                                                                            className = "mt-4">
+                                                                            {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Edit Configuration"}
+                                                                        </Button>
+
+                                                                        <div className = "mt-1 text-xs text-red-800 dark:text-red-200">
+                                                                            You have this option because you own <span className = "font-bold">{name}</span>.
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow>
+                                                                            <TableHead className = "font-medium">Characters</TableHead>
+                                                                            <TableHead>Price (USD)</TableHead>
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {renewalPriceInput.map((value, index) => {
+
+                                                                            return (
+                                                                                <TableRow
+                                                                                    key = {"renewal-price-" + index}>
+                                                                                    <TableCell className = "font-medium">
+                                                                                        {index == 0 ? "Default" : (index)}
+                                                                                    </TableCell>
+                                                                                    <TableCell>
+                                                                                        <Input 
+                                                                                            type     = "text" 
+                                                                                            value    = {value} 
+                                                                                            disabled = {isSavingRenewalConfigurationData}
+                                                                                            onChange = {(e) => {
+
+                                                                                                const newInput = [...renewalPriceInput];
+                                                                                                newInput[index] = e.target.value;
+
+                                                                                                console.log("renewalPriceInput", newInput);
+
+                                                                                                setRenewalPriceInput(newInput)
+                                                                                            }} 
+                                                                                            />
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                            );
+                                                                        })}      
+                                                                    </TableBody>
+                                                                </Table>  
+
+                                                                <div className = "flex">
+                                                                    <Button 
+                                                                        type    = "submit" 
+                                                                        onClick = {(e) => {
+                                                                            const newInput = [...renewalPriceInput];
+                                                                            newInput.push(0);
+                                                                            setRenewalPriceInput(newInput)
+
+                                                                            console.log("NEWWW", newInput);
+
+                                                                        }} 
+                                                                        className = "mt-2"
+                                                                        disabled  = {isSavingRenewalConfigurationData}>
+                                                                        Add Another
+                                                                    </Button>
+
+                                                                    <div className = "w-1"></div>
+
+                                                                    <Button 
+                                                                        type    = "submit" 
+                                                                        onClick = {(e) => {
+                                                                            setIsSavingRenewalConfigurationData(true);
+
+                                                                            console.log("tosend", renewalPriceInput.map((value) => {
+                                                                                        return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
+                                                                                    }));
+                                                                        }} 
+                                                                        className = "mt-2"
+                                                                        disabled  = {isSavingRenewalConfigurationData}>
+                                                                        {isSavingRenewalConfigurationData ? CommonIcons.miniLoader : "Save Configuration"}
+                                                                    </Button>
+                                                                </div>
+
+                                                                {isSavingRenewalConfigurationData && (
+                                                                    <TransactionConfirmationState 
+                                                                        key      = {"save-subname-renewal-config-" + name}
+                                                                        contract = {renewalController}
+                                                                        txArgs   = {{
+                                                                            args: [
+                                                                                renewalPriceInput.map((value) => {
+                                                                                    return Math.floor((value / ONE_YEAR_IN_SECONDS) * 1e18);
+                                                                                })
+                                                                            ],
+                                                                            overrides: {
+                                                                                gasLimit: ethers.BigNumber.from("5000000"),
+                                                                                //value: "10000000000000000000"
+                                                                            }
+                                                                        }}
+                                                                        txFunction = 'setPricingForAllLengths'
+                                                                        onConfirmed = {() => {
+                                                                            console.log("setPricingForAllLengths done");
+
+                                                                            toast({
+                                                                                duration:    5000,
+                                                                                className:   "bg-green-200 dark:bg-green-800 border-0",
+                                                                                description: (
+                                                                                    <p>
+                                                                                        Subname renewal configuration saved on chain.
+                                                                                    </p>
+                                                                                ),
+                                                                            });
+                                                                        }}
+                                                                        onAlways = {() => {
+                                                                            setIsSavingRenewalConfigurationData(false);
+                                                                            setIsEditingSubnameRenewalConfig(false);
+
+                                                                            if (renewalPriceInput.length != renewalPricingData.length) {
+                                                                                refetchLastRenewalPriceIndex();
+                                                                            } else {
+                                                                                refetchRenewalConfiguration();
+                                                                            }
+                                                                        }}
+                                                                        onError = {() => {
+                                                                            toast({
+                                                                                duration:    5000,
+                                                                                className:   "bg-red-200 dark:bg-red-800 border-0",
+                                                                                description: (
+                                                                                    <p>
+                                                                                        There was a problem updating your subname renewal configuration.
+                                                                                    </p>
+                                                                                ),
+                                                                            });
+                                                                        }}
+                                                                        checkStatic = {true}>
+                                                                        <div>
+                                                                            {/*Handled manually*/}
+                                                                        </div>
+                                                                        <div>
+                                                                            {/*Handled manually*/}
+                                                                        </div>
+                                                                    </ TransactionConfirmationState>
+                                                                )}
+                                                            </> 
+                                                        )}
+
+                                                        </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
                             </>
                         </TabsContent>
 
-                        <TabsContent value="item-fuses" asChild>
+                        <TabsContent value = "item-fuses" asChild>
                             <>
                                 <h1 className = "my-4 text-lg">Fuses</h1>
                                 <p className = "text-xs text-red-800 dark:text-red-200">This section details the fuses that have been burned on this name.
@@ -1258,7 +1433,9 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction className = "mt-8" onClick = {onClickClose}>Close</AlertDialogAction>
+                <AlertDialogAction className = "mt-8" onClick = {onClickClose}>
+                    Close
+                </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     )

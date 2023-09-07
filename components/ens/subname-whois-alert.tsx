@@ -5,7 +5,8 @@ import {
     useAccount,
     useNetwork, 
     useSigner,
-    useChainId 
+    useChainId,
+    useProvider 
 }                                       from 'wagmi'
 
 import {
@@ -39,6 +40,9 @@ import {
 }                                       from "@/components/ui/tooltip"
 
 import { Button }                       from "@/components/ui/button"
+import { Input }                        from "@/components/ui/input"
+import { Label }                        from "@/components/ui/label"
+
 import {
   Select,
   SelectContent,
@@ -57,7 +61,9 @@ import { FuseList }                     from '@/components/ens/fuse-list';
 
 import { 
     formatExpiry, 
-    hexEncodeName 
+    hexEncodeName,
+    parseName,
+    getUnruggableName 
 }      
                                         from '../../helpers/Helpers.jsx';
 
@@ -67,25 +73,36 @@ import {
     OPTIMISM_CHAIN_ID
 }                                       from '../../helpers/constants'
 
+import { useToast }                     from '@/lib/hooks/use-toast'
+
 import { 
     useEnsRegistryRead, 
+    useL2NameWrapper,
     useL2NameWrapperRead, 
+    useL2PublicResolver,
+    useL2PublicResolverRead,
+    l2PublicResolverAddress,
     useIRenewalController,
     useIRenewalControllerRead,
     l2SubnameRegistrarAddress,
-    l2NameWrapperAddress 
+    l2NameWrapperAddress,
+    useUnruggableErc3668ResolverRead,
+    unruggableErc3668ResolverAddress 
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
+
+const UNRUGGABLE_RESOLVER_ADDRESS = unruggableErc3668ResolverAddress[ETHEREUM_CHAIN_ID];
 
 interface SubnameWhoisAlertProps {
     name: string,
     onClickClose?: any
 }
 
-
 // @ts-ignore
 export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps): React.ReactElement | null {
+
+    const { toast, dismiss }                = useToast()
 
     const { address }                       = useAccount()
     const { chain }                         = useNetwork()
@@ -93,48 +110,137 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
 
     const renewalControllerOptions          = getRenewalControllerOptions(OPTIMISM_CHAIN_ID);
 
-    const { 
-        data: signer, 
-    }                                       = useSigner()
+    const { data: optimismProvider }        = useProvider({
+        chainId: OPTIMISM_CHAIN_ID,
+    })
 
-    const hasSigner = typeof signer !== "undefined";
+    const { 
+        data: optimismSigner, 
+    }                                       = useSigner({
+        chainId: OPTIMISM_CHAIN_ID
+    })
+
+    const hasOptimismSigner                 = typeof optimismSigner !== "undefined";
+
+
+    const [resolvesTo, setResolvesTo]       = React.useState("");
+    const [
+        isSettingResolvesTo, 
+        setIsSettingResolvesTo
+    ]                                       = React.useState(false);
 
     //Boolean indicating if we are in the process of renewing the subname
     const [isRenewing, setIsRenewing]       = React.useState(false);
 
-    const namehash: `0x${string}`           = ethers.utils.namehash(name) as `0x${string}`;
-    const tokenId                           = ethers.BigNumber.from(namehash);
-    const encodedNameToRenew: `0x${string}` = hexEncodeName(name) as `0x${string}`;
+    const { 
+        labelhash, 
+        namehash, 
+        isDotEth, 
+        namehashAsInt, 
+        parentName,
+        isEth2ld,
+        dnsEncodedName 
+    }                                       = parseName(name);
+
+
+    const { 
+        namehash: parentNameNamehash, 
+    }                                       = parseName(parentName);
+
+    const { 
+        namehash:                unruggableNamehash,
+        namehashAsInt:           unruggableNamehashAsInt,
+        dnsEncodedName:          unruggableDnsEncodedName 
+    }                                       = getUnruggableName(name);
+
+    //Get the resolver for the subname from L1
+    const  { 
+        data:    registryResolver, 
+        refetch: refetchRegistryResolver 
+    }                                       = useEnsRegistryRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'resolver',
+        args:         [namehash],
+    });
+
+    //Check the parent name resolver in the registry.
+    //For now we only go up 1 level
+    const  { 
+        data:    parentRegistryResolver, 
+        refetch: refetchParentRegistryResolver 
+    }                                       = useEnsRegistryRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'resolver',
+        args:         [parentNameNamehash],
+    });
+
+    console.log("registryResolver", registryResolver);
+    console.log("parentRegistryResolver", parentRegistryResolver);
+
+    //L2 NameWrapper instance
+    const l2NameWrapper                     = useL2NameWrapper({
+        chainId:          OPTIMISM_CHAIN_ID,
+        signerOrProvider: optimismSigner ?? optimismProvider
+    });
+
+    //L2 Public Resolver
+    const l2PublicResolver                  = useL2PublicResolver({
+        chainId:          OPTIMISM_CHAIN_ID,
+        signerOrProvider: optimismSigner ?? optimismProvider
+    });
+
+    //L1 Unruggable Resolver instance
+    const  { 
+        data:    verifierData, 
+        refetch: refetchVerifierData 
+    }                                       = useUnruggableErc3668ResolverRead({
+        chainId:      ETHEREUM_CHAIN_ID,
+        functionName: 'getVerifierOfDomain',
+        args:         [dnsEncodedName],
+    });
+
+    const [verifier, verifierSourceNode]    = verifierData || [null, null];
+
+    console.log("verifierData subna", verifierData);
+    console.log("verifierSourceNode", verifierSourceNode);
+
     //Holds the selected time in seconds for a renewal
     const [
         renewForTimeInSeconds, 
         setRenewForTimeInSeconds
     ]                                       = React.useState(ethers.BigNumber.from(renewalLengthOptions[0].value));
+
     const referrerAddress                   = "0xFC04D70bea992Da2C67995BbddC3500767394513";
 
+    //Get ownership/fuses/expiry data for the subname from the L2 NameWrapper
     const  { 
         data:    nameData, 
         refetch: refetchData  
     }                                       = useL2NameWrapperRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getData',
-        args:         [tokenId],
+        args:         [unruggableNamehashAsInt],
     });
 
+    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses} = nameData ?? {};
+
+    //Get the address approved to control this name in the NameWrapper
+    //Only 1 can be set at any given time
     const  { 
         data:    renewalControllerAddress, 
         refetch: refetchRenewalControllerAddress  
     }                                       = useL2NameWrapperRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'getApproved',
-        args:         [tokenId],
+        args:         [unruggableNamehashAsInt],
      });
 
+    //Get the renewal price for the name from the renewal controller
     const  { data: renewalPriceData }        = useIRenewalControllerRead({
         address:      renewalControllerAddress,
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'rentPrice',
-        args:         [encodedNameToRenew, renewForTimeInSeconds]
+        args:         [unruggableDnsEncodedName, renewForTimeInSeconds]
     });
 
     console.log("renewalControllerAddress", renewalControllerAddress);
@@ -149,32 +255,53 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const renewalControllerToUseInstance     = useIRenewalController({
         address:          renewalControllerAddress,
         chainId:          OPTIMISM_CHAIN_ID,
-        signerOrProvider: signer
+        signerOrProvider: optimismSigner
     });
 
+    console.log("renewalControllerToUseInstance", renewalControllerToUseInstance);
+
+    //Checks if the registrar is the owner or an approved operator for the name
     const  { data: canRegistrarModifyName }  = useL2NameWrapperRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'canModifyName',
-        args:         [namehash, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
+        args:         [unruggableNamehash, l2SubnameRegistrarAddress[OPTIMISM_CHAIN_ID]],
     });
 
     console.log("canRegistrarModifyName", canRegistrarModifyName);
 
-    const  { 
-        data: nameWrapperOwnerAddress 
-    }                                        = useL2NameWrapperRead({
-        chainId:      OPTIMISM_CHAIN_ID,
-        functionName: 'ownerOf',
-        args:         [tokenId],
-    });
-
+    //Get the owner of the name in the registry.
+    //Probably the NameWrapper
     const  { data: registryOwnerAddress }    = useEnsRegistryRead({
         chainId:      OPTIMISM_CHAIN_ID,
         functionName: 'owner',
-        args:         [namehash],
+        args:         [unruggableNamehash],
     });
 
-    const isOwnedByUser                     = nameData?.owner == address;
+
+    //For now the interface only supports our public resolver
+    //If they are not using it.. we show a button to use it..
+    const  { 
+        data:    resolvesToAddress, 
+        refetch: refetchResolvesToAddress 
+    }                                     = useL2PublicResolverRead({
+        chainId:      OPTIMISM_CHAIN_ID,
+        functionName: 'addr(bytes,bytes32)',
+        args:         [nameWrapperOwnerAddress, unruggableNamehash],
+    });
+
+    console.log("resolvesToAddress", resolvesToAddress);
+
+    //An effect to set the value displayed in the input to the value resolved from the chain
+    React.useEffect(() => {
+
+        if (resolvesToAddress) {
+
+            setResolvesTo(resolvesToAddress);
+        }
+
+    }, [resolvesToAddress])
+
+    const isOwnedByUser                     = nameWrapperOwnerAddress == address;
 
     //@ts-ignore
     const expiryDate                        = new Date(parseInt(nameData?.expiry) * 1000);
@@ -185,7 +312,15 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     //Handler for when the 'Renew' button is clicked
     const onClickRenew = () => {
 
+        //Setting this will show the relevant TransactionConfirmationState component
         setIsRenewing(true);
+    }
+
+
+    const onClickSetResolvesTo = () => {
+
+        //Setting this will show the relevant TransactionConfirmationState component
+        setIsSettingResolvesTo(true);
     }
 
     return (
@@ -197,6 +332,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                     <Tabs defaultValue = "item-profile">
                         <TabsList className = "flex flex-wrap w-fit mx-auto">
                             <TabsTrigger value = "item-profile">Profile</TabsTrigger>
+                            <TabsTrigger value = "item-configure">Configure</TabsTrigger>
                             <TabsTrigger value = "item-fuses">Fuses</TabsTrigger>
                         </TabsList>
 
@@ -247,7 +383,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
 
                                                                     <Button 
                                                                         type     = "submit" 
-                                                                        disabled = {isRenewing || !hasSigner} 
+                                                                        disabled = {isRenewing || !hasOptimismSigner} 
                                                                         onClick  = {onClickRenew}>
                                                                         {isRenewing && CommonIcons.miniLoader}
                                                                         Renew
@@ -261,7 +397,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://goerli-optimism.etherscan.io/address/" + renewalControllerAddress} target="_blank" rel="noreferrer" className = "underline">{renewalControllerAddress}</a>).
+                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://" + (OPTIMISM_CHAIN_ID == 420 ? "goerli-" : "") + "optimism.etherscan.io/address/" + renewalControllerAddress} target="_blank" rel="noreferrer" className = "underline">{renewalControllerAddress}</a>).
                                                                 </p>
                                                             </>
                                                         ) : (
@@ -275,7 +411,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                         contract = {renewalControllerToUseInstance}
                                                         txArgs   = {{
                                                                 args: [
-                                                                    encodedNameToRenew,
+                                                                    unruggableDnsEncodedName,
                                                                     referrerAddress, //referrer
                                                                     renewForTimeInSeconds
                                                                 ],
@@ -287,18 +423,32 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                         txFunction = 'renew'
                                                         onConfirmed = {() => {
                                                             console.log("renewal confirmed");
+
+                                                            toast({
+                                                                duration:    5000,
+                                                                className:   "bg-green-200 dark:bg-green-800 border-0",
+                                                                description: (<p><span className = "font-bold">{name}</span> was successfully renewed.</p>),
+                                                            });
                                                         }}
                                                         onAlways  = {() => {
                                                             console.log("2ld renewal onAlways");
                                                             setIsRenewing(false);
                                                             refetchData();
                                                         }}
-                                                        checkStatic = {true}>
+                                                        onError = {() => {
+
+                                                            toast({
+                                                                duration: 5000,
+                                                                className: "bg-red-200 dark:bg-red-800 border-0",
+                                                                description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
+                                                            });
+                                                        }}
+                                                        checkStatic = {false}>
                                                         <div>
-                                                            {CommonIcons.miniLoader} Renewing name..
+                                                            {/* Renewing interface handled manually*/}
                                                         </div>
                                                         <div>
-                                                            SUCCESS
+                                                            {/* Success interface handled manually*/}
                                                         </div>
                                                     </ TransactionConfirmationState>
                                                 )}
@@ -308,7 +458,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                             <TableCell className = "font-medium">NameWrapper Owner</TableCell>
                                             <TableCell>
                                                 {l2NameWrapperAddress[OPTIMISM_CHAIN_ID] == nameWrapperOwnerAddress ? (
-                                                    <Tooltip delayDuration={0}>
+                                                    <Tooltip delayDuration = {0}>
                                                         <TooltipTrigger asChild>
                                                             <span>{nameWrapperOwnerAddress}</span>
                                                         </TooltipTrigger>
@@ -337,6 +487,144 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                     </TableBody>
                                 </Table> 
                             </>         
+                        </TabsContent>
+
+                        <TabsContent value = "item-configure" asChild>
+                            <>
+                                <h1 className = "my-4 text-lg">Configure</h1>
+
+                                {(registryResolver == UNRUGGABLE_RESOLVER_ADDRESS || parentRegistryResolver == UNRUGGABLE_RESOLVER_ADDRESS) && (
+
+                                    <>
+                                        {registryResolver == ZERO_ADDRESS && (
+                                            <p className = "text-xs text-red-800 dark:text-red-200 mt-8 mb-4">This subname is being resolved by its parent subject to <a className = "underline" href = "https://docs.ens.domains/ens-improvement-proposals/ensip-10-wildcard-resolution" target="_blank">ENSIP10</a>.
+                                            </p> 
+                                        )}
+
+                                        <Table>
+                                            <TableBody>
+
+                                                {verifierData && (
+                                                    <>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">
+                                                                Resolver
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <p>
+                                                                    <a href = {"https://" + (OPTIMISM_CHAIN_ID == 420 ? "goerli-" : "") + "optimism.etherscan.io/address/" + l2PublicResolverAddress[OPTIMISM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{l2PublicResolverAddress[OPTIMISM_CHAIN_ID]}</a>
+                                                                </p>
+                                                                <p className = "text-xs text-red-800 dark:text-red-200 mt-2">
+                                                                    This is the Layer 2 (Optimism) public resolver.
+                                                                </p>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        <TableRow>
+                                                            <TableCell className="font-medium">
+                                                                Verifier
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <>
+                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + verifierData[0].verifierAddress} target="_blank" rel="noreferrer" className = "underline">{verifierData[0].verifierAddress}</a>
+                                                                </>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {verifierData[0].gatewayUrls && (
+                                                            <>
+                                                                <TableRow>
+                                                                    <TableCell className="font-medium">
+                                                                        Gateway URL(s)
+                                                                    </TableCell>
+                                                                    <TableCell>
+
+                                                                        <ul>
+                                                                            {verifierData[0].gatewayUrls.map((gatewayUrl, index) => {
+
+                                                                                return (<li key = {"gateway-" + index}>{gatewayUrl}</li>);
+                                                                            })}
+                                                                        </ul>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                            </TableBody>
+                                        </Table>  
+
+                                        <p className = "text-xs text-red-800 dark:text-red-200 mt-8 mb-4">Configure where this name resolves to.
+                                        </p> 
+
+                                        <Label htmlFor = "resolvesTo">
+                                            Resolves to
+                                        </Label>
+
+                                        <Input 
+                                            type     = "text" 
+                                            className = "mt-2"
+                                            value    = {resolvesTo} 
+                                            onChange = {(e) => setResolvesTo(e.target.value)} 
+                                            />
+
+                                        <Button 
+                                            type     = "submit" 
+                                            disabled = {isSettingResolvesTo || !hasOptimismSigner} 
+                                            onClick  = {onClickSetResolvesTo}
+                                            className = "mt-2">
+                                            {isSettingResolvesTo && CommonIcons.miniLoader}
+                                            Configure
+                                        </Button>
+
+                                        {isSettingResolvesTo && (
+                                            <TransactionConfirmationState 
+                                                key      = {"set-resolves-to-" + name}
+                                                chainId  = {OPTIMISM_CHAIN_ID}
+                                                contract = {l2PublicResolver}
+                                                txArgs   = {{
+                                                        args: [
+                                                            unruggableDnsEncodedName,
+                                                            resolvesTo
+                                                        ],
+                                                        overrides: {
+                                                            gasLimit: ethers.BigNumber.from("5000000"),
+                                                        }
+                                                }}
+                                                txFunction  = 'setAddr(bytes,address)'
+                                                onConfirmed = {() => {
+                                                    console.log("resolves to set");
+
+                                                    toast({
+                                                        duration:    5000,
+                                                        className:   "bg-green-200 dark:bg-green-800 border-0",
+                                                        description: (<p>You have set the address that <span className = "font-bold">{name}</span> resolves to.</p>),
+                                                    });
+                                                }}
+                                                onAlways  = {() => {
+                                                    console.log("set resolves to address onAlways");
+                                                    setIsSettingResolvesTo(false);
+                                                }}
+                                                onError = {() => {
+
+                                                    toast({
+                                                        duration:    5000,
+                                                        className:   "bg-red-200 dark:bg-red-800 border-0",
+                                                        description: (<p>There was a problem setting the address that <span className = "font-bold">{name}</span> resolves to.</p>),
+                                                    });
+                                                }}
+                                                checkStatic = {false}>
+                                                <div>
+                                                    {/*interface handled manually*/}
+                                                </div>
+                                                <div>
+                                                    {/* Success interface handled manually*/}
+                                                </div>
+                                            </ TransactionConfirmationState>
+                                        )}
+                                    </>
+                                )}
+                            </>
+
                         </TabsContent>
 
                         <TabsContent value = "item-fuses" asChild>

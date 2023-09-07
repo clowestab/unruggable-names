@@ -5,14 +5,22 @@ import { foundry as foundryChain, mainnet, goerli } from 'wagmi/chains'
 import { default as contractsJson }                 from './exported-contracts.json' assert {type: 'json'}
 import { default as l2ContractsJson }               from './exported-l2-contracts.json' assert {type: 'json'}
 
-const mainnetContracts   = contractsJson["1"][0]["contracts"];
-const goerliContracts    = contractsJson["5"][0]["contracts"];
-const localhostContracts = contractsJson["31337"][0]["contracts"];
+//Could export to a file from the respective repo directories (Ccip-Resolver/ENS-Bedrock-Resolver)
+//npx hardhat export --export-all ../nextjs/turbo-eth/ccip-resolver-exports.json
+//For now we will just load the deployment JSON directly
+import { 
+  default as ccipResolverGoerliContractJson 
+}                                                   from '../../Ccip-Resolver/deployments/goerli/UnruggableERC3668Resolver.json' assert {type: 'json'}
+import { 
+  default as ensBedrockResolverGoerliContractJson 
+}                                                   from '../../ENS-Bedrock-Resolver/deployments/optimism-goerli/L2PublicResolver.json' assert {type: 'json'}
+
+const mainnetContracts          = contractsJson["1"][0]["contracts"];
+const goerliContracts           = contractsJson["5"][0]["contracts"];
+const localhostContracts        = contractsJson["31337"][0]["contracts"];
 const optimismGoerliSNContracts = contractsJson["420"][0]["contracts"];
 
-
 const optimismGoerliContracts = l2ContractsJson["420"][0]["contracts"];
-
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -30,6 +38,28 @@ export default defineConfig({
   ],
   plugins: [
     react(),
+    foundry({
+      project: '../../Ccip-Resolver',
+      include: [
+        'UnruggableERC3668Resolver.sol/**',
+      ],
+      deployments: {
+        UnruggableERC3668Resolver: {
+          5: ccipResolverGoerliContractJson?.address,
+        },
+      },
+    }),
+    foundry({
+      project: '../../ENS-Bedrock-Resolver',
+      include: [
+        'L2PublicResolver.sol/**',
+      ],
+      deployments: {
+        L2PublicResolver: {
+          420: ensBedrockResolverGoerliContractJson?.address,
+        },
+      },
+    }),
     foundry({
       project: '../../SubnameWrapper',
       include: [
@@ -95,6 +125,6 @@ export default defineConfig({
           420: optimismGoerliContracts["L2NameWrapper"]?.address
         }
       },
-    })
+    }),
   ],
 })

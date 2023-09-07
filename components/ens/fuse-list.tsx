@@ -3,13 +3,15 @@ import { ethers }                       from "ethers";
 
 import { 
     useSigner, 
-    useNetwork,
     useChainId 
 }                                       from 'wagmi'
+
+import { switchNetwork }                from "@wagmi/core";
 
 import { Icon }                         from '@iconify/react';
 
 import { Button }                       from "@/components/ui/button"
+
 import {
     Tooltip,
     TooltipContent,
@@ -18,8 +20,11 @@ import {
 
 import { 
     useEnsRegistryRead,
+    useNameWrapper,
     useL2NameWrapper,
+    useNameWrapperRead,
     useL2NameWrapperRead,
+    nameWrapperAddress,
     l2NameWrapperAddress
 }                                       from '@/lib/blockchain'
 
@@ -38,83 +43,129 @@ import {
 
 import { useToast }                     from '@/lib/hooks/use-toast'
 
+import { 
+    parseName,
+    getUnruggableName
+}                                       from '@/helpers/Helpers.jsx';
+
 interface FuseListProps {
     name:        string,
 }
 
 export function FuseList({ name }: FuseListProps) {
 
-    const nameParts                         = name.split(".");
-    const label: string                     = nameParts.shift()!;
-    const labelhash: `0x${string}`          = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(label)) as `0x${string}`;
-    const namehash                          = ethers.utils.namehash(name)
+    const { 
+        labelhash, 
+        namehash, 
+        isDotEth, 
+        parentNameNamehash, 
+        namehashAsInt, 
+        parentNameNamehashAsInt,
+        isEth2ld 
+    }                                       = parseName(name);
 
-    const nameNodeString                    = nameParts.join(".");
-    const isDotEth                          = nameNodeString == "eth";
-    const is2ld                             = isDotEth && nameParts.length == 1;
-    const nameNodeNamehash: `0x${string}`   = ethers.utils.namehash(nameNodeString)  as `0x${string}`;
-    
-    const tokenId                           = ethers.BigNumber.from(namehash);
-    const nameNodeTokenId                   = ethers.BigNumber.from(nameNodeNamehash);
-
+    const { 
+        namehash:                unruggableNamehash,
+        namehashAsInt:           unruggableNamehashAsInt,
+        parentNameNamehashAsInt: unruggableParentNameNamehashAsInt 
+    }                                       = getUnruggableName(name);
 
     const { toast }                         = useToast()
 
     const { 
-        data: signer, 
-    }                                       = useSigner()
+        data: ethereumSigner, 
+    }                                       = useSigner({ chainId: ETHEREUM_CHAIN_ID })
 
     const { 
-        chain, 
-    }                                       = useNetwork()
+        data: optimismSigner, 
+    }                                       = useSigner({ chainId: OPTIMISM_CHAIN_ID })
 
     const  chainId                          = useChainId();
 
-    //NameWrapper instance
-    const nameWrapper                    = useL2NameWrapper({
-        chainId: OPTIMISM_CHAIN_ID,
-        signerOrProvider: signer
-    });
+    //If this component is being used for a subname we burn fuses on the L2NameWrapper
+    //The interfaces should be the same
+    const isSubname          = !isEth2ld;
+    const nameWrapperToUse   = isSubname ? useL2NameWrapper : useNameWrapper;
+    const nameWrapperRead    = isSubname ? useL2NameWrapperRead : useNameWrapperRead;
+    const nameWrapperChainId = isSubname ? OPTIMISM_CHAIN_ID : ETHEREUM_CHAIN_ID;
+    const nameWrapperSigner  = isSubname ? optimismSigner : ethereumSigner;
+    const namehashToUse      = isSubname ? unruggableNamehash : namehash;
 
+    console.log("nameWrapperChainId", nameWrapperChainId);
+    console.log("nameWrapperSigner", nameWrapperSigner);
+
+    //NameWrapper instance
+    const nameWrapper                       = nameWrapperToUse({
+        chainId:          nameWrapperChainId,
+        signerOrProvider: nameWrapperSigner
+    });
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { 
-        data: nameData, 
+        data:    nameData, 
         refetch: refetchData 
-    }                                       = useL2NameWrapperRead({
-        chainId: OPTIMISM_CHAIN_ID,
-         functionName: 'getData',
-         args:         [tokenId],
-     });
-    const {owner: nameWrapperOwnerAddress, fuses: wrapperFuses, expiry: wrapperExpiry} = nameData ?? {};
+    }                                       = nameWrapperRead({
+        chainId:      nameWrapperChainId,
+        functionName: 'getData',
+        args:         [isSubname ? unruggableNamehashAsInt : namehashAsInt],
+    });
+    
+    const { 
+        owner:  nameWrapperOwnerAddress, 
+        fuses:  wrapperFuses, 
+        expiry: wrapperExpiry
+    }                                       = nameData ?? {};
+
+    console.log("nameData", nameData);
+
+    //05/09/23 Unsure of this..?
     const isAvailable = String(l2NameWrapperAddress[chainId]) == ZERO_ADDRESS;
 
     //Gets owner/expiry/fuses from the namewrapper
     const  { 
-        data: parentNameData, 
+        data:    parentNameData, 
         refetch: refetchParentData 
-    }                                       = useL2NameWrapperRead({
-        chainId: OPTIMISM_CHAIN_ID,
-         functionName: 'getData',
-         args:         [nameNodeTokenId],
+    }                                       = nameWrapperRead({
+        chainId:      nameWrapperChainId,
+        functionName: 'getData',
+        args:         [isSubname ? unruggableParentNameNamehashAsInt : parentNameNamehashAsInt],
     });
 
-    const {owner: nameWrapperParentOwnerAddress, fuses: parentWrapperFuses} = parentNameData ?? {};
+    const {
+        owner: nameWrapperParentOwnerAddress, 
+        fuses: parentWrapperFuses
+    }                                       = parentNameData ?? {};
 
     //Get the owner address as set in the ENS Registry
     const  { data: registryOwnerAddress  }  = useEnsRegistryRead({
-        chainId:      OPTIMISM_CHAIN_ID,
+        chainId:      ETHEREUM_CHAIN_ID,
         functionName: 'owner',
         args:         [namehash],
      });
 
-    const isWrapped = registryOwnerAddress == l2NameWrapperAddress[OPTIMISM_CHAIN_ID]
+    const  { 
+        data: l2RegistryOwnerAddress  
+    }                                       = useEnsRegistryRead({
+        chainId:      OPTIMISM_CHAIN_ID,
+        functionName: 'owner',
+        args:         [unruggableNamehash],
+    });
 
+    console.log("registryOwnerAddress", registryOwnerAddress);
+    console.log("l2RegistryOwnerAddress " + unruggableNamehash, l2RegistryOwnerAddress);
+
+    const isWrapped     = isSubname ? 
+        (l2RegistryOwnerAddress == l2NameWrapperAddress[OPTIMISM_CHAIN_ID]) : 
+        (registryOwnerAddress == nameWrapperAddress[ETHEREUM_CHAIN_ID]);
+
+    //Keeps track of the fuse being burned for UI updates
     const [
         fuseBeingBurned, 
         setFuseBeingBurned
     ]                                       = React.useState<string | null>(null);
 
+
+    //Helper function for displaying an error toast
     const addError = (error: any) => {
 
         toast({
@@ -137,6 +188,7 @@ export function FuseList({ name }: FuseListProps) {
     }
 
 
+    //Parses and formats an error for display
     const parseError = (error: any) => {
 
         console.log("Error Name: ", error.errorName);
@@ -160,10 +212,24 @@ export function FuseList({ name }: FuseListProps) {
         addError(errorString);
     }
 
+
     /**
      * Burns a fuse on a .eth or a subname
      */ 
     const burnFuse = async (fuseKey: string) => {
+
+        console.log("Burn fuse", chainId);
+
+        if (chainId != nameWrapperChainId) {
+
+        console.log("Burn fuse1", nameWrapperChainId);
+
+            await switchNetwork({
+                chainId: nameWrapperChainId
+            });
+
+            return;
+        }
 
         setFuseBeingBurned(fuseKey);
 
@@ -186,10 +252,9 @@ export function FuseList({ name }: FuseListProps) {
         //Fuses that can be burned by the owner of the parent name
         const isParentControlled = (PARENT_CONTROLLED_FUSES & FUSES[fuseKey as keyof typeof FUSES]) == FUSES[fuseKey as keyof typeof FUSES];
 
-        //When using a mnemonic the signer property is an instance of Wallet which has an address property
-        //When using Metamask/WalletConnect the signer property is an instance of JsonRpcSigner which has an _address property
+        //nameWrapperSigner is an instance of JsonRpcSigner which has an _address property
         //@ts-ignore
-        const signerAddress = nameWrapper?.signer.address ?? nameWrapper?.signer._address;
+        const signerAddress = nameWrapperSigner._address;
 
         //Only the parent can burn parent controlled fuses
         if (isParentControlled) {
@@ -225,13 +290,12 @@ export function FuseList({ name }: FuseListProps) {
             }
 
             console.log("Burning child fuse on subname", fuseKey);
-            console.log("nameNodeNamehash", nameNodeNamehash);
             console.log("labelhash", labelhash);
 
             await nameWrapper
                 .callStatic
                 .setChildFuses(
-                    nameNodeNamehash, 
+                    parentNameNamehash, 
                     labelhash, 
                     FUSES[fuseKey], 
                     0, 
@@ -270,12 +334,14 @@ export function FuseList({ name }: FuseListProps) {
             
             console.log("Burning owner controlled fuse", signerAddress);
             console.log("Burning owner controlled fuse", nameWrapperOwnerAddress);
+            console.log("Burning", nameWrapperSigner);
 
             if (signerAddress != nameWrapperOwnerAddress && signerAddress != nameWrapperParentOwnerAddress) { 
 
                 const isApproved = await nameWrapper.isApprovedForAll(nameWrapperOwnerAddress, signerAddress);
 
                 if (!isApproved) {
+
                     addError("You are not the owner of the name (or its parent), nor are you an approved controller."); 
                     setFuseBeingBurned(null);
                     return;
@@ -310,17 +376,21 @@ export function FuseList({ name }: FuseListProps) {
             console.log("Burning fuse on second level .eth", fuseKey);
 
 
-            console.log("is2ld", is2ld);
             console.log("isDotEth", isDotEth);
-            console.log("nameParts", nameParts.length);
+
+            console.log("nameWrapper", nameWrapper);
 
             await nameWrapper
                 .callStatic
-                .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
+                .setFuses(namehashToUse, FUSES[fuseKey], {gasLimit: 500000})
                 .then(() => {
 
                     return nameWrapper  
-                        .setFuses(namehash, FUSES[fuseKey], {gasLimit: 500000})
+                        .setFuses(
+                            namehashToUse, 
+                            FUSES[fuseKey], 
+                            { gasLimit: 500000 }
+                        )
                 })
                 .then((fuseResponse) => {
                     return fuseResponse.wait();
@@ -328,9 +398,9 @@ export function FuseList({ name }: FuseListProps) {
                 .then((fuseReceipt) => {
 
                     toast({
-                        duration: 5000,
-                        className: "bg-green-200 dark:bg-green-800 border-0",
-                        description: (<p><span className = "font-bold">{fuseKey}</span> successfully burned.</p>),
+                        duration:       5000,
+                        className:      "bg-green-200 dark:bg-green-800 border-0",
+                        description:    (<p><span className = "font-bold">{fuseKey}</span> successfully burned.</p>),
                     })
 
                     return refetchData();
@@ -351,6 +421,7 @@ export function FuseList({ name }: FuseListProps) {
     }
 
 
+    const thClasses = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left";
 
     return (
         <div>
@@ -358,16 +429,16 @@ export function FuseList({ name }: FuseListProps) {
                 <table className = "mt-8 items-center bg-transparent w-full border-collapse ">
                     <thead>
                         <tr>
-                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = {thClasses}>
                                 Fuse
                             </th>
-                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = {thClasses}>
                                 Type
                             </th>
-                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = {thClasses}>
                                 Burned?
                             </th>
-                            <th className = "px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                            <th className = {thClasses}>
                                 Actions
                             </th>
                         </tr>
@@ -415,7 +486,7 @@ export function FuseList({ name }: FuseListProps) {
                                         {!isBurned && (
                                             <Button 
                                                 type      = "submit" 
-                                                disabled  = {typeof signer === "undefined" || fuseBeingBurned == fuseKey} 
+                                                disabled  = {typeof ethereumSigner === "undefined" || fuseBeingBurned == fuseKey} 
                                                 onClick   = {(e) => burnFuse(fuseKey)}>
                                                 {fuseBeingBurned == fuseKey ? CommonIcons.miniLoader : "Burn Fuse"}
                                             </Button>
