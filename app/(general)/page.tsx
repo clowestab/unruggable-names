@@ -220,7 +220,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                 nonce: Math.floor(Math.random() * 100000)
             }); 
 
-            /*newResults.push({
+            newResults.push({
                 name:  nameParts[0] + ".fivedollars.eth", 
                 type:  'subname', 
                 nonce: Math.floor(Math.random() * 100000)
@@ -230,7 +230,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                 name:  nameParts[0] + ".pricepercharacter.eth", 
                 type:  'subname', 
                 nonce: Math.floor(Math.random() * 100000)
-            }); */
+            });
         }
 
         setSearchResults(newResults);
