@@ -35,7 +35,7 @@ import {
     buildErrorMessage,
     parseName,
     getUnruggableName  
-}                                           from '../../helpers/Helpers.jsx';
+}                                           from '../../helpers/Helpers.ts';
 import {
     ZERO_ADDRESS,
     ONE_YEAR_IN_SECONDS,
@@ -66,6 +66,8 @@ interface SearchResultRowProps {
     onRegister?:       () => void,  //Callback for after the name is registered
     doLookup?:         any,         //Allows us to lookup a name
     dialogStartsOpen?: boolean      //Indicates if the profile dialog for this name should be open initially
+    clearCookies:      () => void,
+    cookiedCommitment: any
 }
 
 
@@ -241,7 +243,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
         renewalControllerToUse = nameData.renewalController; 
     } 
 
-    const renewForTimeInSeconds = ONE_YEAR_IN_SECONDS;
+    const renewForTimeInSeconds = ethers.BigNumber.from(ONE_YEAR_IN_SECONDS);
 
     //The renewal price as pulled from the subnames renewal controller
     const  { data: renewalPriceData }           = useIRenewalControllerRead({
@@ -322,12 +324,14 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
 
         console.log("SETTING COOKIES");
 
-        setCookie("committedName", name);
-        setCookie("committedAddressToRegisterTo", addressToRegisterTo);
-        setCookie("committedRegisterForTimeInSeconds", registerForTimeInSeconds);
-        setCookie("committedSalt", salt);
-        setCookie("committedAddressToResolveTo", addressToResolveTo);
-        setCookie("committedCommitmentReadyTimestamp", newCommitmentReadyTimestamp);
+        const cookieLengthDays = 100;
+
+        setCookie("committedName", name, cookieLengthDays);
+        setCookie("committedAddressToRegisterTo", addressToRegisterTo, cookieLengthDays);
+        setCookie("committedRegisterForTimeInSeconds", registerForTimeInSeconds, cookieLengthDays);
+        setCookie("committedSalt", salt, cookieLengthDays);
+        setCookie("committedAddressToResolveTo", addressToResolveTo, cookieLengthDays);
+        setCookie("committedCommitmentReadyTimestamp", newCommitmentReadyTimestamp, cookieLengthDays);
     }
 
 
@@ -381,7 +385,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                             {<SubnameWhoisAlert 
                                                 key          = {"alert-" + name} 
                                                 name         = {name} 
-                                                onClickClose = {(e) => {
+                                                onClickClose = {() => {
 
                                                     window.history.pushState({page: "another"}, "another page", "/");
                                                     setIsDialogOpen(false);
@@ -409,7 +413,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                         <>
                             {isAvailable && registerPriceWei && (
                                 <>
-                                    {registerPriceWei > 0 ? (
+                                    {registerPriceWei.gt(0) ? (
                                         <>
                                             <span>Ξ {ethers.utils.formatEther(registerPriceWei)}</span>
                                             <div className = "text-xs text-center text-green-800 mt-2">${registerPriceUsd.toString()}</div>
@@ -461,7 +465,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                                     }}
                                                                     txFunction  = 'commit'
                                                                     onConfirmed = {onCommitmentConfirmed}
-                                                                    onError     = {(error) => {
+                                                                    onError     = {(error: any) => {
 
                                                                         console.log("error", error.code);
 
@@ -524,7 +528,7 @@ export function SubnameSearchResultRow({ name, resultIndex, onRegister, doLookup
                                                         });
                                                         onRegister?.();
                                                     }}
-                                                    onError = {(error) => {
+                                                    onError = {(error: any) => {
 
                                                         console.log('error this');
                                                         console.log("error", error);

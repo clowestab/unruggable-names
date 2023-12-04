@@ -65,7 +65,7 @@ import {
     parseName,
     getUnruggableName 
 }      
-                                        from '../../helpers/Helpers.jsx';
+                                        from '../../helpers/Helpers.ts';
 
 import {
     ZERO_ADDRESS,
@@ -86,13 +86,14 @@ import {
     useIRenewalControllerRead,
     l2SubnameRegistrarAddress,
     l2NameWrapperAddress,
-    useUnruggableErc3668ResolverRead,
-    unruggableErc3668ResolverAddress 
+    opVerifierAddress, 
+    l1ResolverAddress,
+    l1UnruggableResolverAddress
 }                                       from '../../lib/blockchain'
 import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
-const UNRUGGABLE_RESOLVER_ADDRESS = unruggableErc3668ResolverAddress[ETHEREUM_CHAIN_ID];
+const UNRUGGABLE_RESOLVER_ADDRESS = l1UnruggableResolverAddress[ETHEREUM_CHAIN_ID];
 
 interface SubnameWhoisAlertProps {
     name: string,
@@ -190,7 +191,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     });
 
     //L1 Unruggable Resolver instance
-    const  { 
+    /*const  { 
         data:    verifierData, 
         refetch: refetchVerifierData 
     }                                       = useUnruggableErc3668ResolverRead({
@@ -202,7 +203,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
     const [verifier, verifierSourceNode]    = verifierData || [null, null];
 
     console.log("verifierData subna", verifierData);
-    console.log("verifierSourceNode", verifierSourceNode);
+    console.log("verifierSourceNode", verifierSourceNode);*/
 
     //Holds the selected time in seconds for a renewal
     const [
@@ -285,8 +286,8 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
         refetch: refetchResolvesToAddress 
     }                                     = useL2PublicResolverRead({
         chainId:      OPTIMISM_CHAIN_ID,
-        functionName: 'addr(bytes,bytes32)',
-        args:         [nameWrapperOwnerAddress, unruggableNamehash],
+        functionName: 'addr(bytes32)',
+        args:         [unruggableNamehash],
     });
 
     console.log("resolvesToAddress", resolvesToAddress);
@@ -352,7 +353,6 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                     {formatExpiry(nameData?.expiry)}
                                                 </div>
 
-                                                {!isRenewing ? (  
 
                                                     <>
                                                          {renewalControllerAddress != null ? (
@@ -405,7 +405,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                         )}
                                                     </>
 
-                                                ) : (
+                                                {isRenewing && (
                                                     <TransactionConfirmationState 
                                                         key      = {"renewal-" + name}
                                                         contract = {renewalControllerToUseInstance}
@@ -504,7 +504,6 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                         <Table>
                                             <TableBody>
 
-                                                {verifierData && (
                                                     <>
                                                         <TableRow>
                                                             <TableCell className="font-medium">
@@ -525,11 +524,11 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                             </TableCell>
                                                             <TableCell>
                                                                 <>
-                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + verifierData[0].verifierAddress} target="_blank" rel="noreferrer" className = "underline">{verifierData[0].verifierAddress}</a>
+                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
                                                                 </>
                                                             </TableCell>
                                                         </TableRow>
-                                                        {verifierData[0].gatewayUrls && (
+                                                        {/*verifierData[0].gatewayUrls && (
                                                             <>
                                                                 <TableRow>
                                                                     <TableCell className="font-medium">
@@ -546,9 +545,9 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                                     </TableCell>
                                                                 </TableRow>
                                                             </>
-                                                        )}
+                                                                        )*/}
                                                     </>
-                                                )}
+                                                
 
                                             </TableBody>
                                         </Table>  
@@ -583,14 +582,14 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                 contract = {l2PublicResolver}
                                                 txArgs   = {{
                                                         args: [
-                                                            unruggableDnsEncodedName,
+                                                            unruggableNamehash,
                                                             resolvesTo
                                                         ],
                                                         overrides: {
                                                             gasLimit: ethers.BigNumber.from("5000000"),
                                                         }
                                                 }}
-                                                txFunction  = 'setAddr(bytes,address)'
+                                                txFunction  = 'setAddr(bytes32,address)'
                                                 onConfirmed = {() => {
                                                     console.log("resolves to set");
 

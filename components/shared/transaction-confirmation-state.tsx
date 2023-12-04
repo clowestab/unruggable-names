@@ -7,7 +7,7 @@ import {
     useChainId 
 }                               from 'wagmi'
 import { foundry }              from 'wagmi/chains'
-import { switchNetwork } from "@wagmi/core";
+import { switchNetwork }        from "@wagmi/core";
 
 import { useSubnameRegistrar }  from '../../lib/blockchain'
 
@@ -18,14 +18,16 @@ interface TransactionConfirmationStateProps {
     txFunction:   string,
     txArgs:       any,
     children:     Array<React.ReactElement>,
+    onBefore?:    Function,
     onConfirmed?: Function,
     onAlways?:    Function,
+    onError?:     Function,
     checkStatic:  boolean
 }
 
 //
 // @ts-ignore
-export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError, checkStatic, chainId: expectedChainId = 420 }: TransactionConfirmationStateProps): React.ReactElement | null {
+export function TransactionConfirmationState({ contract, txFunction, txArgs, children, onBefore, onConfirmed, onAlways, onError, checkStatic, chainId: expectedChainId = 42070 }: TransactionConfirmationStateProps): React.ReactElement | null {
 
     const  chainId         = useChainId();
 
@@ -57,7 +59,7 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
 
         if (chainId != expectedChainId) {
 
-            console.log("switch network");
+            console.log("switch network", expectedChainId);
             await switchNetwork({chainId: expectedChainId});
 
             //03/09/23 This return is important
@@ -70,18 +72,18 @@ export function TransactionConfirmationState({ contract, txFunction, txArgs, chi
         //This is important for stopping transactions being sent multiple times
         setHasStarted(true);
 
-        console.log("Lets write..");
+        console.log("Lets write..", txFunction);
         
         onBefore?.();
 
         toast({
             duration: 8000,
             className: "bg-blue-200 dark:bg-blue-800 border-0",
-            description: (<>Please confirm the transaction using your wallet provider (<span className = "font-bold">{connector.name}</span>).</>),
+            description: (<>Please confirm the transaction using your wallet provider (<span className = "font-bold">{connector?.name}</span>).</>),
         });
 
         (checkStatic ? contract.callStatic : contract)[txFunction](...txArgs.args, txArgs.overrides)
-            .then((thing) => {
+            .then((thing: any) => {
 
                 if (checkStatic) {
 

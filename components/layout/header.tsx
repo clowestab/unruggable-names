@@ -66,8 +66,8 @@ export function Header(props: Props) {
               <Image alt="Logo" src="/logo-white.png" width={32} height={32} />
             </BranchColorMode>
             <div className = "ml-2">
-              <h1 className="text-gradient-sand ml-2 text-2xl font-bold">{siteConfig.name}</h1>
-              <img src = "/icons/Optimism-Red-48.svg" className = "mt-2" />
+            <h1 className="text-gradient-sand ml-2 text-2xl font-bold">{siteConfig.name}</h1>
+            <h1 className="text-green-800 ml-2 text-xl font-bold italic mt-1">ENS Chain</h1>
             </div>
 
           </LinkComponent>

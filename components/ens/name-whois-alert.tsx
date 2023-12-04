@@ -1,7 +1,5 @@
 import * as React                         from 'react'
 
-import { Icon }                           from '@iconify/react';
-
 import { ethers }                         from "ethers";
 
 import { 
@@ -79,7 +77,7 @@ import {
     generateSalt,
     parseName,
     getUnruggableName 
-}                                         from '@/helpers/Helpers.jsx';
+}                                         from '@/helpers/Helpers.ts';
 
 import {
     FUSES,
@@ -89,14 +87,13 @@ import {
     OPTIMISM_CHAIN_ID
 }                                         from '@/helpers/constants'
 
+
 import { 
     useEnsRegistryRead, 
     useEthRegistrarController, 
     useEthRegistrarControllerRead, 
     useNameWrapper, 
     useNameWrapperRead, 
-    useSubnameRegistrar, 
-    useSubnameWrapper, 
     nameWrapperAddress,
     useL2PricePerCharRenewalController,
     useL2PricePerCharRenewalControllerRead,
@@ -107,14 +104,15 @@ import {
     useL2NameWrapperRead,
     l2NameWrapperAddress,
     l2SubnameRegistrarAddress,
-    useUnruggableErc3668ResolverRead,
-    unruggableErc3668ResolverAddress
+    l1ResolverAddress,
+    l1UnruggableResolverAddress,
+    opVerifierAddress
 }                                         from '../../lib/blockchain'
 
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
 
-const UNRUGGABLE_RESOLVER_ADDRESS = unruggableErc3668ResolverAddress[ETHEREUM_CHAIN_ID];
+const UNRUGGABLE_RESOLVER_ADDRESS = l1UnruggableResolverAddress[ETHEREUM_CHAIN_ID];
 
 interface NameWhoisAlertProps {
     name:          string,
@@ -243,7 +241,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
     });
 
     //Get the verifier data for the subname
-    const  { 
+   /* const  { 
         data:    verifierData, 
         error:   verifierDataError,
         refetch: refetchVerifierData 
@@ -259,6 +257,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     console.log("verifierData", verifierData);
     console.log("verifierDataError", verifierDataError);
+    */
 
     const refetchRenewalConfiguration = async () => {
 
@@ -273,7 +272,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
         console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
 
-        for (var i = 0; i <= lastRenewalPriceIndex; i++) {
+        for (var i = 0; ethers.BigNumber.from(i).lte(ilastRenewalPriceIndex); i++) {
 
             const price = await renewalController.charAmounts(i);
             secondsPricingData.push(price.toString());
@@ -327,12 +326,6 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     console.log("renewalPricen", renewalPrice);
 
-    //SubnameWrapper instance
-    const subnameWrapper = useSubnameWrapper({
-        chainId:          ETHEREUM_CHAIN_ID,
-        signerOrProvider: ethereumSigner
-    });
-
     //L2 NameWrapper instance
     const l2NameWrapper = useL2NameWrapper({
         chainId:          OPTIMISM_CHAIN_ID,
@@ -375,13 +368,6 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         offerSubnamesInput, 
         setOfferSubnamesInput
     ]                                         = React.useState<boolean | null>(registerPricingData?.offerSubnames ?? null);
-
-
-    //SubnameRegistrar instance
-    const subnameRegistrar = useSubnameRegistrar({
-        chainId: chainId,
-        signerOrProvider: ethereumSigner ?? ethereumProvider
-    });
 
     //NameWrapper instance
     const nameWrapper = useNameWrapper({
@@ -462,7 +448,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
     const onClickRenew = () => {
 
-        console.log("renew");
+        console.log("renew", ETHEREUM_CHAIN_ID);
 
         //Setting this will show the relevant TransactionConfirmationState component
         setIsRenewing(true);
@@ -616,7 +602,8 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                         description: (<p>There was a problem renewing <span className = "font-bold">{name}</span>.</p>),
                                                                     });
                                                                 }}
-                                                                checkStatic = {true}>
+                                                                checkStatic = {true}
+                                                                chainId = {ETHEREUM_CHAIN_ID}>
                                                                 <div>
                                                                     {/* Renewing interface handled manually*/}
                                                                 </div>
@@ -751,7 +738,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                     </div>
 
                                     <div className = "mt-8 text-xs">
-                                        1. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Subname Wrapper</span>.
+                                        1. Approve the <span className = "font-bold">Subname Registrar</span> on the <span className = "font-bold">Name Wrapper</span>.
                                     </div>
                                     
                                     {!isApprovedForAllL2NameWrapper ? (
@@ -765,11 +752,12 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                     {isSubnameRegistrarApprovalPending ? CommonIcons.miniLoader : "Approve Subname Registrar in Subname Wrapper"}
                                             </Button>
                                     
-                                            {/* The Subname registrar needs to be approved on the Subname Wrapper*/}
+                                            {/* The Subname registrar needs to be approved on the L2 Name Wrapper*/}
 
                                             {isSubnameRegistrarApprovalPending && (
                                                 <TransactionConfirmationState 
                                                     key      = {"offer-subnames-" + name}
+                                                    chainId  = {OPTIMISM_CHAIN_ID}
                                                     contract = {l2NameWrapper}
                                                     txArgs   = {{
                                                         address: l2NameWrapperAddress[OPTIMISM_CHAIN_ID],
@@ -847,7 +835,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                 <>
                                                     {registryResolver != UNRUGGABLE_RESOLVER_ADDRESS ?  (
                                                         <>
-                                                            <p>To register subnames of <span className = "font-bold">{name}</span> on Layer 2 (Optimism) you must use our <a className = "underline" href = "https://docs.ens.domains/ens-improvement-proposals/ensip-10-wildcard-resolution" target="_blank">ENSIP10</a>/<a className = "underline" href = "https://eips.ethereum.org/EIPS/eip-3668" target="_blank">EIP3668</a> compliant resolver on Layer 1.</p>
+                                                            <p>To register subnames of <span className = "font-bold">{name}</span> on Layer 2 (ENS Chain) you must use our <a className = "underline" href = "https://docs.ens.domains/ens-improvement-proposals/ensip-10-wildcard-resolution" target="_blank">ENSIP10</a>/<a className = "underline" href = "https://eips.ethereum.org/EIPS/eip-3668" target="_blank">EIP3668</a> compliant resolver on Layer 1.</p>
 
                                                             <p className = "mt-4">The resolver is currently set to <span className = "font-bold">{registryResolver}</span>.</p>
 
@@ -866,7 +854,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                 <TransactionConfirmationState 
                                                                     key      = {"set-unruggable-resolver-" + name}
                                                                     contract = {nameWrapper}
-                                                                    chainId  = {5}
+                                                                    chainId  = {ETHEREUM_CHAIN_ID}
                                                                     txArgs   = {{
                                                                         args: [
                                                                             namehash,
@@ -947,12 +935,11 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                                 <>
                                                                                     <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + registryResolver} target="_blank" rel="noreferrer" className = "underline">{registryResolver}</a>
                                                                                     <div className = "text-xs mt-2">
-                                                                                        This is the Unruggable Resolver - subnames will be resolved from Layer 2 (Optimism).
+                                                                                        This is the Unruggable Resolver - subnames will be resolved from Layer 2 (ENS Chain).
                                                                                     </div> 
                                                                                 </>
                                                                             </TableCell>
                                                                         </TableRow>
-                                                                        {verifierData && (
                                                                             <>
                                                                                 <TableRow>
                                                                                     <TableCell className = "font-medium">
@@ -960,11 +947,11 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                                     </TableCell>
                                                                                     <TableCell>
                                                                                         <>
-                                                                                            <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + verifierData[0].verifierAddress} target="_blank" rel="noreferrer" className = "underline">{verifierData[0].verifierAddress}</a>
+                                                                                            <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
                                                                                         </>
                                                                                     </TableCell>
                                                                                 </TableRow>
-                                                                                {verifierData[0].gatewayUrls && (
+                                                                                {/*verifierData[0].gatewayUrls && (
                                                                                     <>
                                                                                         <TableRow>
                                                                                             <TableCell className = "font-medium">
@@ -981,9 +968,9 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                                             </TableCell>
                                                                                         </TableRow>
                                                                                     </>
-                                                                                )}
+                                                                                                )*/}
                                                                             </>
-                                                                        )}
+                                                                        
                                                                         {/*
                                                                         <TableRow>
                                                                             <TableCell className = "font-medium">Min Duration</TableCell>
@@ -1141,6 +1128,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                             key      = {"save-subname-registration-config-" + name}
                                                             chainId  = {OPTIMISM_CHAIN_ID}
                                                             contract = {l2SubnameRegistrar}
+                                                            
                                                             txArgs   = {{
                                                                 args: [
                                                                     unruggableDnsEncodedName,
@@ -1150,6 +1138,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                     maxRegistrationDurationInputRef && maxRegistrationDurationInputRef.current?.value ? maxRegistrationDurationInputRef.current?.value : 3153600000, //100years
                                                                     minCharactersInputRef && minCharactersInputRef.current?.value ? minCharactersInputRef.current?.value : 0,
                                                                     maxCharactersInputRef && maxCharactersInputRef.current?.value ? maxCharactersInputRef.current?.value : 0,
+                                                                    ethers.BigNumber.from(500) //referrerCut
                                                                 ],
                                                                 overrides: {
                                                                     gasLimit: ethers.BigNumber.from("5000000"),

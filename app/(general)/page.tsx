@@ -34,13 +34,18 @@ import CommonIcons                      from '@/components/shared/common-icons';
 
 import React                            from 'react'
 
-import { foundry, goerli, optimismGoerli }              from 'wagmi/chains'
+import { sepolia }              from 'wagmi/chains'
 
 import { 
     getCookie,
     setCookie,
     deleteCookie
-}                                       from '@/helpers/Helpers.jsx';
+}                                       from '@/helpers/Helpers.ts';
+
+import {
+    ETHEREUM_CHAIN_ID,
+    OPTIMISM_CHAIN_ID
+}                                       from '@/helpers/constants'
 
 import { SubnameSearchResultRow }       from '@/components/ens/subname-search-result-row'
 import { NameSearchResultRow }          from '@/components/ens/name-search-result-row'
@@ -89,8 +94,8 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
 
     const { chain, chains }  = useNetwork();
 
-    const ethereumProvider   = useProvider({chainId: 5});
-    const optimismProvider   = useProvider({chainId: 420});
+    const ethereumProvider   = useProvider({chainId: ETHEREUM_CHAIN_ID});
+    const optimismProvider   = useProvider({chainId: OPTIMISM_CHAIN_ID});
     const chainId            = useChainId();
     const { openChainModal } = useChainModal();
 
@@ -236,7 +241,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
         setSearchResults(newResults);
     }
 
-    const hasValidNetwork = [foundry.id, goerli.id, optimismGoerli.id].includes(chainId);
+    const hasValidNetwork = [sepolia.id, OPTIMISM_CHAIN_ID].includes(chainId);
 
 
     const clearCookies = () => {
@@ -280,11 +285,11 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
 
             <Alert className="border-red-800 bg-red-200 dark:bg-red-800 mb-8" variant="destructive">
                 {CommonIcons.alert}
-                <AlertTitle>Optimism L2 Demo</AlertTitle>
+                <AlertTitle>ENS Chain L2 Demo</AlertTitle>
                 <AlertDescription>
-                    <p className = "mt-2">This version of Unruggable Names runs using custom smart contract deployments on the <a href = "https://www.optimism.io/" target = "_blank" className = "underline">Optimism</a> L2 <span className = "font-bold">Goerli</span> test network.</p>
+                    <p className = "mt-2">This version of Unruggable Names runs using custom smart contract deployments on <span className = "font-bold">Sepolia</span> (L1) and our OP stack based <span className = "font-bold">ENS Chain</span> (L2).</p>
 
-                    <p className = "mt-2">These smart contract are open source and accessible on <a href = "https://github.com/unruggable-labs/L2-ens" target = "_blank" className = "underline">Github</a>. We welcome contributions.</p>
+                    <p className = "mt-2">These smart contract are open source and accessible on <a href = "https://github.com/unruggable-labs/L2-ens/tree/enschain" target = "_blank" className = "underline">Github</a>. We welcome contributions.</p>
 
                     <p className = "mt-2">Please help us develop and improve the product by completing our <a href = "https://forms.gle/6oFshRMvXxJBcG6B6" target = "_blank" className = "underline">Feedback Form</a>.</p>
                 </AlertDescription>
@@ -295,7 +300,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                     {CommonIcons.alert}
                     <AlertTitle>Invalid network</AlertTitle>
                     <AlertDescription>
-                        <p>Unruggable Names currently only works on <span className = "font-bold">Goerli</span> or on a locally deployed <span className = "font-bold">Foundry</span> node.</p>
+                        <p>This demo works with the <span className = "font-bold">Sepolia</span> testnetwork (L1) and our OP stack based <span className = "font-bold">ENS Chain</span> (L2).</p>
                         <Button 
                             type      = "submit" 
                             className = "mt-2"

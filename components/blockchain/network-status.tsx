@@ -12,6 +12,7 @@ const chainNames = {
   5:     "Goerli",
   10:    "Optimism",
   420:   "Optimism Goerli",
+  42070: "ENS Chain",
   31337: "Foundry"
 }
 

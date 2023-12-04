@@ -7,6 +7,7 @@ import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { infuraProvider } from 'wagmi/providers/infura'
 import { publicProvider } from 'wagmi/providers/public'
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
+import { Chain, getDefaultWallets } from '@rainbow-me/rainbowkit';
 
 // @ts-ignore
 goerli.iconUrl = '/icons/NetworkEthereumTest.svg'
@@ -17,10 +18,43 @@ arbitrumGoerli.iconUrl = '/icons/NetworkArbitrumTest.svg'
 // @ts-ignore
 baseGoerli.iconUrl = '/icons/NetworkBaseTest.svg'
 
-export const ETH_CHAINS_TEST = [/*mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, sepolia, */goerli, optimismGoerli]
-export const ETH_CHAINS_PROD = [/*mainnet, optimism, arbitrum, polygon, */goerli, optimismGoerli]
+
+const ensChain: Chain = {
+  id: 42_070,
+  name: 'ENS Chain',
+  network: 'ensChain',
+  iconUrl: 'https://example.com/icon.svg',
+  iconBackground: '#fff',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'ETH',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: { http: ['https://chain.enstools.com'] },
+    default: { http: ['https://chain.enstools.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'ENSChain', url: 'https://explorer.enstools.com' },
+    //etherscan: { name: 'SnowTrace', url: 'https://snowtrace.io' },
+  },
+  contracts: {
+    /*multicall3: {
+      address: '0xca11bde05977b3631167028862be2a173976ca11',
+      blockCreated: 11_907_934,
+    },*/
+  },
+  testnet: false,
+};
+
+
+export const ETH_CHAINS_TEST = [/*mainnet, baseGoerli, optimismGoerli, arbitrumGoerli, sepolia, */sepolia, ensChain]
+export const ETH_CHAINS_PROD = [/*mainnet, optimism, arbitrum, polygon, */sepolia, ensChain]
 
 export const CHAINS = process.env.NODE_ENV === 'production' ? ETH_CHAINS_PROD : ETH_CHAINS_TEST
+
+
+console.log("goerli", goerli);
 
 const PROVIDERS = [
   /*alchemyProvider({
@@ -29,7 +63,7 @@ const PROVIDERS = [
 ];
 
 PROVIDERS.push(jsonRpcProvider({
-  rpc: (chain) => {
+  rpc: (chain: Chain) => {
 
     console.log("deebug chain", chain);
 
@@ -45,10 +79,20 @@ PROVIDERS.push(jsonRpcProvider({
           http: `https://opt-goerli.g.alchemy.com/v2/rTbd7myQ6pGvD1L4SEN171Sft4BG-uVZ`,
         });
 
-      /*default:
+      case 11155111:
+        return ({
+          http: `https://eth-sepolia.g.alchemy.com/v2/wU2GqCbHRv7zR36dbSRH0sHKM72poxIE`,
+        });
+
+      case 42070:
+        return ({
+          http: `https://chain.enstools.com`,
+        });
+
+      default:
         return ({
           http: `http://127.0.0.1:8545`,
-        });*/
+        })
     }
   }
 }))

@@ -15,7 +15,7 @@ import {
 
 import { 
 		hexEncodeName,
-}                                       from '@/helpers/Helpers.jsx';
+}                                       from '@/helpers/Helpers.ts';
 
 import { 
 		useAccount, 

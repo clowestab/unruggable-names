@@ -46,7 +46,7 @@ import { useToast }                     from '@/lib/hooks/use-toast'
 import { 
     parseName,
     getUnruggableName
-}                                       from '@/helpers/Helpers.jsx';
+}                                       from '@/helpers/Helpers.ts';
 
 interface FuseListProps {
     name:        string,
@@ -292,42 +292,45 @@ export function FuseList({ name }: FuseListProps) {
             console.log("Burning child fuse on subname", fuseKey);
             console.log("labelhash", labelhash);
 
-            await nameWrapper
-                .callStatic
-                .setChildFuses(
-                    parentNameNamehash, 
-                    labelhash, 
-                    FUSES[fuseKey], 
-                    0, 
-                    {gasLimit: 500000}
-                )
-                .then(() => {
+            if (nameWrapper != null) {
 
-                    return nameWrapper  
-                        .setChildFuses(
-                            nameNodeNamehash, 
-                            labelhash, 
-                            FUSES[fuseKey], 
-                            0, 
-                            {gasLimit: 500000}
-                        );
-                })
-                .then((childFuseResponse) => {
-                    return childFuseResponse.wait();
-                })
-                .then((childFuseReceipt) => {
-                    return refetchData();
-                })
-                .catch((error) => {
-                    console.log("ERROR child fuse response - " + error.reason, error);
-                    console.log("Werror", error.error);
+                await nameWrapper
+                    .callStatic
+                    .setChildFuses(
+                        parentNameNamehash, 
+                        labelhash, 
+                        FUSES[fuseKey], 
+                        ethers.BigNumber.from("0"), 
+                        {gasLimit: 500000}
+                    )
+                    .then(() => {
 
-                    parseError(error);
-                    return;
-                })
-                .then(() => {
+                        return nameWrapper  
+                            .setChildFuses(
+                                nameNodeNamehash, 
+                                labelhash, 
+                                FUSES[fuseKey], 
+                                ethers.BigNumber.from("0"), 
+                                {gasLimit: 500000}
+                            );
+                    })
+                    .then((childFuseResponse) => {
+                        return childFuseResponse.wait();
+                    })
+                    .then((childFuseReceipt) => {
+                        return refetchData();
+                    })
+                    .catch((error) => {
+                        console.log("ERROR child fuse response - " + error.reason, error);
+                        console.log("Werror", error.error);
 
-                });
+                        parseError(error);
+                        return;
+                    })
+                    .then(() => {
+
+                    });
+            }
 
         //The owner or parent (of not emancipated names) can burn the other kinds of fuses
         } else {

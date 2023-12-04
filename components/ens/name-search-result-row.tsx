@@ -39,7 +39,7 @@ import {
     buildErrorMessage,
     parseName,
     getUnruggableName  
-}                                       from '../../helpers/Helpers.jsx';
+}                                       from '../../helpers/Helpers.ts';
 import {
     ZERO_ADDRESS,
     FUSES,
