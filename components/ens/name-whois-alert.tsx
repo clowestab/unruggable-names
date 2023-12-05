@@ -272,12 +272,10 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
 
         console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
 
-        for (var i = 0; ethers.BigNumber.from(i).lte(ilastRenewalPriceIndex); i++) {
+        for (var i = 0; i < lastRenewalPriceIndex; i++) {
 
             const price = await renewalController.charAmounts(i);
             secondsPricingData.push(price.toString());
-
-            console.log("lastRenewalPriceIndex price wut " + i, price);
 
             const pricePerYear = (price.mul(yearInSeconds));
             const formatted = ethers.utils.formatEther(pricePerYear.toString())
@@ -307,7 +305,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
         console.log("lastRenewalPriceIndex WUT", renewalController);
         if (ethereumProvider) {
             console.log("lastRenewalPriceIndex", lastRenewalPriceIndex);
-            //refetchRenewalConfiguration();
+            refetchRenewalConfiguration();
         }
 
     }, [ethereumProvider, lastRenewalPriceIndex]);
