@@ -13,7 +13,8 @@ const chainNames = {
   10:    "Optimism",
   420:   "Optimism Goerli",
   42070: "ENS Chain",
-  31337: "Foundry"
+  31337: "Foundry",
+  11155111: "Sepolia"
 }
 
 export function NetworkStatus({ className }: any) {
@@ -29,12 +30,12 @@ export function NetworkStatus({ className }: any) {
   )
 
   return (
-    <div className={classes}>
-      <span className={classesBadge}>
+    <div className = {classes}>
+      <span className = {classesBadge}>
         <span className="px-1">{chainNames[chainId] ?? 'Ethereum'}</span>
       </span>
       {explorerUrl && (
-        <LinkComponent href={explorerUrl} className="mx-3 text-2xs dark:hover:text-gray-200">
+        <LinkComponent href = {explorerUrl} className="mx-3 text-2xs dark:hover:text-gray-200">
           <>#{block.data}</>
         </LinkComponent>
       )}

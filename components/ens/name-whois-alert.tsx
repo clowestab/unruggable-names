@@ -76,7 +76,7 @@ import {
     hexEncodeName,
     generateSalt,
     parseName,
-    getUnruggableName 
+    getUnruggableName, 
 }                                         from '@/helpers/Helpers.ts';
 
 import {
@@ -84,7 +84,8 @@ import {
     ZERO_ADDRESS,
     ONE_YEAR_IN_SECONDS,
     ETHEREUM_CHAIN_ID,
-    OPTIMISM_CHAIN_ID
+    OPTIMISM_CHAIN_ID,
+    ETHERSCAN_URL_BASE
 }                                         from '@/helpers/constants'
 
 
@@ -111,8 +112,9 @@ import {
 
 import CommonIcons                        from '../shared/common-icons';
 import { TransactionConfirmationState }   from '../shared/transaction-confirmation-state'
-
+            
 const UNRUGGABLE_RESOLVER_ADDRESS = l1UnruggableResolverAddress[ETHEREUM_CHAIN_ID];
+const CHAIN_EXPLORER_BASE = ETHERSCAN_URL_BASE[ETHEREUM_CHAIN_ID];
 
 interface NameWhoisAlertProps {
     name:          string,
@@ -916,7 +918,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                             <TableCell>Renewal Controller</TableCell>
                                                                             <TableCell>
                                                                                 <>
-                                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + registerPricingData?.renewalController} target="_blank" rel="noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
+                                                                                    <a href = {CHAIN_EXPLORER_BASE + "/address/" + registerPricingData?.renewalController} target = "_blank" rel = "noreferrer" className = "underline">{registerPricingData?.renewalController}</a>
                                                                                     {currentRenewalController && (
                                                                                         <div className = "text-xs mt-2">
                                                                                             The <span className = "font-bold">{currentRenewalController?.label}</span> renewal controller allows you to <span className = "font-bold">{currentRenewalController?.controlDescription}</span>
@@ -931,7 +933,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 <>
-                                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + registryResolver} target="_blank" rel="noreferrer" className = "underline">{registryResolver}</a>
+                                                                                    <a href = {CHAIN_EXPLORER_BASE + "/address/" + registryResolver} target="_blank" rel="noreferrer" className = "underline">{registryResolver}</a>
                                                                                     <div className = "text-xs mt-2">
                                                                                         This is the Unruggable Resolver - subnames will be resolved from Layer 2 (ENS Chain).
                                                                                     </div> 
@@ -945,7 +947,7 @@ export function NameWhoisAlert({ name, onClickClose }: NameWhoisAlertProps): Rea
                                                                                     </TableCell>
                                                                                     <TableCell>
                                                                                         <>
-                                                                                            <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
+                                                                                            <a href = {CHAIN_EXPLORER_BASE + "/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
                                                                                         </>
                                                                                     </TableCell>
                                                                                 </TableRow>

@@ -70,7 +70,8 @@ import {
 import {
     ZERO_ADDRESS,
     ETHEREUM_CHAIN_ID,
-    OPTIMISM_CHAIN_ID
+    OPTIMISM_CHAIN_ID,
+    ETHERSCAN_URL_BASE
 }                                       from '../../helpers/constants'
 
 import { useToast }                     from '@/lib/hooks/use-toast'
@@ -94,6 +95,7 @@ import CommonIcons                      from '../shared/common-icons';
 import { TransactionConfirmationState } from '../shared/transaction-confirmation-state'
 
 const UNRUGGABLE_RESOLVER_ADDRESS = l1UnruggableResolverAddress[ETHEREUM_CHAIN_ID];
+const CHAIN_EXPLORER_BASE = ETHERSCAN_URL_BASE[ETHEREUM_CHAIN_ID];
 
 interface SubnameWhoisAlertProps {
     name: string,
@@ -397,7 +399,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                                 )}
 
                                                                 <p className = "text-xs mt-2">
-                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller (<a href = {"https://" + (OPTIMISM_CHAIN_ID == 420 ? "goerli-" : "") + "optimism.etherscan.io/address/" + renewalControllerAddress} target="_blank" rel="noreferrer" className = "underline">{renewalControllerAddress}</a>).
+                                                                    This name is using the <span className = "font-bold">{currentRenewalControllerData?.label}</span> renewal controller ({renewalControllerAddress}).
                                                                 </p>
                                                             </>
                                                         ) : (
@@ -511,7 +513,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                             </TableCell>
                                                             <TableCell>
                                                                 <p>
-                                                                    <a href = {"https://" + (OPTIMISM_CHAIN_ID == 420 ? "goerli-" : "") + "optimism.etherscan.io/address/" + l2PublicResolverAddress[OPTIMISM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{l2PublicResolverAddress[OPTIMISM_CHAIN_ID]}</a>
+                                                                    {l2PublicResolverAddress[OPTIMISM_CHAIN_ID]}
                                                                 </p>
                                                                 <p className = "text-xs text-red-800 dark:text-red-200 mt-2">
                                                                     This is the Layer 2 (Optimism) public resolver.
@@ -524,7 +526,7 @@ export function SubnameWhoisAlert({ name, onClickClose }: SubnameWhoisAlertProps
                                                             </TableCell>
                                                             <TableCell>
                                                                 <>
-                                                                    <a href = {"https://" + (ETHEREUM_CHAIN_ID == 5 ? "goerli." : "") + "etherscan.io/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
+                                                                    <a href = {CHAIN_EXPLORER_BASE + "/address/" + opVerifierAddress[ETHEREUM_CHAIN_ID]} target="_blank" rel="noreferrer" className = "underline">{opVerifierAddress[ETHEREUM_CHAIN_ID]}</a>
                                                                 </>
                                                             </TableCell>
                                                         </TableRow>

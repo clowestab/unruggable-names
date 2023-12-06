@@ -17,8 +17,8 @@ export function DashboardFooter({ className }: DashboardFooterProps) {
   return (
     <footer className={classes}>
       <h3 className="text-sm font-semibold">{siteConfig.title}</h3>
-      <a className="link my-2 text-xs" target={'_blank'} href="https://unruggablelabs.com/" rel="noreferrer">
-        Built by Unruggable Labs
+      <a className="link my-2 text-xs" target={'_blank'} href="https://unruggable.com/" rel="noreferrer">
+        Built by Unruggable
       </a>
       {/*<div className="mt-2 flex items-center">
         <LinkComponent href={`${siteConfig.links.github}`}>

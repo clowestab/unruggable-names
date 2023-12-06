@@ -27,3 +27,8 @@ export const ONE_YEAR_IN_SECONDS              = 31536000
 
 export const OPTIMISM_CHAIN_ID = 42070;
 export const ETHEREUM_CHAIN_ID = 11155111;
+
+export const ETHERSCAN_URL_BASE = {
+  5: "https://goerli.etherscan.io",
+  11155111: "https://sepolia.etherscan.io",
+}

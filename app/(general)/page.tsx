@@ -241,8 +241,10 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
         setSearchResults(newResults);
     }
 
-    const hasValidNetwork = [sepolia.id, OPTIMISM_CHAIN_ID].includes(chainId);
+    const hasValidNetwork = [sepolia.id, OPTIMISM_CHAIN_ID].includes(chain?.id);
 
+    console.log("VALID net", hasValidNetwork);
+    console.log("VALID net chain", chainId);
 
     const clearCookies = () => {
 
@@ -289,7 +291,7 @@ export default function RegistrationForm({ nameToOpen } : RegistrationFormProps)
                 <AlertDescription>
                     <p className = "mt-2">This version of Unruggable Names runs using custom smart contract deployments on <span className = "font-bold">Sepolia</span> (L1) and our OP stack based <span className = "font-bold">ENS Chain</span> (L2).</p>
 
-                    <p className = "mt-2">These smart contract are open source and accessible on <a href = "https://github.com/unruggable-labs/L2-ens/tree/enschain" target = "_blank" className = "underline">Github</a>. We welcome contributions.</p>
+                    <p className = "mt-2">These smart contract are open source and accessible on <a href = "https://github.com/unruggable-labs/L2-ens/" target = "_blank" className = "underline">Github</a>. We welcome contributions.</p>
 
                     <p className = "mt-2">Please help us develop and improve the product by completing our <a href = "https://forms.gle/6oFshRMvXxJBcG6B6" target = "_blank" className = "underline">Feedback Form</a>.</p>
                 </AlertDescription>

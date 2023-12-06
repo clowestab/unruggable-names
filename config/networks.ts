@@ -23,7 +23,7 @@ const ensChain: Chain = {
   id: 42_070,
   name: 'ENS Chain',
   network: 'ensChain',
-  iconUrl: 'https://example.com/icon.svg',
+  iconUrl: '/icons/NetworkEthereumTest.svg',
   iconBackground: '#fff',
   nativeCurrency: {
     decimals: 18,
